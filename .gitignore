@@ -1,6 +1,8 @@
-# node_modules
-node_modules/
-.env
+# Mengabaikan folder node_modules di seluruh proyek
+client/node_modules/
+web_service/node_modules/
+web_service/.env
+
 
 
 # Logs

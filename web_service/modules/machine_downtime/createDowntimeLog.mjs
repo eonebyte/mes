@@ -1,12 +1,9 @@
 import { InfluxDB, Point } from '@influxdata/influxdb-client';
 import { v4 as uuidv4 } from 'uuid';
+import 'dotenv/config';
 
-const token = '33iwssECX2KS75Tavb6spXqARVpA3-uOzoN-_Rnuc7Dkzd-MIvnP1KIr7caWwXRthia7_Islxd5a7sSFcyUawQ=='; // Ganti dengan token Anda
-const org = 'api';
-const bucket = 'mes';
-
-const influxDB = new InfluxDB({ url: 'http://localhost:8086', token });
-const writeApi = influxDB.getWriteApi(org, bucket);
+const influxDB = new InfluxDB({ url: 'http://localhost:8086', token: process.env.TOKEN });
+const writeApi = influxDB.getWriteApi(process.env.ORG, process.env.BUCKET);
 
 export default async function CreateDowntimeLog(fastify, opts) {
   const dbClient = await fastify.pg.connect();

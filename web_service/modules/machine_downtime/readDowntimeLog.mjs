@@ -1,10 +1,8 @@
 import { InfluxDB, Point } from '@influxdata/influxdb-client';
 
-const token = '33iwssECX2KS75Tavb6spXqARVpA3-uOzoN-_Rnuc7Dkzd-MIvnP1KIr7caWwXRthia7_Islxd5a7sSFcyUawQ=='; // Ganti dengan token Anda
-const org = 'api';
-const bucket = 'mes';
+import 'dotenv/config';
 
-const influxDB = new InfluxDB({ url: 'http://localhost:8086', token });
+const influxDB = new InfluxDB({ url: 'http://localhost:8086', token: process.env.TOKEN });
 
 export async function GetMachines(fastify, opts) {
   fastify.get('/api/machines', async (request, reply) => {
@@ -30,7 +28,7 @@ export async function ReadDowntimeLog(fastify, opts) {
   fastify.get('/api/machine-events', async (request, reply) => {
     try {
       const query = `
-  from(bucket: "${bucket}")
+  from(bucket: "${process.env.BUCKET}")
     |> range(start: -1d) // adjust the time range as needed
     |> filter(fn: (r) => r._measurement == "machine_events")
     |> filter(fn: (r) => r._field == "duration" or r._field == "start_time" or r._field == "end_time")
@@ -39,7 +37,7 @@ export async function ReadDowntimeLog(fastify, opts) {
 `;
 
       // Execute the query
-      const result = await influxDB.getQueryApi(org).collectRows(query);
+      const result = await influxDB.getQueryApi(process.env.ORG).collectRows(query);
 
       // Check if result is empty
       if (!result.length) {
