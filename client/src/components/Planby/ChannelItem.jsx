@@ -16,15 +16,16 @@ export const ChannelItem = ({ channel }) => {
   );
 };
 
-// Define prop types for runtime validation
+// Define prop types for ChannelItem
 ChannelItem.propTypes = {
   channel: PropTypes.shape({
     position: PropTypes.shape({
-      top: PropTypes.number.isRequired,
-      left: PropTypes.number.isRequired,
-      right: PropTypes.number.isRequired,
-      bottom: PropTypes.number.isRequired
+      top: PropTypes.number,
+      left: PropTypes.number,
+      right: PropTypes.number,
+      bottom: PropTypes.number,
+      // Add other position properties based on what ChannelBox expects
     }).isRequired,
-    logo: PropTypes.string.isRequired
-  }).isRequired
+    logo: PropTypes.string.isRequired,  // Assuming logo is a URL string
+  }).isRequired,
 };

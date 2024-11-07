@@ -13,6 +13,7 @@ export default async function CreateDowntimeLog(fastify, opts) {
     const injectPromises = request.body.map(async ({ machineId }) => {
       try {
         const lastRunningTime = await getLastRunningTime(machineId);
+        const machineUUID = await getMachineUUID(machineId);
 
         console.log("Last Running : " + lastRunningTime);
 
@@ -20,7 +21,7 @@ export default async function CreateDowntimeLog(fastify, opts) {
         await logInjectData(machineId);
         await updateLastRunningTime(machineId);
 
-        await checkAndLogEvent(machineId, lastRunningTime);
+        await checkAndLogEvent(machineId, lastRunningTime, machineUUID);
 
         fastify.log.info(`Machine ${machineId} diinject pada : ${new Date()}`);
       } catch (error) {
@@ -43,6 +44,20 @@ export default async function CreateDowntimeLog(fastify, opts) {
       return null;
     } catch (error) {
       fastify.log.error('Error fetching last running date:', error);
+      return null;
+    }
+  };
+
+  const getMachineUUID = async (machineId) => {
+    try {
+      const result = await dbClient.query('SELECT uuid FROM mes.machines WHERE machine_id = $1', [machineId]);
+      if (result.rows.length > 0) {
+        console.log(`Machine uuid ${machineId} : ` + result.rows[0].uuid);
+        return result.rows[0].uuid;
+      }
+      return null;
+    } catch (error) {
+      fastify.log.error('Error fetching machine uuid:', error);
       return null;
     }
   };
@@ -79,7 +94,7 @@ export default async function CreateDowntimeLog(fastify, opts) {
     }
   };
 
-  const checkAndLogEvent = async (machineId, lastRunningTime) => {
+  const checkAndLogEvent = async (machineId, lastRunningTime, mUUID) => {
     const currentTime = new Date();
     const runningThreshold = 300;
     let status;
@@ -94,13 +109,15 @@ export default async function CreateDowntimeLog(fastify, opts) {
         const downtimeStartTime = lastRunningTime;
         const downtimeEndTime = currentTime;
         status = 'downtime';
-        await logEvent(machineId, downtimeStartTime, downtimeEndTime, status);
+        await logEvent(machineId, downtimeStartTime, downtimeEndTime, status, mUUID);
       }
     }
   };
 
 
-  const logEvent = async (machineId, downtimeStartTime, downtimeEndTime, status) => {
+  const logEvent = async (machineId, downtimeStartTime, downtimeEndTime, status, mUUID) => {
+    console.log(mUUID);
+    
     const duration = Math.floor((downtimeEndTime - downtimeStartTime) / 1000);
     const startTime = Math.floor(downtimeStartTime.getTime() / 1000);
     const endTime = Math.floor(downtimeEndTime.getTime() / 1000);
@@ -110,6 +127,7 @@ export default async function CreateDowntimeLog(fastify, opts) {
     const point = new Point('machine_events')
       .tag('machine_id', machineId)
       .tag('event_id', eventID)
+      .tag('channel_uuid', mUUID)
       .tag('status', status)
       .floatField('start_time', startTime)
       .floatField('end_time', endTime)
@@ -117,6 +135,7 @@ export default async function CreateDowntimeLog(fastify, opts) {
 
     console.log(`start: ${startTime}, endtime: ${endTime}, duration: ${duration}`);
     console.log('Point to write:', point);
+    console.log('Machine UUID:', mUUID);
 
 
     try {

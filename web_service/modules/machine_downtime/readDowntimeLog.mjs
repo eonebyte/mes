@@ -8,7 +8,7 @@ export async function GetMachines(fastify, opts) {
   fastify.get('/api/machines', async (request, reply) => {
     const dbClient = await fastify.pg.connect();
     try {
-      const { rows } = await dbClient.query('SELECT machine_id, machine_name FROM mes.machines')
+      const { rows } = await dbClient.query('SELECT machine_id, uuid, machine_name FROM mes.machines')
       if (rows.length > 0) {
         console.log('Berhasil fetch data semua machine');
         return reply.send(rows);
@@ -33,7 +33,7 @@ export async function ReadDowntimeLog(fastify, opts) {
     |> filter(fn: (r) => r._measurement == "machine_events")
     |> filter(fn: (r) => r._field == "duration" or r._field == "start_time" or r._field == "end_time")
     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-    |> keep(columns: ["event_id", "machine_id", "status", "start_time", "end_time", "duration"])
+    |> keep(columns: ["event_id", "machine_id", "channel_uuid", "status", "start_time", "end_time", "duration"])
 `;
 
       // Execute the query
@@ -60,6 +60,7 @@ export async function ReadDowntimeLog(fastify, opts) {
 
         return {
           eventId: row.event_id,
+          channelUuid: row.channel_uuid,
           machineId: row.machine_id,
           status: row.status,
           startTime: startTime,

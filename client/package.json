@@ -24,6 +24,8 @@
     "antd-style": "^3.6.2",
     "apexcharts": "^3.48.0",
     "axios": "^1.7.7",
+    "dayjs": "^1.11.13",
+    "dayjs-plugin-utc": "^0.1.2",
     "faker": "^5.5.3",
     "lodash": "^4.17.21",
     "moment": "^2.30.1",

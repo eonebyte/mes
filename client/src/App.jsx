@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import IROEEStatus from "./pages/IROEEStatus";
 import './Chart.css'
 import './index.css'
-import MachineDowntime from "./pages/MachineDowntime2";
+import MachineDowntime from "./pages/MachineDowntime";
 import SimulasiIoT from "./pages/SimulasiIoT";
 
 function App() {
