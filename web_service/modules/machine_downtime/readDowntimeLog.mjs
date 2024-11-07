@@ -29,7 +29,7 @@ export async function ReadDowntimeLog(fastify, opts) {
     try {
       const query = `
   from(bucket: "${process.env.BUCKET}")
-    |> range(start: -1d) // adjust the time range as needed
+    |> range(start: -2d) // adjust the time range as needed
     |> filter(fn: (r) => r._measurement == "machine_events")
     |> filter(fn: (r) => r._field == "duration" or r._field == "start_time" or r._field == "end_time")
     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
@@ -64,37 +64,15 @@ export async function ReadDowntimeLog(fastify, opts) {
           status: row.status,
           startTime: startTime,
           endTime: endTime,
+          startTimeLocal: startTime.toLocaleString(),
+          endTimeLocal: endTime.toLocaleString(),
           duration: durationInSeconds,
           durationText: formatDuration(durationInSeconds),
           eventColor: '#FF0000',
         };
-      }).sort((a, b) => a.startTime - b.startTime);
+      });
 
-      // Merge overlapping events
-      const mergedEvents = [];
-      for (let i = 0; i < events.length; i++) {
-        let currentEvent = events[i];
-
-        // Loop untuk menggabungkan event yang berurutan
-        while (i + 1 < events.length && currentEvent.endTime.getTime() === events[i + 1].startTime.getTime()) {
-          // Update endTime dan durasi dari currentEvent
-          currentEvent.endTime = events[i + 1].endTime;
-          currentEvent.duration += events[i + 1].duration;
-          i++;
-        }
-
-        // Push event yang sudah digabung ke mergedEvents
-        mergedEvents.push({
-          ...currentEvent,
-          startTime: currentEvent.startTime.toISOString(),
-          endTime: currentEvent.endTime.toISOString(),
-          startTimeLocal: currentEvent.startTime.toLocaleString(),
-          endTimeLocal: currentEvent.endTime.toLocaleString(),
-        });
-      }
-
-      // Send the merged events as the response
-      reply.send(mergedEvents);
+      reply.send(events);
     } catch (error) {
       // Log the error and respond with a 500 status
       fastify.log.error('Error fetching machine events:', error);

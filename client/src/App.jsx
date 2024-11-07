@@ -2,7 +2,8 @@ import Dashboard from "./pages/Dashboard";
 import { Routes, Route } from "react-router-dom";
 import IROEEStatus from "./pages/IROEEStatus";
 import './Chart.css'
-import MachineDowntime from "./pages/MachineDowntime";
+import './index.css'
+import MachineDowntime from "./pages/MachineDowntime2";
 import SimulasiIoT from "./pages/SimulasiIoT";
 
 function App() {
