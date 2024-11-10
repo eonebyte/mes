@@ -33,7 +33,7 @@ export async function ReadDowntimeLog(fastify, opts) {
     |> filter(fn: (r) => r._measurement == "machine_events")
     |> filter(fn: (r) => r._field == "duration" or r._field == "start_time" or r._field == "end_time")
     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-    |> keep(columns: ["event_id", "machine_id", "channel_uuid", "status", "start_time", "end_time", "duration"])
+    |> keep(columns: ["event_id", "machine_id", "status", "start_time", "end_time", "duration"])
 `;
 
       // Execute the query
@@ -60,13 +60,12 @@ export async function ReadDowntimeLog(fastify, opts) {
 
         return {
           eventId: row.event_id,
-          channelUuid: row.channel_uuid,
-          machineId: row.machine_id,
+          machineId: parseInt(row.machine_id),
           status: row.status,
-          startTime: startTime,
-          endTime: endTime,
-          startTimeLocal: startTime.toLocaleString(),
-          endTimeLocal: endTime.toLocaleString(),
+          startTime: startTime.getTime(),
+          endTime: endTime.getTime(),
+          startTimeLocal: startTime,
+          endTimeLocal: endTime,
           duration: durationInSeconds,
           durationText: formatDuration(durationInSeconds),
           eventColor: '#FF0000',

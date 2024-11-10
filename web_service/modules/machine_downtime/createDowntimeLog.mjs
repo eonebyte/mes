@@ -8,6 +8,29 @@ const writeApi = influxDB.getWriteApi(process.env.ORG, process.env.BUCKET);
 export default async function CreateDowntimeLog(fastify, opts) {
   const dbClient = await fastify.pg.connect();
 
+  // const injectEventSimulation = async () => {
+  //   const machines = [{ machineId: 1 }, { machineId: 2 }, { machineId: 3 }]; 
+  //   const injectPromises = machines.map(async ({ machineId }) => {
+  //     try {
+  //       const lastRunningTime = await getLastRunningTime(machineId);
+  //       const machineUUID = await getMachineUUID(machineId);
+
+  //       await logInjectData(machineId);
+  //       await updateLastRunningTime(machineId);
+
+  //       await checkAndLogEvent(machineId, lastRunningTime, machineUUID);
+
+  //       fastify.log.info(`Machine ${machineId} diinject pada : ${new Date()}`);
+  //     } catch (error) {
+  //       fastify.log.error(`Error processing machine ${machineId}:`, error);
+  //     }
+  //   });
+
+  //   await Promise.all(injectPromises);
+  // };
+
+  // setInterval(injectEventSimulation, 5000);
+
 
   fastify.post('/api/inject-event', async (request, reply) => {
     const injectPromises = request.body.map(async ({ machineId }) => {
