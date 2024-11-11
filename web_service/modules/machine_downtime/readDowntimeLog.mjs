@@ -1,5 +1,5 @@
 import { InfluxDB, Point } from '@influxdata/influxdb-client';
-
+import dayjs from 'dayjs';
 import 'dotenv/config';
 
 const influxDB = new InfluxDB({ url: 'http://localhost:8086', token: process.env.TOKEN });
@@ -27,9 +27,11 @@ export async function GetMachines(fastify, opts) {
 export async function ReadDowntimeLog(fastify, opts) {
   fastify.get('/api/machine-events', async (request, reply) => {
     try {
+      const startOfYesterday = dayjs().subtract(1, 'day').startOf('day').toISOString();
+      const endOfToday = dayjs().toISOString();
       const query = `
   from(bucket: "${process.env.BUCKET}")
-    |> range(start: -2d) // adjust the time range as needed
+    |> range(start: ${startOfYesterday}, stop: ${endOfToday}) 
     |> filter(fn: (r) => r._measurement == "machine_events")
     |> filter(fn: (r) => r._field == "duration" or r._field == "start_time" or r._field == "end_time")
     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
@@ -55,7 +57,7 @@ export async function ReadDowntimeLog(fastify, opts) {
           const hours = Math.floor((duration % (24 * 3600)) / 3600);
           const minutes = Math.floor((duration % 3600) / 60);
           const seconds = duration % 60;
-          return `${days} hari, ${hours} jam, ${minutes} menit, ${seconds} detik`;
+          return `${days}d, ${hours}h, ${minutes}m, ${seconds}s`;
         };
 
         return {
@@ -66,6 +68,8 @@ export async function ReadDowntimeLog(fastify, opts) {
           endTime: endTime.getTime(),
           startTimeLocal: startTime,
           endTimeLocal: endTime,
+          startTimeLocalString: startTime.toLocaleString(), // Waktu lokal sebagai string
+          endTimeLocalString: endTime.toLocaleString(), 
           duration: durationInSeconds,
           durationText: formatDuration(durationInSeconds),
           eventColor: '#FF0000',

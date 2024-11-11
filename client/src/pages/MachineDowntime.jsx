@@ -1,8 +1,8 @@
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
+import duration from 'dayjs/plugin/duration';
 
-dayjs.extend(isoWeek);
+dayjs.extend(duration);
 import { KonvaTimeline } from '@melfore/konva-timeline'; // Importing from the specified package
 import LayoutDashboard from "../components/layouts/LayoutDashboard";
 import { Row, Modal } from 'antd';
@@ -40,27 +40,81 @@ const MachineDowntime = () => {
     label: `MC ${resource.machine_name}`,
   }));
 
-  const mappedTasks = tasks.map(task => ({
-    id: task.event_id,
-    label: `MC ID ${task.machine_id}`,
-    resourceId: task.machine_id.toString(),
-    time: {
-      start: task.start_time,
-      end: task.end_time,
-    },
-    taskColor: task.task_color,
-    durationText: task.duration_text,
-  }));
+  const formatDuration = (start, end) => {
+    const gapDuration = dayjs.duration(dayjs(end).diff(dayjs(start)));
+    const days = gapDuration.days();
+    const hours = gapDuration.hours();
+    const minutes = gapDuration.minutes();
+    const seconds = gapDuration.seconds();
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  };
+
+  const mappedTasks = resources.flatMap(resource => {
+    const machineTasks = tasks
+      .filter(task => task.machine_id === resource.machine_id)
+      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+    
+    const machineIdString = resource.machine_id.toString();
+    const machineMappedTasks = [];
+  
+    for (let i = 0; i < machineTasks.length; i++) {
+      const task = machineTasks[i];
+      const taskStart = dayjs(task.start_time);
+  
+      // update start menjadi 00:00 jika task start timenya < dari 00:00
+      const adjustedStart = taskStart.isBefore(dayjs().subtract(1, 'day').startOf('day').valueOf()) 
+        ? dayjs().subtract(1, 'day').startOf('day').valueOf()
+        : taskStart;
+  
+      machineMappedTasks.push({
+        id: task.event_id,
+        label: `MC ID ${task.machine_id}`,
+        customStart: task.start_time,
+        resourceId: machineIdString,
+        time: {
+          start: adjustedStart.valueOf(),  // Use adjusted start time
+          end: task.end_time,
+        },
+        taskColor: task.task_color,
+        durationText: formatDuration(task.start_time, task.end_time), // Updated duration text
+      });
+  
+      // Add gap if there is a next task
+      if (i < machineTasks.length - 1) {
+        const nextTask = machineTasks[i + 1];
+        const gapStart = dayjs(task.end_time);
+        const gapEnd = dayjs(nextTask.start_time);
+  
+        if (gapStart.isBefore(gapEnd)) {
+          machineMappedTasks.push({
+            id: `gap-${task.event_id}-${nextTask.event_id}`,
+            label: `Gap for MC ${resource.machine_name}`,
+            resourceId: machineIdString,
+            time: {
+              start: gapStart.valueOf(),
+              end: gapEnd.valueOf(),
+            },
+            taskColor: '#00FF00', // Green color for gap tasks
+            durationText: formatDuration(gapStart, gapEnd),
+          });
+        }
+      }
+    }
+  
+    return machineMappedTasks;
+  });
+  
 
   const defaultRange = {
-    start: dayjs().startOf('isoWeek').valueOf(), // Mulai dari 00:00 pada hari Senin minggu ini
-    end: dayjs().endOf('isoWeek').valueOf(), // Sampai dengan 23:59:59.999 pada hari Minggu minggu ini
+    start: dayjs().subtract(1, 'day').startOf('day').valueOf(), // Mulai dari 00:00 pada hari Senin minggu ini
+    end: dayjs().endOf('day').valueOf(), // Sampai dengan 23:59:59.999 pada hari Minggu minggu ini
   };
 
-  const range = {
-    start: defaultRange.start,
-    end: defaultRange.end,
-  };
+  // const range = tasks.length > 0 ? {
+  //   start: Math.min(...tasks.map(task => dayjs(task.start_time).valueOf())), 
+  //   end: Math.max(...tasks.map(task => dayjs(task.end_time).valueOf())), 
+  // } : defaultRange;
+
 
   // Fungsi untuk mengatur tampilan modal dan task yang dipilih
   const onTaskClick = (taskData) => {
@@ -73,22 +127,24 @@ const MachineDowntime = () => {
   };
 
   const customToolTip = (taskData) => {
+    console.log(taskData);
+    
     return (
       <div
         style={{
           backgroundColor: isDarkMode ? "#444" : "#fff",
           color: isDarkMode ? "#fff" : "#000",
           padding: "10px",
-          borderRadius: "5px",
         }}
       >
         <div>{taskData.label}</div>
-        <div>Start: {taskData.start}</div>
+        <div>Start: {dayjs(taskData.customStart).format("DD/MM/YYYY HH:mm:ss")}</div>
         <div>End: {taskData.end}</div>
         <div>Duration: {taskData.durationText}</div>
       </div>
     );
   };
+  
 
   return (
     <div>
@@ -114,7 +170,7 @@ const MachineDowntime = () => {
             dragResolution="5min"
             onErrors={(error) => console.log(error)}
             onTaskChange={(task) => console.log('Task Changed:', task)}
-            range={range}
+            range={defaultRange}
             resolution="1hrs"
             resources={mappedResources}
             tasks={mappedTasks}
@@ -135,7 +191,7 @@ const MachineDowntime = () => {
             <div>
               <p><strong>Task ID:</strong> {selectedTask.id}</p>
               <p><strong>Machine ID:</strong> {selectedTask.resourceId}</p>
-              <p><strong>Start Time:</strong> {dayjs(selectedTask.time.start).format('YYYY-MM-DD HH:mm')}</p>
+              <p><strong>Start Time:</strong> {dayjs(selectedTask.customStart).format('YYYY-MM-DD HH:mm')}</p>
               <p><strong>End Time:</strong> {dayjs(selectedTask.time.end).format('YYYY-MM-DD HH:mm')}</p>
               <p><strong>Duration:</strong> {selectedTask.durationText}</p>
             </div>
