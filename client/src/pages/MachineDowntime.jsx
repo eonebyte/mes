@@ -8,7 +8,7 @@ import LayoutDashboard from "../components/layouts/LayoutDashboard";
 import { Row, Modal } from 'antd';
 import StatusButton from '../components/Buttons/StatusButton';
 import { useCallback, useEffect, useState } from 'react';
-import { fetchResources, fetchTasks } from '../utils/fetchData';
+import { fetchResources, fetchTasks } from '../data/fetchData';
 
 const MachineDowntime = () => {
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
@@ -17,8 +17,8 @@ const MachineDowntime = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   // Conditional background color based on the theme
-  const backgroundColor = isDarkMode ? '#333' : '#fff';
-  const textColor = isDarkMode ? '#fff' : '#000';
+  // const backgroundColor = isDarkMode ? '#333' : '#fff';
+  // const textColor = isDarkMode ? '#fff' : '#000';
 
   const handleFetchResources = useCallback(async () => {
     try {
@@ -53,19 +53,19 @@ const MachineDowntime = () => {
     const machineTasks = tasks
       .filter(task => task.machine_id === resource.machine_id)
       .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-    
+
     const machineIdString = resource.machine_id.toString();
     const machineMappedTasks = [];
-  
+
     for (let i = 0; i < machineTasks.length; i++) {
       const task = machineTasks[i];
       const taskStart = dayjs(task.start_time);
-  
+
       // update start menjadi 00:00 jika task start timenya < dari 00:00
-      const adjustedStart = taskStart.isBefore(dayjs().subtract(1, 'day').startOf('day').valueOf()) 
+      const adjustedStart = taskStart.isBefore(dayjs().subtract(1, 'day').startOf('day').valueOf())
         ? dayjs().subtract(1, 'day').startOf('day').valueOf()
         : taskStart;
-  
+
       machineMappedTasks.push({
         id: task.event_id,
         label: `MC ID ${task.machine_id}`,
@@ -78,13 +78,13 @@ const MachineDowntime = () => {
         taskColor: task.task_color,
         durationText: formatDuration(task.start_time, task.end_time), // Updated duration text
       });
-  
+
       // Add gap if there is a next task
       if (i < machineTasks.length - 1) {
         const nextTask = machineTasks[i + 1];
         const gapStart = dayjs(task.end_time);
         const gapEnd = dayjs(nextTask.start_time);
-  
+
         if (gapStart.isBefore(gapEnd)) {
           machineMappedTasks.push({
             id: `gap-${task.event_id}-${nextTask.event_id}`,
@@ -100,10 +100,10 @@ const MachineDowntime = () => {
         }
       }
     }
-  
+
     return machineMappedTasks;
   });
-  
+
 
   const defaultRange = {
     start: dayjs().subtract(1, 'day').startOf('day').valueOf(), // Mulai dari 00:00 pada hari Senin minggu ini
@@ -128,13 +128,14 @@ const MachineDowntime = () => {
 
   const customToolTip = (taskData) => {
     console.log(taskData);
-    
+
     return (
       <div
         style={{
           backgroundColor: isDarkMode ? "#444" : "#fff",
           color: isDarkMode ? "#fff" : "#000",
           padding: "10px",
+          borderRadius: "8px",
         }}
       >
         <div>{taskData.label}</div>
@@ -144,7 +145,7 @@ const MachineDowntime = () => {
       </div>
     );
   };
-  
+
 
   return (
     <div>
@@ -152,15 +153,7 @@ const MachineDowntime = () => {
         <Row gutter={[8, 8]} style={{ maxWidth: '100%', margin: 0, marginTop: 5 }}>
           <StatusButton />
         </Row>
-        <div
-          style={{
-            marginTop: 15,
-            padding: 10,
-            backgroundColor,
-            marginBottom: '20px',
-            color: textColor,
-          }}
-        >
+        <div style={{ marginTop: 15 }}>
           <KonvaTimeline
             dateLocale="id"
             enableDrag={false}
@@ -179,11 +172,10 @@ const MachineDowntime = () => {
             onTaskClick={onTaskClick}  // Menambahkan onTaskClick untuk menangani klik task
           />
         </div>
-        
         {/* Modal untuk menampilkan detail task */}
         <Modal
           title="Task Detail"
-          visible={isModalVisible}
+          open={isModalVisible}
           onCancel={handleCancel}
           footer={null}  // Menyembunyikan footer modal, bisa ditambahkan jika perlu
         >

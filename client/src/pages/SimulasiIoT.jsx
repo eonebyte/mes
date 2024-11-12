@@ -1,62 +1,40 @@
 import { useEffect, useState } from 'react';
 
 const SimulasiIoT = () => {
-  const [socketMessages, setSocketMessages] = useState([]);
-  const [influxData, setInfluxData] = useState([]);
+  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:3000/websocket');
+    const socket = new WebSocket('ws://localhost:3000/ws');
 
-    socket.addEventListener('open', () => {
-      console.log('Connected to the server');
-    });
-
-    socket.addEventListener('message', (event) => {
-      const data = JSON.parse(event.data); // Parse data JSON
-      console.log('Received from WebSocket:', data);
-      setSocketMessages(prevMessages => [...prevMessages, data]); // Tambahkan pesan baru ke state
-    });
-
-    socket.addEventListener('close', () => {
-      console.log('Disconnected from server');
-    });
-
-    return () => {
-      socket.close(); // Tutup socket saat komponen di-unmount
-    };
-  }, []);
-
-  useEffect(() => {
-    const fetchInfluxData = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/machine-downtime');
-        const data = await response.json();
-        setInfluxData(data);
-      } catch (error) {
-        console.error('Error fetching InfluxDB data:', error);
-      }
+    socket.onopen = () => {
+      console.log('Connected to WebSocket server');
     };
 
-    fetchInfluxData();
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setMessages((prevMessages) => [...prevMessages, data]);
+    };
+
+    console.log(messages);
+
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    socket.onclose = () => {
+      console.log('Disconnected from WebSocket server');
+    };
+
+    return () => socket.close();
   }, []);
 
   return (
     <div>
-      <h1>Device Messages</h1>
-      <h2>From WebSocket</h2>
+      <h2>Machine Data Updates</h2>
       <ul>
-        {socketMessages.map((msg, index) => (
+        {messages.map((msg, index) => (
           <li key={index}>
-            Device ID: {msg.device_id}, Timestamp: {msg.timestamp}
-          </li>
-        ))}
-      </ul>
-
-      <h2>From InfluxDB</h2>
-      <ul>
-        {influxData.map((data, index) => (
-          <li key={index}>
-            Device ID: {data.device_id}, Value: {data._value}, Timestamp: {data._time}
+            <strong>{msg.message}</strong> - {new Date(msg.timestamp).toLocaleTimeString()}
           </li>
         ))}
       </ul>

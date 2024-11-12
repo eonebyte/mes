@@ -8,7 +8,7 @@ export async function GetMachines(fastify, opts) {
   fastify.get('/api/machines', async (request, reply) => {
     const dbClient = await fastify.pg.connect();
     try {
-      const { rows } = await dbClient.query('SELECT machine_id, uuid, machine_name FROM mes.machines')
+      const { rows } = await dbClient.query('SELECT machine_id AS "machineId", machine_name AS "machineName" FROM mes.machines')
       if (rows.length > 0) {
         console.log('Berhasil fetch data semua machine');
         return reply.send(rows);
@@ -64,8 +64,8 @@ export async function ReadDowntimeLog(fastify, opts) {
           eventId: row.event_id,
           machineId: parseInt(row.machine_id),
           status: row.status,
-          startTime: startTime.getTime(),
-          endTime: endTime.getTime(),
+          startTime: startTime,
+          endTime: endTime,
           startTimeLocal: startTime,
           endTimeLocal: endTime,
           startTimeLocalString: startTime.toLocaleString(), // Waktu lokal sebagai string

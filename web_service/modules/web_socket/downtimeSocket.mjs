@@ -20,7 +20,7 @@ export default async function DowntimeSocket(fastify, opts) {
       const deviceId = generateDeviceId(); 
       const timestamp = new Date().toISOString(); 
       await saveToInfluxDB(deviceId, timestamp, clients);
-    }, 60000); // 10 detik
+    }, 60000); // 1 menit
 
     socket.on('message', message => {
       console.log(`Received from client ${clientId}:`, message.toString());

@@ -6,10 +6,26 @@ const influxDB = new InfluxDB({ url: 'http://localhost:8086', token: process.env
 const writeApi = influxDB.getWriteApi(process.env.ORG, process.env.BUCKET);
 
 export default async function CreateDowntimeLog(fastify, opts) {
+
+  fastify.get('/ws', { websocket: true }, (socket, req) => {
+    socket.send(JSON.stringify({ message: 'Connected to WebSocket server', timestamp: new Date() }));
+    socket.on('close', () => {
+      fastify.log.info('WebSocket connection closed');
+    });
+  });
+
+  const broadcast = (message) => {
+    fastify.websocketServer.clients.forEach((client) => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify(message));
+      }
+    });
+  };
+
   const dbClient = await fastify.pg.connect();
 
   // const injectEventSimulation = async () => {
-  //   const machines = [{ machineId: 1 }, { machineId: 2 }, { machineId: 3 }]; 
+  //   const machines = [{ machineId: 2 }, { machineId: 3 }];
   //   const injectPromises = machines.map(async ({ machineId }) => {
   //     try {
   //       const lastRunningTime = await getLastRunningTime(machineId);
@@ -17,10 +33,9 @@ export default async function CreateDowntimeLog(fastify, opts) {
 
   //       await logInjectData(machineId);
   //       await updateLastRunningTime(machineId);
-
   //       await checkAndLogEvent(machineId, lastRunningTime, machineUUID);
 
-  //       fastify.log.info(`Machine ${machineId} diinject pada : ${new Date()}`);
+  //       fastify.log.info(`Machine ${machineId} injected at: ${new Date()}`);
   //     } catch (error) {
   //       fastify.log.error(`Error processing machine ${machineId}:`, error);
   //     }
@@ -29,7 +44,7 @@ export default async function CreateDowntimeLog(fastify, opts) {
   //   await Promise.all(injectPromises);
   // };
 
-  // setInterval(injectEventSimulation, 5000);
+  // setInterval(injectEventSimulation, 5000); // Injeksi data setiap 1 menit
 
 
   fastify.post('/api/inject-event', async (request, reply) => {
@@ -140,7 +155,7 @@ export default async function CreateDowntimeLog(fastify, opts) {
 
   const logEvent = async (machineId, downtimeStartTime, downtimeEndTime, status, mUUID) => {
     console.log(mUUID);
-    
+
     const duration = Math.floor((downtimeEndTime - downtimeStartTime) / 1000);
     const startTime = Math.floor(downtimeStartTime.getTime() / 1000);
     const endTime = Math.floor(downtimeEndTime.getTime() / 1000);
@@ -160,11 +175,11 @@ export default async function CreateDowntimeLog(fastify, opts) {
     console.log('Point to write:', point);
     console.log('Machine UUID:', mUUID);
 
-
     try {
       await writeApi.writePoint(point);
       await writeApi.flush(); // Pastikan data tertulis
       fastify.log.info(`Successfully logged downtime event for machine ${machineId} from ${startTime} to ${endTime}`);
+      broadcast({ message: { status: 'New Inject', machine_id: machineId }, timestamp: new Date() });
     } catch (error) {
       fastify.log.error(`Error logging downtime event for machine ${machineId}:`, error);
     }
