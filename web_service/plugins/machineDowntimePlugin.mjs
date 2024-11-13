@@ -1,5 +1,5 @@
-import CreateDowntimeLog from "../modules/machine_downtime/createDowntimeLog.mjs"
-import { GetMachines, ReadDowntimeLog } from "../modules/machine_downtime/readDowntimeLog.mjs";
+import CreateDowntimeLog from "../modules/machine_downtime/injectEvent.mjs"
+import { GetMachines, ReadDowntimeLog } from "../modules/machine_downtime/machineEvents.mjs";
 
 
 export default async function machineDowntimePlugin(fastify, opts) {
