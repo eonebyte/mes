@@ -1,0 +1,56 @@
+/* App.css */
+
+/* Tambahkan gaya untuk teks h1 di sini */
+h1 {
+  font-size: 24px;
+  /* Ukuran teks h1 di layar besar */
+}
+
+/* Gunakan media query untuk menyesuaikan ukuran teks pada ukuran layar yang lebih kecil */
+@media screen and (max-width: 768px) {
+  h1 {
+    font-size: 20px;
+    /* Ukuran teks h1 pada layar md */
+  }
+}
+
+@media screen and (max-width: 576px) {
+  h1 {
+    font-size: 18px;
+    /* Ukuran teks h1 pada layar sm */
+  }
+}
+
+@media screen and (max-width: 375px) {
+  h1 {
+    font-size: 16px;
+    /* Ukuran teks h1 pada layar xs */
+  }
+}
+
+.MuiGauge-root {
+  fill: #FFFFFF;
+  color: 'white';
+  /* Warna teks */
+  font-size: 24px;
+  /* Ukuran font */
+  transform: translate(0px, 0px);
+  /* Transformasi lain yang diperlukan */
+}
+
+.MuiGauge-referenceArc {
+  fill: #FFFFFF;
+  color: 'white';
+}
+
+.MuiGauge-valueArc {
+  fill: #FFFFFF;
+  color: 'white';
+}
+
+.MuiGauge-valueText {
+  fill: #FFFFFF;
+  color: 'white';
+}
+
+
