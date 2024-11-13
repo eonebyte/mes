@@ -18,7 +18,7 @@ dayjs.extend(utc);
 
 export const fetchResources = async () => {
     try {
-        const resourcesRes = await axios.get('http://localhost:3000/api/machines');
+        const resourcesRes = await axios.get('http://localhost:3000/api/machine-downtime/machines');
 
         // Memastikan resources adalah array
         const resources = Array.isArray(resourcesRes.data) ? resourcesRes.data.map(resource => ({
@@ -33,7 +33,7 @@ export const fetchResources = async () => {
 
 export const fetchTasks = async () => {
     try {
-        const eventsRes = await axios.get('http://localhost:3000/api/machine-events');
+        const eventsRes = await axios.get('http://localhost:3000/api/machine-downtime/machine-events');
 
 
         const events = Array.isArray(eventsRes.data) ? eventsRes.data.map(event => {
