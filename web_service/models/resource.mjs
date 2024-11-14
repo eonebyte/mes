@@ -16,10 +16,7 @@ class Resource {
             return rows.map(row => new Resource(row.machineId, row.machineName));
         } catch (error) {
             throw new Error(`Error fetching resources: ${error.message}`);
-        } finally {
-            // Pastikan koneksi dibebaskan setelah selesai
-            dbClient.release();
-        }
+        } 
     }
 
     /**
@@ -65,10 +62,7 @@ class Resource {
             console.log(`Updated last running time for machine: ${machineId}`);
         } catch (error) {
             throw new Error(`Error updating last running time for machine ${machineId}: ${error.message}`);
-        } finally {
-            // Pastikan koneksi dibebaskan setelah selesai
-            dbClient.release();
-        }
+        } 
     }
 }
 
