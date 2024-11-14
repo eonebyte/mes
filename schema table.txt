@@ -1,0 +1,14 @@
+CREATE TABLE mes.machine_events (
+    id SERIAL PRIMARY KEY,
+    machine_id INT NOT NULL,         
+    event_id UUID NOT NULL,           
+    status VARCHAR(50) NOT NULL,      
+    start_time BIGINT NOT NULL,       
+    end_time BIGINT NOT NULL,         
+    duration INT NOT NULL,            
+    created_at TIMESTAMPTZ DEFAULT NOW()  
+);
+
+ALTER TABLE mes.machine_events
+ADD CONSTRAINT fk_machine
+FOREIGN KEY (machine_id) REFERENCES mes.machines(machine_id);

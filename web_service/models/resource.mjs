@@ -5,20 +5,20 @@ class Resource {
     }
 
     /**
-     * @param {int} id
-     * @param {string} name
-     * @returns {object} resource
+     * @param {object} dbClient - Koneksi client database
+     * @returns {Array} - Daftar resource
      */
     static async getAll(dbClient) {
-
         try {
             const { rows } = await dbClient.query(
                 'SELECT machine_id AS "machineId", machine_name AS "machineName" FROM mes.machines'
             );
-
             return rows.map(row => new Resource(row.machineId, row.machineName));
         } catch (error) {
             throw new Error(`Error fetching resources: ${error.message}`);
+        } finally {
+            // Pastikan koneksi dibebaskan setelah selesai
+            dbClient.release();
         }
     }
 
@@ -29,7 +29,6 @@ class Resource {
      * @returns {Date|null} - Waktu terakhir mesin berjalan atau null jika tidak ditemukan
      */
     static async getLastRunningTime(dbClient, machine_id) {
-
         try {
             if (!machine_id) {
                 throw new Error('Machine ID is required.');
@@ -49,10 +48,11 @@ class Resource {
         }
     }
 
+
     /**
-     * Update the last running time of a machine
-     * @param {Object} dbClient - Database client instance
-     * @param {int} machineId - ID of the machine to update
+     * Memperbarui waktu terakhir mesin berjalan
+     * @param {object} dbClient - Koneksi client database
+     * @param {int} machineId - ID mesin yang akan diperbarui
      * @returns {Promise<void>}
      */
     static async updateLastRunningTime(dbClient, machineId) {
@@ -65,6 +65,9 @@ class Resource {
             console.log(`Updated last running time for machine: ${machineId}`);
         } catch (error) {
             throw new Error(`Error updating last running time for machine ${machineId}: ${error.message}`);
+        } finally {
+            // Pastikan koneksi dibebaskan setelah selesai
+            dbClient.release();
         }
     }
 }
