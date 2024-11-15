@@ -15,6 +15,33 @@ class Event {
     this.endTime = Math.floor(eventEndTime.getTime() / 1000);
   }
 
+  static async getAll(dbClient) {
+    try {
+      const query = `
+        SELECT
+          event_id,
+          machine_id,
+          status,
+          start_time,  -- epoch timestamp
+          end_time,    -- epoch timestamp
+          duration
+        FROM
+          mes.machine_events
+        WHERE
+          start_time >= extract(epoch from current_date)  -- Mulai dari 00:00 hari kemarin
+          AND end_time <= extract(epoch from current_date + interval '1 day')  -- Sampai 23:59 hari ini
+        ORDER BY
+          start_time;
+      `;
+      const { rows } = await dbClient.query(query);
+      return rows.map(row => new Event(
+
+      ));
+    } catch (error) {
+      throw new Error(`Error fetching resources: ${error.message}`);
+    }
+  }
+
   static async create(dbClient, machineId, eventStartTime, eventEndTime, status) {
     const event = new Event(machineId, eventStartTime, eventEndTime, status);
 
