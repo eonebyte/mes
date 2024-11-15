@@ -7,7 +7,13 @@ import FastifyWebSocket from '@fastify/websocket';
 import MachineDowntimePlugin from './plugins/machineDowntimePlugin.mjs';
 import WebSocketPlugin from './plugins/webSocketPlugin.mjs';
 
-const server = Fastify();
+const server = Fastify({
+  ajv: {
+    customOptions: {
+      coerceTypes: false, // Nonaktifkan konversi tipe otomatis
+    },
+  },
+});
 
 const DB_USER = process.env.DB_USER;
 const DB_PASSWORD = process.env.DB_PASSWORD;
@@ -23,11 +29,11 @@ try {
     connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
   });
 
-    // Test PostgreSQL connection
-    const client = await server.pg.connect();
-    await client.query('SELECT NOW()'); 
-    console.log('Connected to PostgreSQL successfully');
-    client.release(); 
+  // Test PostgreSQL connection
+  const client = await server.pg.connect();
+  await client.query('SELECT NOW()');
+  console.log('Connected to PostgreSQL successfully');
+  client.release();
 
   await server.register(FastifyWebSocket);
   await server.register(MachineDowntimePlugin);

@@ -30,7 +30,7 @@ function LayoutDashboard({ children }) {
                     isDarkMode={isDarkMode}
                     handleModeClick={handleClick}
                 />
-                <Layout style={{ backgroundImage: `url(${isDarkMode ? '/src/assets/images/bg.jpg' : '/src/assets/images/bg3.jpg'})`, backgroundSize: "cover" }}>
+                <Layout style={{ backgroundImage: `url(${isDarkMode ? '/src/assets/images/bg.jpg' : '/src/assets/images/bggg3.jpeg'})`, backgroundSize: "cover" }}>
                     <Content
                         style={{
                             margin: "0 16px",

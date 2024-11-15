@@ -1,11 +1,10 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
-import { Layout, theme, Flex, Space, Button, Dropdown, Typography } from "antd";
+import { Layout, theme, Flex, Space, Button, Dropdown, Typography, Menu } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
-import { MoonOutlined, SunOutlined, DashboardOutlined, SettingOutlined, DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { MoonOutlined, SunOutlined, DashboardOutlined, SettingOutlined, DownOutlined, ExclamationCircleOutlined, HomeOutlined, DatabaseOutlined, ControlOutlined, CarryOutOutlined, FundProjectionScreenOutlined } from "@ant-design/icons";
 import StatisticDrawer from "../Statistics/StatisticDrawer";
 import MachineProdIcon from "../Icons/MachineProdIcon";
-
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -14,11 +13,17 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
 
     const {
         // token: { colorBgContainer, colorText ='#000', backgroundColor= "green" },
-        token: { colorBgContainer, colorText ='#000' },
+        token: { colorBgContainer, colorText = '#000' },
     } = theme.useToken();
     const navigateTo = useNavigate();
     const locationPath = useLocation();
     const [selectedKeys, setSelectedKeys] = useState([locationPath.pathname]);
+
+    const [current, setCurrent] = useState('mail');
+    const onClick = (e) => {
+        console.log('click ', e);
+        setCurrent(e.key);
+    };
 
 
 
@@ -26,6 +31,34 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
         setSelectedKeys([key]);
         navigateTo(key);
     };
+
+    const itemMenus = [
+        {
+            label: 'HOME',
+            key: 'home',
+            icon: <HomeOutlined />,
+        },
+        {
+            label: 'MASTER',
+            key: 'master',
+            icon: <DatabaseOutlined />,
+        },
+        {
+            label: 'SHOPFLOOR',
+            key: 'shopfloor',
+            icon: <ControlOutlined />,
+        },
+        {
+            label: 'PLAN',
+            key: 'plan',
+            icon: <CarryOutOutlined />,
+        },
+        {
+            label: 'REPORT',
+            key: 'report',
+            icon: <FundProjectionScreenOutlined />,
+        },
+    ];
 
     const items = [
         {
@@ -69,28 +102,42 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
             }}>
 
             <Flex align="center">
-            <img style={{ marginLeft: "15px", marginRight: "15px", }} width={80} src="/src/assets/images/logoadw.png" alt="" />
-            <Space>
-            <Text>Master</Text>
-            <Text>Shopfloor</Text>
-            <Dropdown
-                menu={{
-                    items,
-                    selectable: true,
-                    defaultSelectedKeys: selectedKeys,
-                    onClick: handleMenuClick,
-                }}
-            >
-                <Typography.Link>
-                    <Space>
-                        <Text strong>
-                        Menus
-                        </Text>
-                        <DownOutlined style={{color: colorText}} />
-                    </Space>
-                </Typography.Link>
-            </Dropdown>
-            </Space>
+                <img style={{ marginLeft: "15px", marginRight: "15px", }} width={80} src="/src/assets/images/logoadw.png" alt="" />
+                <Space>
+                    <Dropdown
+                        menu={{
+                            items,
+                            selectable: true,
+                            defaultSelectedKeys: selectedKeys,
+                            onClick: handleMenuClick,
+                        }}
+                    >
+                        <Typography.Link>
+                            <Space>
+                                <Text strong>
+                                    Menus
+                                </Text>
+                                <DownOutlined style={{ color: colorText }} />
+                            </Space>
+                        </Typography.Link>
+                    </Dropdown>
+                </Space>
+            </Flex>
+
+            <Flex align="center">
+                <Menu
+                    onClick={onClick}
+                    selectedKeys={[current]}
+                    mode="horizontal"
+                    items={itemMenus}
+                    style={{
+                        fontSize: '16px', // Adjust font size to make the menu look more professional
+                        boxShadow: 'none', // Removes box shadow for a clean look
+                        alignItems: 'center',
+                        lineHeight: '50px', // Center the text vertically inside the item
+                        borderBottom: 0
+                    }}
+                />
             </Flex>
 
             <Flex style={{}} align="center" justify="flex-end">
@@ -100,7 +147,6 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
                     </Button>
                     <StatisticDrawer />
                 </Space>
-
             </Flex>
 
 

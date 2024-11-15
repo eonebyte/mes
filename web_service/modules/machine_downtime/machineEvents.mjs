@@ -1,7 +1,9 @@
 import 'dotenv/config';
+import { machineEventsResponseSchema } from './schemas/machineEventsResponseSchema.mjs';
+
 
 export default async function MachineEvents(fastify, opts) {
-  fastify.get('/api/machine-downtime/machine-events', async (request, reply) => {
+  fastify.get('/api/machine-downtime/machine-events', { schema: machineEventsResponseSchema }, async (request, reply) => {
     const dbClient = await fastify.pg.connect();
     try {
       const query = `
