@@ -19,14 +19,6 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
     const locationPath = useLocation();
     const [selectedKeys, setSelectedKeys] = useState([locationPath.pathname]);
 
-    const [current, setCurrent] = useState('mail');
-    const onClick = (e) => {
-        console.log('click ', e);
-        setCurrent(e.key);
-    };
-
-
-
     const handleMenuClick = ({ key }) => {
         setSelectedKeys([key]);
         navigateTo(key);
@@ -35,27 +27,27 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
     const itemMenus = [
         {
             label: 'HOME',
-            key: 'home',
+            key: '/home',
             icon: <HomeOutlined />,
         },
         {
             label: 'MASTER',
-            key: 'master',
+            key: '/master',
             icon: <DatabaseOutlined />,
         },
         {
             label: 'SHOPFLOOR',
-            key: 'shopfloor',
+            key: '/shopfloor',
             icon: <ControlOutlined />,
         },
         {
             label: 'PLAN',
-            key: 'plan',
+            key: '/plan',
             icon: <CarryOutOutlined />,
         },
         {
             label: 'REPORT',
-            key: 'report',
+            key: '/report',
             icon: <FundProjectionScreenOutlined />,
         },
     ];
@@ -126,8 +118,8 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
 
             <Flex align="center">
                 <Menu
-                    onClick={onClick}
-                    selectedKeys={[current]}
+                    onClick={handleMenuClick}
+                    selectedKeys={selectedKeys}
                     mode="horizontal"
                     items={itemMenus}
                     style={{

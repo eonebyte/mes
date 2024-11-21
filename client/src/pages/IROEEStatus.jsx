@@ -9,9 +9,8 @@ const marginFlex = { maginLeft: 10 };
 const cardTextStyle = { margin: 0 };
 const cardTextRightBodyStyle = { margin: 0, fontWeight: 'bold' }
 const cardTextRightStyle = { margin: 0, fontSize: 18, fontWeight: 'bold' }
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 
-import { updateMachineStatus, deleteAllStopTimes } from '../states/reducers/machineSlice';
 
 import DaysUtilization from "../components/IR/DayUtilization";
 import WeekUtilization from "../components/IR/WeekUtilization";
@@ -19,15 +18,9 @@ import WeekUtilization from "../components/IR/WeekUtilization";
 export default function IROEEStatus() {
 
     
-    const dispatch = useDispatch();
     const machines = useSelector(state => state.machines.data);
 
     console.log('Machines:', machines);
-
-    const handleStatusUpdate = (id, newStatus) => {
-        const stopMinutes = document.getElementById("stopMinutes").value;
-        dispatch(updateMachineStatus({ id, newStatus, stopTime: newStatus === 'Stop' ? stopMinutes : null }));
-    };
 
     const calculateUtilizationPercentage = (machine) => {
         // Waktu mulai dan waktu selesai
@@ -45,9 +38,6 @@ export default function IROEEStatus() {
         return utilizationPercentage.toFixed(2); 
     }
 
-    const clearCache = (machine) => {
-        dispatch(deleteAllStopTimes({id: machine.id}));
-    };
 
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, '0'); // Mengambil jam dengan format dua digit, misalnya 03, 13
@@ -113,7 +103,6 @@ export default function IROEEStatus() {
                 <Row gutter={[16, 16]}>
                     {machines.map((machine) => (
                         <Col key={machine.id} xs={12} sm={8} md={6} lg={4}>
-                            <button onClick={() => clearCache(machine)} style={{marginBottom: 5}}>Clear Cache</button>
                             <Card
                                 size="small"
                                 title={`${machine.id}#`}
@@ -162,13 +151,6 @@ export default function IROEEStatus() {
                                     </Space>
                                     <p style={cardTextRightStyle}>{calculateUtilizationPercentage(machine)}%</p>
                                 </Flex>
-                                <button onClick={() => handleStatusUpdate(machine.id, 'Running')}>
-                                    Running
-                                </button>
-                                <input type="number" id="stopMinutes" name="stopMinutes" min="1" max="20" />
-                                <button onClick={() => handleStatusUpdate(machine.id, 'Stop')}>
-                                    Stop 
-                                </button>
                                 <Flex align="center" justify="space-between">
                                     <Space>
                                         <p style={cardTextStyle}>End Time Simulation:</p>
