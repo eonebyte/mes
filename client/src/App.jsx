@@ -5,14 +5,16 @@ import './Chart.css'
 import './index.css'
 import MachineDowntime from "./pages/MachineDowntime";
 import SimulasiIoT from "./pages/SimulasiIoT";
-import ShopFloor from "./pages/ShopFloor";
+import DashboardResource from "./pages/ShopFloor/DashboardResource";
+import DetailResource from "./pages/ShopFloor/DetailResource";
 
 function App() {
   return (
     <>
       <Routes>
         <Route path="/" element={<Dashboard />}></Route>
-        <Route path="/shopfloor" element={<ShopFloor />}></Route>
+        <Route path="/shopfloor" element={<DashboardResource />}></Route>
+        <Route path="/resource" element={<DetailResource />}></Route>
         <Route path="/ir-oee-status" element={<IROEEStatus />}></Route>
         <Route path="/machine-downtime" element={<MachineDowntime />}></Route>
         <Route path="/simulasi-iot" element={<SimulasiIoT />}></Route>

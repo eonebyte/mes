@@ -17,7 +17,14 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
     } = theme.useToken();
     const navigateTo = useNavigate();
     const locationPath = useLocation();
-    const [selectedKeys, setSelectedKeys] = useState([locationPath.pathname]);
+    
+    const [selectedKeys, setSelectedKeys] = useState(() => {
+        const path = locationPath.pathname;
+        if (path === '/shopfloor' || path === '/resource') {
+            return ['/shopfloor', '/resource'];
+        }
+        return [path]; 
+    });
 
     const handleMenuClick = ({ key }) => {
         setSelectedKeys([key]);
@@ -90,7 +97,8 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
                 // color: "dark",
                 backgroundColor: colorBgContainer,
                 // borderBottom: "5px solid #1677ff",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                boxShadow: "0 2px 4px rgba(0,0,0,0.16)",
+                zIndex: 10
             }}>
 
             <Flex align="center">

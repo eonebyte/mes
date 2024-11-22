@@ -33,7 +33,7 @@ function LayoutDashboard({ children }) {
                 <Layout style={{ backgroundImage: `url(${isDarkMode ? '/src/assets/images/bg.jpg' : '/src/assets/images/bggg3.jpeg'})`, backgroundSize: "cover" }}>
                     <Content
                         style={{
-                            margin: "0 16px",
+                            margin: "0 5px",
                         }}
                     >
                         {children}
