@@ -20,8 +20,8 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
     
     const [selectedKeys, setSelectedKeys] = useState(() => {
         const path = locationPath.pathname;
-        if (path === '/shopfloor' || path === '/resource') {
-            return ['/shopfloor', '/resource'];
+        if (path === '/shopfloor' || path === '/resource' || path === '/resource/task') {
+            return ['/shopfloor', '/resource', '/resource/task'];
         }
         return [path]; 
     });

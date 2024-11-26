@@ -1,7 +1,7 @@
 import { Row, Col, Card, Space, Flex, Divider } from "antd";
 import LayoutDashboard from '../../components/layouts/LayoutDashboard';
 
-import PlanProgress from "../../components/Plan/PlanProgress";
+import RemainingProgress from "../../components/ShopFloors/Plan/RemainingProgress";
 import StatusButton from "../../components/Buttons/StatusButton";
 import { resources } from "../../data/fetchResource";
 import { Link } from "react-router-dom";
@@ -42,16 +42,17 @@ export default function DashboardResource() {
                 </Row>
                 <Divider style={{ margin: '5px 0px' }} />
                 {/* Grid Machine */}
-                <Row gutter={[16, 16]}>
+                <Row gutter={[8, 8]}>
                     {resources.map((machine) => (
                         <Col key={machine.resource_id} xs={12} sm={8} md={6} lg={4}>
-                            <Link to={`/resource?q=${machine.uuid}`} style={{ textDecoration: 'none' }}>
+                            <Link to={{ pathname: '/resource', state: { resourceId: machine.uuid, module: 'active' } }} style={{ textDecoration: 'none' }}>
                                 <Card
                                     size="small"
                                     style={{
                                         width: '100%',
                                         height: 250,
                                         border: 0,
+                                        borderRadius: 3,
                                         backgroundColor: machine.status === 'Running'
                                             ? '#52c41a'
                                             : machine.status === 'Down'
@@ -71,7 +72,7 @@ export default function DashboardResource() {
                                                 <p style={{ fontWeight: 'bold', margin: 0 }}>{machine.name}</p>
                                                 <p style={{ marginBottom: 0, margin: 0 }}>{machine.line}</p> {/* Hilangkan <br /> agar lebih rapi */}
                                             </Space>
-                                            <PlanProgress
+                                            <RemainingProgress
                                                 target={machine.plan_qty}
                                                 progress={machine.progress}
                                             />
