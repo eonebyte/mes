@@ -1,5 +1,5 @@
 import { Alert, Button, Card, Col, Flex, Row, Spin } from "antd";
-import { MoreOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import SettingsIcon from '@mui/icons-material/Settings';
 import DoneIcon from '@mui/icons-material/Done';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -10,39 +10,63 @@ import DatasetIcon from '@mui/icons-material/Dataset';
 import ScienceIcon from '@mui/icons-material/Science';
 import PolicyIcon from '@mui/icons-material/Policy';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { resources } from "../../data/fetchResource";
-import { useSearchParams } from "react-router-dom";
-import DetailResource from "./DetailResource";
+import { plans } from "../../data/fetchResource";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import LayoutDashboard from "../../components/layouts/LayoutDashboard";
+import DownloadIcon from '@mui/icons-material/Download';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 
-function ActiveResource() {
-
+function PlanDetail() {
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
 
-    const [searchParams] = useSearchParams();
-    const resourceId = searchParams.get('resourceId');
+    const navigate = useNavigate();
+
+    const location = useLocation();
+    const planId = location.state?.planId;
 
     const [loading, setLoading] = useState(true);
-    const [resource, setResource] = useState(null);
+    const [plan, setPlan] = useState(null);
 
 
     useEffect(() => {
         setTimeout(() => {
-            const resourceData = resources.find((res) => res.id === resourceId);
-            setResource(resourceData);
+            if (!planId) {
+                navigate("/shopfloor");
+            }
+            const planData = plans.find((plan) => plan.id === Number(planId));
+            if (planData) {
+                setPlan(planData);
+            }
+
             setLoading(false);
         }, 500);
-    }, [resourceId]);
+    }, [planId, navigate]);
+
+    function getBackgroundColor(status, isDarkMode) {
+        if (status === 'On Hold') {
+            return isDarkMode ? '#333' : '#fff7e6'; // On Hold: terang jika mode terang, gelap jika mode gelap
+        } else if (status === 'Released') {
+            return isDarkMode ? '#555' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
+        } else if (status === 'Ready') {
+            return isDarkMode ? '#457b9d' : '#e6f4ff'; // Ready: biru muda terang jika mode terang
+        }
+        return '#ffffff'; // default background color
+    }
+
+    function getTextColor(isDarkMode) {
+        return isDarkMode ? '#ffffff' : '#1677FF'; // Teks putih jika mode gelap, hitam jika terang
+    }
 
     return (
-        <DetailResource>
+        <LayoutDashboard>
             {loading ?
                 <Col
                     style={{
                         marginTop: 10,
                         display: 'flex',
-                        justifyContent: 'center',
+                        justifyContent: 'center', // Pusatkan secara horizontal
                     }}
                     lg={24}
                 >
@@ -63,15 +87,20 @@ function ActiveResource() {
                                     margin: 0,
                                     fontSize: '18px',
                                     fontWeight: 'bold',
-                                    color: isDarkMode ? '#e6f7ff' : 'inherit'
+                                    color: getTextColor(isDarkMode),
                                 }}>
                                     Single Task
                                 </p>
-                                <MoreOutlined style={{
+
+                                <p style={{
+                                    margin: 0,
                                     fontSize: '18px',
-                                    color: isDarkMode ? '#e6f7ff' : 'inherit',
-                                    cursor: 'pointer'
-                                }} />
+                                    fontWeight: 'bold',
+                                    color: getTextColor(isDarkMode),
+                                }}>
+                                    {`<${plan.planNo}> ${plan.status}`}
+                                </p>
+
                             </Flex>
                         }
                         style={{
@@ -85,8 +114,8 @@ function ActiveResource() {
                         styles={{
                             header: {
                                 border: 0,
-                                backgroundColor: isDarkMode ? '#2c3e50' : '#f6ffed',
-                                color: isDarkMode ? '#e6f7ff' : 'inherit',
+                                backgroundColor: getBackgroundColor(plan.status, isDarkMode),
+                                color: getTextColor(isDarkMode),
                                 borderRadius: '3px 3px 0px 0px',
                             },
                             body: {
@@ -97,33 +126,63 @@ function ActiveResource() {
                     >
                         <Row gutter={[16]} style={{ borderBottom: '1px solid #9999', marginBottom: 5 }}>
                             <Col lg={24} style={{ padding: 0 }}>
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                >
-                                    <SettingsIcon sx={{ fontSize: 18 }} />
-                                    <span>SETUP</span>
-                                </Button>
-
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                >
-                                    <DoneIcon sx={{ fontSize: 18 }} />
-                                    <span>COMPLETE</span>
-                                </Button>
+                                {plan.status == 'On Hold' && (
+                                    <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                        <DownloadIcon sx={{ fontSize: 18 }} />
+                                        <span>RELEASE</span>
+                                    </Button>
+                                )}
+                                {plan.status == 'Released' && (
+                                    <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                        <FactCheckIcon sx={{ fontSize: 18 }} />
+                                        <span>READY</span>
+                                    </Button>
+                                )}
+                                {plan.status == 'Ready' && (
+                                    <><Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                        <SettingsIcon sx={{ fontSize: 18 }} />
+                                        <span>SETUP</span>
+                                    </Button><Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                            <DoneIcon sx={{ fontSize: 18 }} />
+                                            <span>COMPLETE</span>
+                                        </Button></>
+                                )}
                                 <Button
                                     color="primary"
                                     variant="text"
@@ -140,45 +199,54 @@ function ActiveResource() {
                             </Col>
                         </Row>
                         <Row gutter={[16]}>
-                            <Col lg={7} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                                <div>Order No.</div>
-                                <div style={{ marginBottom: 10 }}><strong>O23098943-NHZ</strong></div>
+                            <Col lg={4} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                                 <div>Part No.</div>
-                                <div style={{ marginBottom: 10 }}><strong>CJA-3400-SHA</strong></div>
-                                <div>Part Drawing #</div>
+                                <div style={{ marginBottom: 10 }}><strong>FH-54KJH-8034093</strong></div>
+                                <div>Revision</div>
+                                <div style={{ marginBottom: 10 }}><strong>A</strong></div>
+                                <div>Project</div>
                                 <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                             </Col>
                             <Col lg={4}>
-                                <div>ToGo Qty</div>
-                                <div style={{ marginBottom: 10 }}><strong>1000</strong></div>
-                                <div>Output Qty</div>
-                                <div style={{ marginBottom: 10 }}><strong>500</strong></div>
-                                <div>CT <small>(s)</small></div>
-                                <div style={{ marginBottom: 10 }}><strong>35000</strong></div>
+                                <div>Seq Desc</div>
+                                <div style={{ marginBottom: 10 }}><strong>10-AKL</strong></div>
+                                <div>Part Model</div>
+                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                <div>Part Drawing #</div>
+                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                             </Col>
 
                             <Col lg={4}>
-                                <div>Good Qty</div>
-                                <div style={{ marginBottom: 10 }}><strong>485</strong></div>
-                                <div>Defect Qty</div>
-                                <div style={{ marginBottom: 10 }}><strong>15</strong></div>
-                                <div>Lost Qty</div>
-                                <div style={{ marginBottom: 10 }}><strong>0</strong></div>
+                                <div>Order No.</div>
+                                <div style={{ marginBottom: 10 }}><strong>02394334</strong></div>
+                                <div>Cust Order</div>
+                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                <div>Batch</div>
+                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                             </Col>
-                            <Col lg={9}>
+
+                            <Col lg={4}>
+                                <div>Plan Qty</div>
+                                <div style={{ marginBottom: 10 }}><strong>10.000.000</strong></div>
+                                <div>ToGo Qty</div>
+                                <div style={{ marginBottom: 10 }}><strong>9.000.000</strong></div>
+                                <div>Output Per Cycle (Std / Act)</div>
+                                <div style={{ marginBottom: 10 }}><strong>2/2</strong></div>
+                            </Col>
+                            <Col lg={8}>
 
                                 <Flex align="flex-start" justify="space-between">
                                     <div>
                                         <div>Part Desc</div>
                                         <div style={{ marginBottom: 10 }}><strong>Description Product</strong></div>
-                                        <div>Cavity</div>
-                                        <div style={{ marginBottom: 10 }}><strong>1</strong></div>
+                                        <div>Cycles</div>
+                                        <div style={{ marginBottom: 10 }}><strong>19000</strong></div>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                        {resource ? (
-                                            <RemainingProgress target={resource.plan_qty} progress={resource.progress} />
+                                        {plan ? (
+                                            <RemainingProgress target={plan.planQty} progress={plan.progress} />
                                         ) : (
-                                            <p>No resource found</p>
+                                            <p>No plan found</p>
                                         )}
                                         <small>Remaining</small>
                                         <strong>864+16:30</strong>
@@ -331,10 +399,18 @@ function ActiveResource() {
                             </Col>
                         </Row>
                     </Card>
+
+                    <Row>
+                        <Col>
+                            <Button style={{ margin: '5px 0px' }} onClick={() => navigate(-1)} color="primary" variant="filled">
+                                <ArrowLeftOutlined />
+                            </Button>
+                        </Col>
+                    </Row>
                 </>
             }
-        </DetailResource>
+        </LayoutDashboard>
     );
 }
 
-export default ActiveResource;
+export default PlanDetail;

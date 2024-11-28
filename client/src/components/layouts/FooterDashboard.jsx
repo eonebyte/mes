@@ -7,7 +7,8 @@ export default function FooterDashboard() {
             style={{
                 marginTop: 15,
                 textAlign: "center",
-                backgroundColor: "rgba(255, 255, 255, 0.2)" // Atur opasitas di sini
+                backgroundColor: "rgba(255, 255, 255, 0.2)", // Atur opasitas di sini
+                padding: '10px 0px'
             }}
         >
             <small>Adyawinsa Plastics Industry ©{new Date().getFullYear()} | ICT Department</small>

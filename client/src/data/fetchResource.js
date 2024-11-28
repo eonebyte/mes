@@ -1,6 +1,6 @@
 class Resource {
-    constructor(resource_id, name, line, lineno, status, plan_qty, progress, uuid) {
-        this.resource_id = resource_id;
+    constructor(id, name, line, lineno, status, plan_qty, progress, uuid) {
+        this.id = id;
         this.name = name;
         this.line = line;
         this.lineno = lineno;
@@ -11,7 +11,65 @@ class Resource {
         this.uuid = uuid;
     }
 }
-export const resources = [
+
+class Plan {
+    constructor(id, title, planNo, startDate, status, planQty, progress, resourceId) {
+        this.id = id;
+        this.title = title;
+        this.planNo = planNo;
+        this.startDate = startDate;
+        this.status = status;
+        this.planQty = planQty;
+        this.progress = progress;
+        this.resourceId = resourceId;
+    }
+}
+
+const plans = [
+    new Plan(
+        108,
+        "Plan to start at 2024-11-26",
+        '1234HJKDS',
+        "2024-11-26T00:00:00Z",
+        "Ready",
+        1000,
+        350,
+        1
+    ),
+    new Plan(
+        109,
+        "Plan to start at 2024-11-26",
+        '1234HJKDS',
+        "2024-11-26T00:00:00Z",
+        "On Hold",
+        1000,
+        350,
+        1
+    ),
+    new Plan(
+        111,
+        "Plan to start at 2024-11-27",
+        '343423DSDS',
+        "2024-11-27T00:07:00Z",
+        "Released",
+        2000,
+        0,
+        1
+    ),
+    new Plan(
+        112 ,
+        "Plan to start at 2024-11-26",
+        '5455GGGH',
+        "2024-11-26T00:00:00Z",
+        "Released",
+        500,
+        50,
+        2
+    ),
+
+];
+
+const resources = [
     new Resource(1, 'MC001', 'Line 1', 101, 'Running', 1000, 350, 'c6a7a20e-d2d4-4b49-9bb5-1e2bc6625f8e'),
     new Resource(2, 'MC002', 'Line 2', 102, 'Running', 500, 50, '8bff4e3a-7db5-4c27-9a5f-b5193d6c96c4'),
     new Resource(3, 'MC003', 'Line 3', 103, 'Running', 300, 100, '2c6f6d78-d493-45c1-b1b7-cb482f2288a7'),
@@ -25,3 +83,5 @@ export const resources = [
     new Resource(11, 'MC011', 'Line 11', 111, 'Idle', 1000, 700, '14b352a1-4f7f-4956-99b6-8a21eaf6305e'),
     new Resource(12, 'MC012', 'Line 12', 112, 'Fault', 1200, 550, '4783f8b1-37e1-4663-9c6c-5d02c8e4a49d'),
 ];
+
+export { Resource, Plan, plans, resources };

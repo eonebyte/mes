@@ -7,32 +7,7 @@ import { resources } from "../../data/fetchResource";
 import { Link } from "react-router-dom";
 
 
-class Plan {
-    constructor(plan_id, product_id, product_name, resource_id, plan_qty, progress) {
-        this.plan_id = plan_id;
-        this.product_id = product_id;
-        this.product_name = product_name;
-        this.resource_id = resource_id;
-        this.plan_qty = plan_qty;
-        this.progress = progress;
-    }
-
-    calculateProgressPercentage() {
-        return (this.progress / this.plan_qty) * 100;
-    }
-}
-
 export default function DashboardResource() {
-
-
-    // const isDarkMode = useSelector(state => state.theme.isDarkMode);
-
-    const plans = [
-        new Plan(1, 101, 'Product X', 1, 1000, 700),
-        new Plan(2, 102, 'Product Y', 2, 500, 250),
-    ];
-
-    console.log(plans);
 
     return (
         <>
@@ -44,8 +19,8 @@ export default function DashboardResource() {
                 {/* Grid Machine */}
                 <Row gutter={[8, 8]}>
                     {resources.map((machine) => (
-                        <Col key={machine.resource_id} xs={12} sm={8} md={6} lg={4}>
-                            <Link to={{ pathname: '/resource', state: { resourceId: machine.uuid, module: 'active' } }} style={{ textDecoration: 'none' }}>
+                        <Col key={machine.id} xs={12} sm={8} md={6} lg={4}>
+                            <Link to={`/resource?resourceId=${machine.id}`} style={{ textDecoration: 'none' }}>
                                 <Card
                                     size="small"
                                     style={{
