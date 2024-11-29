@@ -23,12 +23,15 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
         if (path === '/shopfloor' || 
             path === '/resource' || 
             path === '/resource/plan' ||
-            path === '/resource/plan/detail') {
+            path === '/resource/plan/detail' ||
+            path === '/resource/mold'
+        ) {
             return [
                 '/shopfloor', 
                 '/resource', 
                 '/resource/plan',
-                '/resource/plan/detail'
+                '/resource/plan/detail',
+                '/resource/mold',
             ];
         }
         return [path]; 

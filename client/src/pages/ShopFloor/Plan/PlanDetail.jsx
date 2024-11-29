@@ -3,28 +3,34 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import SettingsIcon from '@mui/icons-material/Settings';
 import DoneIcon from '@mui/icons-material/Done';
 import TableChartIcon from '@mui/icons-material/TableChart';
-import RemainingProgress from "../../components/ShopFloors/Plan/RemainingProgress";
+import RemainingPlan from "../../../components/ShopFloors/Plan/RemainingPlan";
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import GppBadIcon from '@mui/icons-material/GppBad';
 import DatasetIcon from '@mui/icons-material/Dataset';
 import ScienceIcon from '@mui/icons-material/Science';
 import PolicyIcon from '@mui/icons-material/Policy';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { plans } from "../../data/fetchResource";
-import { useLocation, useNavigate } from "react-router-dom";
+import { plans } from "../../../data/fetchResource";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import LayoutDashboard from "../../components/layouts/LayoutDashboard";
+import LayoutDashboard from "../../../components/layouts/LayoutDashboard";
 import DownloadIcon from '@mui/icons-material/Download';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
+
+import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
+import ConfirmReleased from "../../../components/Buttons/ConfirmReleased";
+import ConfirmReady from "../../../components/Buttons/ConfirmReady";
+import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
+
 
 function PlanDetail() {
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
 
     const navigate = useNavigate();
 
-    const location = useLocation();
-    const planId = location.state?.planId;
+    const [searchParams] = useSearchParams();
+    const planId = searchParams.get('planId');
 
     const [loading, setLoading] = useState(true);
     const [plan, setPlan] = useState(null);
@@ -58,6 +64,9 @@ function PlanDetail() {
     function getTextColor(isDarkMode) {
         return isDarkMode ? '#ffffff' : '#1677FF'; // Teks putih jika mode gelap, hitam jika terang
     }
+
+
+
 
     return (
         <LayoutDashboard>
@@ -136,6 +145,7 @@ function PlanDetail() {
                                             fontSize: "12px",
                                             padding: "4px 12px",
                                         }}
+                                        onClick={ConfirmReleased}
                                     >
                                         <DownloadIcon sx={{ fontSize: 18 }} />
                                         <span>RELEASE</span>
@@ -151,6 +161,7 @@ function PlanDetail() {
                                             fontSize: "12px",
                                             padding: "4px 12px",
                                         }}
+                                        onClick={ConfirmReady}
                                     >
                                         <FactCheckIcon sx={{ fontSize: 18 }} />
                                         <span>READY</span>
@@ -166,19 +177,22 @@ function PlanDetail() {
                                             fontSize: "12px",
                                             padding: "4px 12px",
                                         }}
+                                        onClick={ConfirmSetup}
                                     >
                                         <SettingsIcon sx={{ fontSize: 18 }} />
                                         <span>SETUP</span>
-                                    </Button><Button
-                                        color="primary"
-                                        variant="text"
-                                        style={{
-                                            fontWeight: 600,
-                                            fontFamily: "'Roboto', Arial, sans-serif",
-                                            fontSize: "12px",
-                                            padding: "4px 12px",
-                                        }}
-                                    >
+                                    </Button>
+                                        <Button
+                                            color="primary"
+                                            variant="text"
+                                            style={{
+                                                fontWeight: 600,
+                                                fontFamily: "'Roboto', Arial, sans-serif",
+                                                fontSize: "12px",
+                                                padding: "4px 12px",
+                                            }}
+                                            onClick={ConfirmComplete}
+                                        >
                                             <DoneIcon sx={{ fontSize: 18 }} />
                                             <span>COMPLETE</span>
                                         </Button></>
@@ -192,6 +206,7 @@ function PlanDetail() {
                                         fontSize: "12px",
                                         padding: "4px 12px",
                                     }}
+                                    onClick={ConfirmComplete}
                                 >
                                     <TableChartIcon sx={{ fontSize: 16 }} />
                                     <span>MATERIAL</span>
@@ -244,7 +259,7 @@ function PlanDetail() {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                         {plan ? (
-                                            <RemainingProgress target={plan.planQty} progress={plan.progress} />
+                                            <RemainingPlan target={plan.planQty} progress={plan.progress} />
                                         ) : (
                                             <p>No plan found</p>
                                         )}
@@ -399,6 +414,8 @@ function PlanDetail() {
                             </Col>
                         </Row>
                     </Card>
+
+
 
                     <Row>
                         <Col>

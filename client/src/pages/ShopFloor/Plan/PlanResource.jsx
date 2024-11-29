@@ -1,10 +1,10 @@
 import { Alert, Card, Col, Empty, Flex, Row, Spin } from "antd";
-import DetailResource from "./DetailResource";
+import DetailResource from "../DetailResource";
 import { useSelector } from "react-redux";
-import RemainingProgress from "../../components/ShopFloors/Plan/RemainingProgress";
+import RemainingPlan from "../../../components/ShopFloors/Plan/RemainingPlan";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { plans } from "../../data/fetchResource";
+import { plans } from "../../../data/fetchResource";
 
 function PlanResource() {
 
@@ -101,17 +101,17 @@ function PlanResource() {
                             <Card
                                 key={plan.id}
                                 title={
-                                    <div onClick={() => navigate('/resource/plan/detail', { state: { resourceId: plan.resourceId, planId: plan.id } })} style={{ cursor: 'pointer' }}>
+                                    <div onClick={() => navigate(`/resource/plan/detail?planId=${plan.id}`, { state: { resourceId: plan.resourceId } })} style={{ cursor: 'pointer' }}>
                                         <Flex align="center" justify="space-between">
                                             <div>
-                                                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: isDarkMode ? '#e6f7ff' : 'inherit' }}>
+                                                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
                                                     {plan.planNo}
                                                 </p>
                                                 <small>plan to start at {new Date(plan.startDate).toLocaleString()}</small>
 
                                             </div>
                                             <div>
-                                                <span style={{ fontSize: '18px', fontWeight: '500' }}>{plan.status}</span>
+                                                <span style={{ fontSize: '18px', fontWeight: '500', color: isDarkMode ? '#e6f7ff' : '#1677FF' }}>{plan.status}</span>
                                             </div>
                                         </Flex>
                                     </div>
@@ -168,7 +168,7 @@ function PlanResource() {
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                                 {allPlans ? (
-                                                    <RemainingProgress target={plan.planQty} progress={plan.progress} />
+                                                    <RemainingPlan target={plan.planQty} progress={plan.progress} />
                                                 ) : (
                                                     <p>No resource found</p>
                                                 )}

@@ -3,7 +3,7 @@ import { MoreOutlined } from "@ant-design/icons";
 import SettingsIcon from '@mui/icons-material/Settings';
 import DoneIcon from '@mui/icons-material/Done';
 import TableChartIcon from '@mui/icons-material/TableChart';
-import RemainingProgress from "../../components/ShopFloors/Plan/RemainingProgress";
+import RemainingPlan from "../../components/ShopFloors/Plan/RemainingPlan";
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import GppBadIcon from '@mui/icons-material/GppBad';
 import DatasetIcon from '@mui/icons-material/Dataset';
@@ -15,6 +15,9 @@ import { useSearchParams } from "react-router-dom";
 import DetailResource from "./DetailResource";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import ConfirmComplete from "../../components/Buttons/ConfirmComplete";
+import ConfirmSetup from "../../components/Buttons/ConfirmSetup";
+
 
 function ActiveResource() {
 
@@ -29,7 +32,7 @@ function ActiveResource() {
 
     useEffect(() => {
         setTimeout(() => {
-            const resourceData = resources.find((res) => res.id === resourceId);
+            const resourceData = resources.find((res) => res.id === Number(resourceId));
             setResource(resourceData);
             setLoading(false);
         }, 500);
@@ -106,6 +109,7 @@ function ActiveResource() {
                                         fontSize: "12px",
                                         padding: "4px 12px",
                                     }}
+                                    onClick={ConfirmSetup}
                                 >
                                     <SettingsIcon sx={{ fontSize: 18 }} />
                                     <span>SETUP</span>
@@ -120,6 +124,7 @@ function ActiveResource() {
                                         fontSize: "12px",
                                         padding: "4px 12px",
                                     }}
+                                    onClick={ConfirmComplete}
                                 >
                                     <DoneIcon sx={{ fontSize: 18 }} />
                                     <span>COMPLETE</span>
@@ -176,7 +181,7 @@ function ActiveResource() {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                         {resource ? (
-                                            <RemainingProgress target={resource.plan_qty} progress={resource.progress} />
+                                            <RemainingPlan target={resource.plan_qty} progress={resource.progress} />
                                         ) : (
                                             <p>No resource found</p>
                                         )}

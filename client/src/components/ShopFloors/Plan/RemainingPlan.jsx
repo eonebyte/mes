@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 
 const COLORS = ['#000'];
 
-export default function RemainingProgress({ target, progress }) {
+export default function RemainingPlan({ target, progress }) {
     const isDarkMode = useSelector(state => state.theme.isDarkMode);
     return (
         <PieChart width={50} height={50}>
@@ -58,7 +58,7 @@ export default function RemainingProgress({ target, progress }) {
     );
 }
 
-RemainingProgress.propTypes = {
+RemainingPlan.propTypes = {
     target: PropTypes.number.isRequired, // target should be a number
     progress: PropTypes.number.isRequired, // progress should be a number
 };

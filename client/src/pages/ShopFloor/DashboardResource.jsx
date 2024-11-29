@@ -1,7 +1,7 @@
 import { Row, Col, Card, Space, Flex, Divider } from "antd";
 import LayoutDashboard from '../../components/layouts/LayoutDashboard';
 
-import RemainingProgress from "../../components/ShopFloors/Plan/RemainingProgress";
+import RemainingPlan from "../../components/ShopFloors/Plan/RemainingPlan";
 import StatusButton from "../../components/Buttons/StatusButton";
 import { resources } from "../../data/fetchResource";
 import { Link } from "react-router-dom";
@@ -47,7 +47,7 @@ export default function DashboardResource() {
                                                 <p style={{ fontWeight: 'bold', margin: 0 }}>{machine.name}</p>
                                                 <p style={{ marginBottom: 0, margin: 0 }}>{machine.line}</p> {/* Hilangkan <br /> agar lebih rapi */}
                                             </Space>
-                                            <RemainingProgress
+                                            <RemainingPlan
                                                 target={machine.plan_qty}
                                                 progress={machine.progress}
                                             />

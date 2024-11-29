@@ -114,7 +114,7 @@ const DetailResource = ({ children }) => {
                                         </Button>
                                     </Col>
                                     <Col span={12} style={{ paddingRight: 0 }}>
-                                        <Button color="primary" variant="outlined" style={{ width: '100%', padding: '18px 0px', borderRadius: 3 }}>
+                                        <Button onClick={() => navigate(`/resource/mold?resourceId=${resource.id}`)} color="primary" variant={locationPath === '/resource/mold' ? 'solid' : 'outlined'} style={{ width: '100%', padding: '18px 0px', borderRadius: 3 }}>
                                             <HouseSidingIcon sx={{ fontSize: 18 }} />
                                             <span style={{ fontSize: '18px', fontWeight: '500', fontFamily: 'Arial, sans-serif' }}>MOLD</span>
                                         </Button>

@@ -53,4 +53,18 @@ h1 {
   color: 'white';
 }
 
+:where(.css-dev-only-do-not-override-tpassh).ant-tabs-card.ant-tabs-top>.ant-tabs-nav .ant-tabs-tab,
+:where(.css-dev-only-do-not-override-tpassh).ant-tabs-card.ant-tabs-top>div>.ant-tabs-nav .ant-tabs-tab {
+  border-radius: 0 !important;
+  /* Menyetel border radius menjadi 0 */
+}
+
+:where(.css-dev-only-do-not-override-tpassh).ant-tabs-card.ant-tabs-top>.ant-tabs-nav .ant-tabs-tab-active,
+:where(.css-dev-only-do-not-override-tpassh).ant-tabs-card.ant-tabs-top>div>.ant-tabs-nav .ant-tabs-tab-active {
+  border-top: 3px solid #1677FF !important;
+  /* Border atas */
+  /* Border kiri */
+  border-bottom-color: transparent !important;
+  /* Hilangkan garis bawah */
+}
 

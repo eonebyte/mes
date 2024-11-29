@@ -7,8 +7,9 @@ import MachineDowntime from "./pages/MachineDowntime";
 import SimulasiIoT from "./pages/SimulasiIoT";
 import DashboardResource from "./pages/ShopFloor/DashboardResource";
 import ActiveResource from "./pages/ShopFloor/ActiveResource";
-import PlanResource from "./pages/ShopFloor/PlanResource";
-import PlanDetail from "./pages/ShopFloor/PlanDetail";
+import PlanResource from "./pages/ShopFloor/Plan/PlanResource";
+import PlanDetail from "./pages/ShopFloor/Plan/PlanDetail";
+import MoldResource from "./pages/ShopFloor/Mold/MoldResource";
 
 function App() {
 
@@ -20,6 +21,10 @@ function App() {
         <Route path="/resource" element={<ActiveResource />}></Route>
         <Route path="/resource/plan" element={<PlanResource />}></Route>
         <Route path="/resource/plan/detail" element={<PlanDetail />}></Route>
+        <Route path="/resource/mold" element={<MoldResource />}></Route>
+
+
+
         <Route path="/ir-oee-status" element={<IROEEStatus />}></Route>
         <Route path="/machine-downtime" element={<MachineDowntime />}></Route>
         <Route path="/simulasi-iot" element={<SimulasiIoT />}></Route>
