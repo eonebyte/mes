@@ -94,7 +94,7 @@ const DetailResource = ({ children }) => {
                                 </Row>
                                 <Row gutter={[5]} style={{ width: "100%", margin: '5px 0px' }}>
                                     <Col span={12} style={{ paddingLeft: 0 }}>
-                                        <Button color="primary" variant="outlined" style={{ width: '100%', padding: '18px 0px', borderRadius: 3 }}>
+                                        <Button onClick={() => navigate(`/resource/down?resourceId=${resource.id}`)} color="primary" variant={locationPath === '/resource/down' ? 'solid' : 'outlined'} style={{ width: '100%', padding: '18px 0px', borderRadius: 3 }}>
                                             <AlarmAddIcon sx={{ fontSize: 18 }} />
                                             <span style={{ fontSize: '18px', fontWeight: '500', fontFamily: 'Arial, sans-serif' }}>DOWN</span>
                                         </Button>

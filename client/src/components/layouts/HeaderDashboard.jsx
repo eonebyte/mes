@@ -24,7 +24,9 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
             path === '/resource' || 
             path === '/resource/plan' ||
             path === '/resource/plan/detail' ||
-            path === '/resource/mold'
+            path === '/resource/mold' ||
+            path === '/resource/mold/setup' ||
+            path === '/resource/down'
         ) {
             return [
                 '/shopfloor', 
@@ -32,6 +34,8 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
                 '/resource/plan',
                 '/resource/plan/detail',
                 '/resource/mold',
+                '/resource/mold/setup',
+                '/resource/down',
             ];
         }
         return [path]; 

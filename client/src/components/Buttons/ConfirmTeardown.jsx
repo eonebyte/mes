@@ -2,13 +2,13 @@ import { CheckOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Divider, Modal, Space } from "antd";
 
 
-const ConfirmReleased = () => {
+const ConfirmTeardown = (mold) => {
     Modal.confirm({
-        title: 'Confirm Release',
+        title: 'Confirm Teardown',
         content: (
             <>
                 <Divider />
-                <span style={{ fontSize: '18px' }}>Page release confirm message</span>
+                <span style={{ fontSize: '18px' }}>Teardown Mold {mold} ?</span>
                 <Divider />
             </>
 
@@ -60,4 +60,4 @@ const ConfirmReleased = () => {
     });
 };
 
-export default ConfirmReleased;
+export default ConfirmTeardown;

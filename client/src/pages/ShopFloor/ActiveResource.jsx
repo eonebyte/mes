@@ -4,7 +4,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import DoneIcon from '@mui/icons-material/Done';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import RemainingPlan from "../../components/ShopFloors/Plan/RemainingPlan";
-import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import GppBadIcon from '@mui/icons-material/GppBad';
 import DatasetIcon from '@mui/icons-material/Dataset';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -17,6 +16,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import ConfirmComplete from "../../components/Buttons/ConfirmComplete";
 import ConfirmSetup from "../../components/Buttons/ConfirmSetup";
+import ChangeCavity from "../../components/Buttons/ChangeCavity";
 
 
 function ActiveResource() {
@@ -195,19 +195,7 @@ function ActiveResource() {
                         {/* Row 2 */}
                         <Row>
                             <Col lg={24} style={{ padding: 0 }}>
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                >
-                                    <GroupWorkIcon sx={{ fontSize: 18 }} />
-                                    <span>CAVITY</span>
-                                </Button>
+                                <ChangeCavity />
 
                                 <Button
                                     color="primary"

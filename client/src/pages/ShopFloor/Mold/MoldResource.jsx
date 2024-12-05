@@ -8,6 +8,7 @@ import SwipeUpIcon from '@mui/icons-material/SwipeUp';
 import HouseSidingIcon from '@mui/icons-material/HouseSiding';
 import InputIcon from '@mui/icons-material/Input';
 import RemainingMold from "../../../components/ShopFloors/Mold/RemainingMold";
+import ConfirmTeardown from "../../../components/Buttons/ConfirmTeardown";
 
 const onChange = (key) => {
     console.log(key);
@@ -54,38 +55,43 @@ function MoldResource() {
                     <Card
                         style={{
                             boxShadow: '0 1px 4px rgba(0, 0, 0, 0.5)',
-                            width: 400,
+                            width: 300,
                             marginBottom: 16,
                             backgroundColor: isDarkMode ? '#333' : '#fff',
+                            cursor: 'pointer',
                         }}
+                        onClick={() => ConfirmTeardown('CL000006')}
                         styles={{
                             body: { padding: 10 }
                         }}
                     >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            {/* Informasi Mold */}
                             <div>
-                            {/* Mold Section */}
-                            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, marginBottom: 10 }}>
-                                <span style={{ fontSize: '14px' }}>Mold #</span>
-                                <span style={{ fontSize: '16px', fontWeight: '600' }}>CL000006</span>
+                                {/* Mold Section */}
+                                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, marginBottom: 10 }}>
+                                    <span style={{ fontSize: '14px' }}>Mold #</span>
+                                    <span style={{ fontSize: '16px', fontWeight: '600' }}>CL000006</span>
+                                </div>
+
+                                {/* Available life cycles */}
+                                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, marginBottom: 10 }}>
+                                    <span style={{ fontSize: '14px' }}>Available life cycles</span>
+                                    <span style={{ fontSize: '16px', fontWeight: '600' }}>71.5%</span>
+                                </div>
+
+                                {/* Setup Time */}
+                                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                                    <span style={{ fontSize: '14px' }}>Setup Time</span>
+                                    <span style={{ fontSize: '16px', fontWeight: '600' }}>2024-11-13 00:42:55</span>
+                                </div>
                             </div>
 
-                            {/* Available life cycles */}
-                            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, marginBottom: 10 }}>
-                                <span style={{ fontSize: '14px' }}>Available life cycles</span>
-                                <span style={{ fontSize: '16px', fontWeight: '600' }}>71.5%</span>
+                            {/* Remaining Mold Chart */}
+                            <div style={{ marginLeft: '20px' }}>
+                                <RemainingMold target={500} progress={100} />
                             </div>
-
-                            {/* Setup Time */}
-                            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                                <span style={{ fontSize: '14px' }}>Setup Time</span>
-                                <span style={{ fontSize: '16px', fontWeight: '600' }}>2024-11-13 00:42:55</span>
-                            </div>
-                            </div>
-
-                            <RemainingMold target={500} progress={100} />
-
-
-
+                        </div>
 
                     </Card>
                 )
@@ -130,7 +136,7 @@ function MoldResource() {
                     {/* BODY CONTENT */}
                     <Card
                         title={
-                            <div onClick={() => navigate()} style={{ cursor: 'pointer' }}>
+                            <div onClick={() => navigate(`/resource/mold/setup?resourceId=${resource.id}`)} style={{ cursor: 'pointer' }}>
                                 <Flex align="center" justify="flex-start">
                                     <Space>
                                         <div
