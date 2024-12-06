@@ -12,6 +12,9 @@ import PlanDetail from "./pages/ShopFloor/Plan/PlanDetail";
 import MoldResource from "./pages/ShopFloor/Mold/MoldResource";
 import StepMoldSetup from "./pages/ShopFloor/Mold/StepMoldSetup";
 import DownResource from "./pages/ShopFloor/Down/DownResource";
+import Resources from "./pages/Resources";
+import GanttChartPage from "./pages/GanttChart";
+
 
 function App() {
 
@@ -32,6 +35,8 @@ function App() {
         <Route path="/ir-oee-status" element={<IROEEStatus />}></Route>
         <Route path="/machine-downtime" element={<MachineDowntime />}></Route>
         <Route path="/simulasi-iot" element={<SimulasiIoT />}></Route>
+        <Route path="/resources" element={<Resources />}></Route>
+        <Route path="/gantt-chart" element={<GanttChartPage />}></Route>
         {/* <Route path="/home" element={<Home />}></Route> */}
         {/* <Route path="/gedung-b" element={<GedungB />}></Route> */}
       </Routes>

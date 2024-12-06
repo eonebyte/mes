@@ -100,6 +100,11 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
             key: '/machine-downtime',
             icon: <DashboardOutlined style={{ fontSize: '18px' }} />,
         },
+        {
+            label: 'Resources',
+            key: '/resources',
+            icon: <MachineProdIcon isDark={isDarkMode} />,
+        },
     ];
 
     return (
