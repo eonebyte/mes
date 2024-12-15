@@ -29,6 +29,8 @@
     "dayjs": "^1.11.13",
     "dayjs-plugin-utc": "^0.1.2",
     "faker": "^5.5.3",
+    "highcharts": "^12.0.2",
+    "highcharts-react-official": "^3.2.1",
     "lodash": "^4.17.21",
     "moment": "^2.30.1",
     "planby": "^1.1.7",

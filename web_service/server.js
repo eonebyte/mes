@@ -6,6 +6,7 @@ import cors from '@fastify/cors';
 import FastifyWebSocket from '@fastify/websocket';
 import MachineDowntimePlugin from './plugins/machineDowntimePlugin.mjs';
 import WebSocketPlugin from './plugins/webSocketPlugin.mjs';
+import McRunPlugin from './plugins/mcRunPlugin.mjs';
 
 const server = Fastify({
   ajv: {
@@ -37,6 +38,7 @@ try {
 
   await server.register(FastifyWebSocket);
   await server.register(MachineDowntimePlugin);
+  await server.register(McRunPlugin)
   // await server.register(WebSocketPlugin);
 
   await server.listen({ port: 3000 });

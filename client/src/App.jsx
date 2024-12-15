@@ -14,6 +14,7 @@ import StepMoldSetup from "./pages/ShopFloor/Mold/StepMoldSetup";
 import DownResource from "./pages/ShopFloor/Down/DownResource";
 import Resources from "./pages/Resources";
 import Scheduler from "./pages/Scheduler";
+import McRun from "./pages/McRun";
 
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
         <Route path="/simulasi-iot" element={<SimulasiIoT />}></Route>
         <Route path="/resources" element={<Resources />}></Route>
         <Route path="/scheduler" element={<Scheduler />}></Route>
+        <Route path="/mc-run" element={<McRun />}></Route>
         {/* <Route path="/home" element={<Home />}></Route> */}
         {/* <Route path="/gedung-b" element={<GedungB />}></Route> */}
       </Routes>
