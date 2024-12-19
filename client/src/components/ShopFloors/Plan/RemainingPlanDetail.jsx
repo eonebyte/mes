@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 
 const COLORS = ['#000', '#fff'];
 
-export default function RemainingPlan({ status, target, progress }) {
+export default function RemainingPlanDetail({ status, target, progress }) {
     const locationPath = useLocation();
     const path = locationPath.pathname;
 
@@ -77,11 +77,14 @@ export default function RemainingPlan({ status, target, progress }) {
                     <Cell fill={colorChart} />
                 </Pie>
             </PieChart>
+            <small>Remaining</small>
+            <strong>864+16:30</strong>
         </div>
+
     );
 }
 
-RemainingPlan.propTypes = {
+RemainingPlanDetail.propTypes = {
     status: PropTypes.string.isRequired,
     target: PropTypes.number.isRequired, // target should be a number
     progress: PropTypes.number.isRequired, // progress should be a number

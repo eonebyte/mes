@@ -23,7 +23,8 @@ const DB_HOST = process.env.DB_HOST;
 
 try {
   await server.register(cors, {
-    origin: 'http://localhost:5173',
+    origin: '*',
+    // origin: 'http://localhost:5173',
   });
 
   await server.register(import('@fastify/postgres'), {

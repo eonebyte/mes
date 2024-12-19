@@ -16,11 +16,11 @@ export default function DashboardResource() {
                     <StatusButton />
                 </Row>
                 <Divider style={{ margin: '5px 0px' }} />
-                {/* Grid Machine */}
+                {/* Grid resource */}
                 <Row gutter={[8, 8]}>
-                    {resources.map((machine) => (
-                        <Col key={machine.id} xs={12} sm={8} md={6} lg={4}>
-                            <Link to={`/resource?resourceId=${machine.id}`} style={{ textDecoration: 'none' }}>
+                    {resources.map((resource) => (
+                        <Col key={resource.id} xs={12} sm={8} md={6} lg={4}>
+                            <Link to={`/resource?resourceId=${resource.id}`} style={{ textDecoration: 'none' }}>
                                 <Card
                                     size="small"
                                     style={{
@@ -28,11 +28,16 @@ export default function DashboardResource() {
                                         height: 250,
                                         border: 0,
                                         borderRadius: 3,
-                                        backgroundColor: machine.status === 'Running'
+                                        color: resource.status === 'Inspect'
+                                        ? 'white'
+                                        : 'black',
+                                        backgroundColor: resource.status === 'Running'
                                             ? '#52c41a'
-                                            : machine.status === 'Down'
+                                            : resource.status === 'Down'
                                                 ? '#f5222d'
-                                                : '#f5222d'
+                                                : resource.status === 'Inspect'
+                                                    ? '#a8071a'
+                                                    : '#f5222d'
                                     }}
                                     styles={{
                                         body: {
@@ -44,20 +49,21 @@ export default function DashboardResource() {
                                     <Flex gap="40px" vertical>
                                         <Flex align="flex-start" justify="space-between">
                                             <Space style={{ flexDirection: 'column', display: 'inline', lineHeight: '1.2', alignItems: 'flex-start' }}>
-                                                <p style={{ fontWeight: 'bold', margin: 0 }}>{machine.name}</p>
-                                                <p style={{ marginBottom: 0, margin: 0 }}>{machine.line}</p> {/* Hilangkan <br /> agar lebih rapi */}
+                                                <p style={{ fontWeight: 'bold', margin: 0 }}>{resource.name}</p>
+                                                <p style={{ marginBottom: 0, margin: 0 }}>{resource.line}</p> {/* Hilangkan <br /> agar lebih rapi */}
                                             </Space>
                                             <RemainingPlan
-                                                target={machine.plan_qty}
-                                                progress={machine.progress}
+                                                status={resource.status}
+                                                target={resource.plan_qty}
+                                                progress={resource.progress}
                                             />
                                         </Flex>
                                         <div style={{ textAlign: 'center' }}>
-                                            <img src={machine.image} alt={machine.name} style={{ maxWidth: '100%' }} />
+                                            <img src={resource.image} alt={resource.name} style={{ maxWidth: '100%' }} />
                                         </div>
                                         <Flex align="flex-end" justify="space-between">
                                             <Space style={{ flexDirection: 'column', display: 'inline', lineHeight: '1.2', alignItems: 'flex-start' }}>
-                                                <p style={{ fontWeight: 'bold', margin: 0 }}>{machine.status}</p>
+                                                <p style={{ fontWeight: 'bold', margin: 0 }}>{resource.status}</p>
                                             </Space>
                                             <Space style={{ flexDirection: 'column', display: 'inline', lineHeight: '1.2', alignItems: 'flex-start' }}>
                                                 <p style={{ margin: 0 }}>14:00:00</p>
@@ -69,7 +75,7 @@ export default function DashboardResource() {
                         </Col>
                     ))}
                 </Row>
-                {/* End Grid Machine */}
+                {/* End Grid resource */}
             </LayoutDashboard>
         </>
     );

@@ -14,7 +14,11 @@ export default function McRun() {
         const data = await response.json();
 
         // Data untuk interval kecil (5 menit)
-        const smallIntervalData = data.smallInterval;
+        const smallIntervalTwoHours = data.smallIntervalTwoHoursAgo;
+        console.log(smallIntervalTwoHours);
+        console.log("Categories:", smallIntervalTwoHours.categories);
+
+        
         const options5Min = {
           chart: {
             type: 'line',
@@ -25,14 +29,17 @@ export default function McRun() {
           series: [
             {
               name: "MCNO Count",
-              data: smallIntervalData.data, // Jumlah mesin yang aktif per interval 5 menit
+              data: smallIntervalTwoHours.data, // Jumlah mesin yang aktif per interval 5 menit
             },
           ],
           xAxis: {
-            categories: smallIntervalData.categories, // Kategori waktu (HH:MM)
             labels: {
               rotation: -90,
+              groupedOptions: [{
+                rotation: 0
+              }]
             },
+            categories: smallIntervalTwoHours.categories.map(item => item.categories).flat()
           },
           yAxis: {
             title: {
@@ -65,7 +72,7 @@ export default function McRun() {
             },
           ],
           xAxis: {
-            categories: largeIntervalData.categories, // Kategori waktu (HH:MM)
+            categories: smallIntervalTwoHours.categories.map(item => item.categories).flat(),
             labels: {
               rotation: -90,
             },
@@ -97,11 +104,11 @@ export default function McRun() {
   }, []);
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <div style={{ height: "400px", width: "45%" }}>
+    <div style={{ }}>
+      <div style={{ height: "400px", width: "100%" }}>
         {chartOptions5Min && <HighchartsReact highcharts={highstock} options={chartOptions5Min} />}
       </div>
-      <div style={{ height: "400px", width: "45%" }}>
+      <div style={{ height: "400px", width: "100%" }}>
         {chartOptions15Min && <HighchartsReact highcharts={highstock} options={chartOptions15Min} />}
       </div>
     </div>

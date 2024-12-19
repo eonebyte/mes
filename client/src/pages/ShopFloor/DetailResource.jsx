@@ -17,7 +17,7 @@ const { Sider, Content } = Layout;
 
 const DetailResource = ({ children }) => {
 
-    
+
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -61,11 +61,16 @@ const DetailResource = ({ children }) => {
                                         width: '100%',
                                         border: 0,
                                         borderRadius: 3,
+                                        color: resource.status === 'Inspect'
+                                            ? 'white'
+                                            : 'black',
                                         backgroundColor: resource.status === 'Running'
                                             ? '#52c41a'
                                             : resource.status === 'Down'
                                                 ? '#f5222d'
-                                                : '#f5222d'
+                                                : resource.status === 'Inspect'
+                                                    ? '#a8071a'
+                                                    : '#f5222d'
                                     }}
                                     styles={{
                                         body: {

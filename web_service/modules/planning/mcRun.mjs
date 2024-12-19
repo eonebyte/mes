@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 function loadLogData() {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const filePath = path.resolve(__dirname, '../../data/logData.json');
+    const filePath = path.resolve(__dirname, '../../data/logData24H.json');
 
     try {
         const data = fs.readFileSync(filePath, 'utf-8');
@@ -36,7 +36,7 @@ function generateBuckets(start, end, intervalMinutes) {
     return buckets;
 }
 
-// Map data to the nearest bucket
+// Map data to the nearest bucket (5 minutes) and count machine occurrences
 function mapDataToBuckets(data, buckets) {
     const bucketMap = buckets.reduce((acc, bucket) => {
         acc[bucket.toISOString()] = new Set();
@@ -50,48 +50,63 @@ function mapDataToBuckets(data, buckets) {
             return;
         }
 
-        // Find the nearest bucket
+        // Find the nearest bucket (5 minutes)
         const bucket = buckets.find((b) => b <= entryDate && entryDate < new Date(b.getTime() + 5 * 60000));
         if (bucket) {
             bucketMap[bucket.toISOString()].add(entry.MCNO);
         }
     });
 
-    return bucketMap;
-}
-
-// Aggregate data to larger intervals
-function aggregateBuckets(bucketMap, intervalMinutes) {
-    const aggregatedMap = {};
-    const intervalMillis = intervalMinutes * 60000;
-
+    // Count how many machines are running (appear multiple times within 5 minutes)
+    const countedBucketMap = {};
     Object.keys(bucketMap).forEach((key) => {
-        const date = new Date(key);
-        const intervalStart = new Date(Math.floor(date.getTime() / intervalMillis) * intervalMillis);
-        const intervalKey = intervalStart.toISOString();
-
-        if (!aggregatedMap[intervalKey]) {
-            aggregatedMap[intervalKey] = new Set();
-        }
-
-        bucketMap[key].forEach((mcno) => aggregatedMap[intervalKey].add(mcno));
+        countedBucketMap[key] = bucketMap[key].size;
     });
 
-    return aggregatedMap;
+    return countedBucketMap;
 }
 
-// Convert bucket map to sorted response format
-function formatResponse(bucketMap) {
+// Format response for both small and large intervals
+function formatResponse(bucketMap, intervalMinutes) {
     const sortedKeys = Object.keys(bucketMap).sort((a, b) => new Date(a) - new Date(b));
 
+    // Group sorted keys by date
+    const groupedByDate = sortedKeys.reduce((acc, key) => {
+        const date = new Date(key);
+        const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+
+        if (!acc[dateString]) {
+            acc[dateString] = [];
+        }
+        acc[dateString].push(key);
+
+        return acc;
+    }, {});
+
+    // Format categories
+    const categories = Object.keys(groupedByDate).map((date) => {
+        const dateBuckets = groupedByDate[date];
+
+        return {
+            categories: dateBuckets.map((key) => {
+                const date = new Date(key);
+                return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+            }),
+            name: date,  // The date itself (e.g., 2024-12-15 or 2024-12-16)
+        };
+    });
+
+    // Combine all data into one array
+    const combinedData = sortedKeys.map((key) => bucketMap[key]);
+
     return {
-        categories: sortedKeys.map((key) => {
-            const date = new Date(key);
-            return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-        }),
-        data: sortedKeys.map((key) => bucketMap[key].size),
+        categories,
+        data: combinedData,  // All data combined into a single array
     };
 }
+
+
+
 
 export default async function McRun(fastify, opts) {
     fastify.get('/api/mc-run', async (request, reply) => {
@@ -108,23 +123,30 @@ export default async function McRun(fastify, opts) {
         const start = new Date(Math.min(...timestamps));
         const end = new Date(Math.max(...timestamps));
 
-        // Generate time buckets for the smallest interval
+        // Generate time buckets for the smallest interval (5 minutes)
         const smallBuckets = generateBuckets(start, end, parseInt(smallInterval, 10));
         const smallBucketMap = mapDataToBuckets(logData, smallBuckets);
 
-        // Aggregate small buckets to larger intervals
-        const largeBucketMap = aggregateBuckets(smallBucketMap, parseInt(largeInterval, 10));
+        // Generate time buckets for the larger interval (15 minutes) - no aggregation, just matching
+        const largeBuckets = generateBuckets(start, end, parseInt(largeInterval, 10));
+        const largeBucketMap = mapDataToBuckets(logData, largeBuckets);
+
+        // Generate time buckets for the 2-hour small interval
+        const smallIntervalTwoHoursAgoStart = new Date(end.getTime() - 2 * 60 * 60 * 1000); // 2 hours ago
+        const smallIntervalTwoHoursAgoBuckets = generateBuckets(smallIntervalTwoHoursAgoStart, end, 5); // 5-minute intervals
+        const smallIntervalTwoHoursAgoMap = mapDataToBuckets(logData, smallIntervalTwoHoursAgoBuckets);
 
         // Format response
         const response = {
             smallInterval: {
-                ...formatResponse(smallBucketMap),
-                name: new Date().toISOString().split('T')[0],
+                ...formatResponse(smallBucketMap, 5),
             },
             largeInterval: {
-                ...formatResponse(largeBucketMap),
-                name: new Date().toISOString().split('T')[0],
+                ...formatResponse(largeBucketMap, 15),
             },
+            smallIntervalTwoHoursAgo: {
+                ...formatResponse(smallIntervalTwoHoursAgoMap, 5),
+            }
         };
 
         return response;

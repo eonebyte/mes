@@ -3,7 +3,7 @@ import { MoreOutlined } from "@ant-design/icons";
 import SettingsIcon from '@mui/icons-material/Settings';
 import DoneIcon from '@mui/icons-material/Done';
 import TableChartIcon from '@mui/icons-material/TableChart';
-import RemainingPlan from "../../components/ShopFloors/Plan/RemainingPlan";
+import RemainingPlanDetail from "../../components/ShopFloors/Plan/RemainingPlanDetail";
 import GppBadIcon from '@mui/icons-material/GppBad';
 import DatasetIcon from '@mui/icons-material/Dataset';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -179,15 +179,11 @@ function ActiveResource() {
                                         <div>Cavity</div>
                                         <div style={{ marginBottom: 10 }}><strong>1</strong></div>
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                        {resource ? (
-                                            <RemainingPlan target={resource.plan_qty} progress={resource.progress} />
-                                        ) : (
-                                            <p>No resource found</p>
-                                        )}
-                                        <small>Remaining</small>
-                                        <strong>864+16:30</strong>
-                                    </div>
+                                    {resource ? (
+                                        <RemainingPlanDetail target={resource.plan_qty} progress={resource.progress} />
+                                    ) : (
+                                        <p>No resource found</p>
+                                    )}
                                 </Flex>
                             </Col>
                         </Row>
