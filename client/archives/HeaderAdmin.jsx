@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { Layout, Menu, theme, Flex, Space, Button, } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
 import { MoonOutlined, SunOutlined } from "@ant-design/icons";
-import StatisticDrawer from "../../components/Statistics/StatisticDrawer";
+import StatisticDrawer from "../src/components/Statistics/StatisticDrawer";
 
 const { Header } = Layout;
 

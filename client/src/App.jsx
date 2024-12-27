@@ -1,20 +1,22 @@
-import Dashboard from "./pages/Dashboard";
+import OverAll from "./pages/OverAll";
 import { Routes, Route } from "react-router-dom";
 import IROEEStatus from "./pages/IROEEStatus";
 import './Chart.css'
 import './index.css'
 import MachineDowntime from "./pages/MachineDowntime";
 import SimulasiIoT from "./pages/SimulasiIoT";
-import DashboardResource from "./pages/ShopFloor/DashboardResource";
-import ActiveResource from "./pages/ShopFloor/ActiveResource";
-import PlanResource from "./pages/ShopFloor/Plan/PlanResource";
-import PlanDetail from "./pages/ShopFloor/Plan/PlanDetail";
-import MoldResource from "./pages/ShopFloor/Mold/MoldResource";
-import StepMoldSetup from "./pages/ShopFloor/Mold/StepMoldSetup";
-import DownResource from "./pages/ShopFloor/Down/DownResource";
+import Dashboard from "./pages/ShopFloor/Dashboard";
+import Active from "./pages/ShopFloor/Resource/Active";
+import PlanList from "./pages/ShopFloor/Resource/PlanList";
+import PlanDetail from "./pages/ShopFloor/Resource/PlanDetail";
+import Mold from "./pages/ShopFloor/Resource/Mold";
+import MoldSetup from "./pages/ShopFloor/Resource/MoldSetup";
+import Down from "./pages/ShopFloor/Resource/Down";
 import Resources from "./pages/Resources";
 import Scheduler from "./pages/Scheduler";
 import McRun from "./pages/McRun";
+import Import from "./pages/Plan/Import";
+import ListPlan from "./pages/Plan/List";
 
 
 function App() {
@@ -22,16 +24,22 @@ function App() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Dashboard />}></Route>
-        <Route path="/shopfloor" element={<DashboardResource />}></Route>
-        <Route path="/resource" element={<ActiveResource />}></Route>
-        <Route path="/resource/plan" element={<PlanResource />}></Route>
+        <Route path="/" element={<OverAll />}></Route>
+
+        {/* Shopfloor */}
+        <Route path="/shopfloor" element={<Dashboard />}></Route>
+        <Route path="/resource" element={<Active />}></Route>
+        <Route path="/resource/plan" element={<PlanList />}></Route>
         <Route path="/resource/plan/detail" element={<PlanDetail />}></Route>
-        <Route path="/resource/mold" element={<MoldResource />}></Route>
-        <Route path="/resource/mold/setup" element={<StepMoldSetup />}></Route>
-        <Route path="/resource/down" element={<DownResource />}></Route>
+        <Route path="/resource/mold" element={<Mold />}></Route>
+        <Route path="/resource/mold/setup" element={<MoldSetup />}></Route>
+        <Route path="/resource/down" element={<Down />}></Route>
+        {/* End shopfloor */}
 
-
+        {/* Plan */}
+        <Route path="/plan/list" element={<ListPlan />}></Route>
+        <Route path="/plan/import" element={<Import />}></Route>
+        {/* End plan */}
 
         <Route path="/ir-oee-status" element={<IROEEStatus />}></Route>
         <Route path="/machine-downtime" element={<MachineDowntime />}></Route>

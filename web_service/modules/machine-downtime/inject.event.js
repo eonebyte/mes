@@ -1,7 +1,7 @@
 import 'dotenv/config';
-import Resource from '../../models/resource.mjs';
-import Event from '../../models/event.mjs';
-import { injectEventSchema } from './schemas/injectEventSchema.mjs';
+import Resource from '../../models/resource.js';
+import Event from '../../models/event.js';
+import { injectEventSchema } from './schemas/inject.event.schema.js';
 
 export default async function InjectEvent(fastify, opts) {
   

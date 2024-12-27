@@ -1,7 +1,7 @@
 import { Alert, Card, Col, Flex, Space, Spin, Tabs } from "antd";
 import { resources } from "../../../data/fetchResource";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import DetailResource from "../DetailResource";
+import ResourceLayout from "./ResourceLayout";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import SwipeUpIcon from '@mui/icons-material/SwipeUp';
@@ -114,7 +114,7 @@ function MoldResource() {
     };
 
     return (
-        <DetailResource>
+        <ResourceLayout>
             {loading ?
                 <Col
                     style={{
@@ -193,7 +193,7 @@ function MoldResource() {
                     </Card>
                 </>
             }
-        </DetailResource>
+        </ResourceLayout>
     );
 }
 

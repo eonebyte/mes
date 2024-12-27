@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 
 const COLORS = ['#000', '#fff'];
 
-export default function RemainingPlan({ status, target, progress }) {
+export default function RemainingPlan({ status, planQty, outputQty }) {
     const locationPath = useLocation();
     const path = locationPath.pathname;
 
@@ -29,11 +29,15 @@ export default function RemainingPlan({ status, target, progress }) {
         colorChart = COLORS[0]
     }
 
+    const percentage = planQty > 0 ? (outputQty / planQty * 100) : 0;
+    const roundedPercentage = percentage % 1 >= 0.5 ? Math.ceil(percentage) : Math.floor(percentage);
+    const endAngle = planQty > 0 ? (360 * (outputQty / planQty)) : 0;
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start', justifyContent: 'center' }}>
             <PieChart width={50} height={50}>
                 <Pie
-                    data={[{ name: 'Remaining', value: target }]}
+                    data={[{ name: 'Remaining', value: planQty }]}
                     cx={21}
                     cy={20}
                     innerRadius={18}
@@ -47,7 +51,7 @@ export default function RemainingPlan({ status, target, progress }) {
                     <Cell fill={colorText} /> {/* Latar belakang putih */}
                 </Pie>
                 <Pie
-                    data={[{ name: 'Progress', value: progress }]}
+                    data={[{ name: 'outputQty', value: outputQty }]}
                     cx={21}
                     cy={20}
                     innerRadius={18}
@@ -55,7 +59,7 @@ export default function RemainingPlan({ status, target, progress }) {
                     fill="#8884d8"
                     dataKey="value"
                     startAngle={90} // Mulai dari atas
-                    endAngle={90 - (360 * (progress / target))}
+                    endAngle={90 - endAngle}
                     label={() => (
                         <text
                             x={26} // X tengah
@@ -68,7 +72,7 @@ export default function RemainingPlan({ status, target, progress }) {
                                 fill: colorChart,
                             }}
                         >
-                            {`${progress}`}
+                            {`${roundedPercentage}`}
                         </text>
                     )}
                     labelLine={false}
@@ -83,6 +87,6 @@ export default function RemainingPlan({ status, target, progress }) {
 
 RemainingPlan.propTypes = {
     status: PropTypes.string.isRequired,
-    target: PropTypes.number.isRequired, // target should be a number
-    progress: PropTypes.number.isRequired, // progress should be a number
+    planQty: PropTypes.number.isRequired, // planQty should be a number
+    outputQty: PropTypes.number.isRequired, // outputQty should be a number
 };

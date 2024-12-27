@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { resources } from "../../data/fetchResource"; // Pastikan import data resource dengan benar
-import LayoutDashboard from "../../components/layouts/LayoutDashboard";
+import { resources } from "../../../data/fetchResource"; // Pastikan import data resource dengan benar
+import LayoutDashboard from "../../../components/layouts/LayoutDashboard";
 import { Button, Card, Col, Row } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import AlarmAddIcon from '@mui/icons-material/AlarmAdd';
@@ -15,7 +15,7 @@ import { useEffect } from "react";
 const { Sider, Content } = Layout;
 
 
-const DetailResource = ({ children }) => {
+const ResourceLayout = ({ children }) => {
 
 
 
@@ -160,8 +160,8 @@ const DetailResource = ({ children }) => {
     );
 };
 
-DetailResource.propTypes = {
+ResourceLayout.propTypes = {
     children: PropTypes.node,
 }
 
-export default DetailResource;
+export default ResourceLayout;

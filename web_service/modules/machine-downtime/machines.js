@@ -1,4 +1,4 @@
-import Resource from '../../models/resource.mjs';
+import Resource from '../../models/resource.js';
 
 export default async function Machines(fastify, opts) {
     fastify.get('/api/machine-downtime/machines', async (request, reply) => {

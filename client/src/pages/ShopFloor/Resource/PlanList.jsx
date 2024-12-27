@@ -1,7 +1,7 @@
 import { Alert, Card, Col, Empty, Flex, Row, Spin } from "antd";
-import DetailResource from "../DetailResource";
+import ResourceLayout from "./ResourceLayout";
 import { useSelector } from "react-redux";
-import RemainingPlan from "../../../components/ShopFloors/Plan/RemainingPlan";
+import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { plans } from "../../../data/fetchResource";
@@ -19,17 +19,14 @@ function PlanResource() {
     const [searchParams] = useSearchParams();
     const resourceId = searchParams.get('resourceId');
 
-
     useEffect(() => {
-        setTimeout(() => {
-            const plansData = plans.filter((plan) => plan.resourceId === Number(resourceId));
-            if (plansData.length > 0) {
-                setPlans(plansData);
-            } else {
-                setPlans([]);
-            }
-            setLoading(false);
-        }, 500);
+        const plansData = plans.filter((plan) => plan.resource_id === Number(resourceId));
+        if (plansData.length > 0) {
+            setPlans(plansData);
+        } else {
+            setPlans([]);
+        }
+        setLoading(false);
     }, [resourceId]);
 
     function getBackgroundColor(status, isDarkMode) {
@@ -39,6 +36,8 @@ function PlanResource() {
             return isDarkMode ? '#555' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
         } else if (status === 'Ready') {
             return isDarkMode ? '#457b9d' : '#bae0ff'; // Ready: biru muda terang jika mode terang
+        } else if (status === 'Running') {
+            return isDarkMode ? '#457b9d' : '#d9f7be'; // Ready: biru muda terang jika mode terang
         }
         return '#ffffff'; // default background color
     }
@@ -48,7 +47,7 @@ function PlanResource() {
     }
 
     return (
-        <DetailResource>
+        <ResourceLayout>
             {loading ?
                 <Col
                     style={{
@@ -105,9 +104,9 @@ function PlanResource() {
                                         <Flex align="center" justify="space-between">
                                             <div>
                                                 <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
-                                                    {plan.planNo}
+                                                    {plan.plan_no}
                                                 </p>
-                                                <small>plan to start at {new Date(plan.startDate).toLocaleString()}</small>
+                                                <small>start at {new Date(plan.start_date).toLocaleString()}</small>
 
                                             </div>
                                             <div>
@@ -141,40 +140,36 @@ function PlanResource() {
                                 <Row gutter={[16]}>
                                     <Col lg={7} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                                         <div>Order No.</div>
-                                        <div style={{ marginBottom: 10 }}><strong>O23098943-NHZ</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.order_no}</strong></div>
                                         <div>Part No.</div>
-                                        <div style={{ marginBottom: 10 }}><strong>CJA-3400-SHA</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_no}</strong></div>
                                         <div>Part Drawing #</div>
-                                        <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing}</strong></div>
                                     </Col>
                                     <Col lg={4}>
                                         <div>Plan Qty</div>
-                                        <div style={{ marginBottom: 10 }}><strong>10000</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.plan_qty}</strong></div>
                                         <div>ToGo Qty</div>
-                                        <div style={{ marginBottom: 10 }}><strong>9063</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.togo_qty}</strong></div>
                                         <div>Part Model </div>
-                                        <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_model}</strong></div>
                                     </Col>
                                     <Col lg={13}>
 
                                         <Flex align="flex-start" justify="space-between">
                                             <div>
                                                 <div>Part Desc</div>
-                                                <div style={{ marginBottom: 10 }}><strong>Description Product</strong></div>
+                                                <div style={{ marginBottom: 10 }}><strong>{plan.part_desc}</strong></div>
                                                 <div>Spec</div>
-                                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                                <div style={{ marginBottom: 10 }}><strong>{plan.spec}</strong></div>
                                                 <div>Mold #</div>
-                                                <div style={{ marginBottom: 10 }}><strong>CL000010</strong></div>
+                                                <div style={{ marginBottom: 10 }}><strong>{plan.mold}</strong></div>
                                             </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                                {allPlans ? (
-                                                    <RemainingPlan target={plan.planQty} progress={plan.progress} />
-                                                ) : (
-                                                    <p>No resource found</p>
-                                                )}
-                                                <small>Remaining</small>
-                                                <strong>864+16:30</strong>
-                                            </div>
+                                            {allPlans ? (
+                                                <RemainingPlanDetail planQty={plan.plan_qty} toGoQty={plan.togo_qty} outputQty={plan.output_qty} CT={plan.cycletime} />
+                                            ) : (
+                                                <p>No resource found</p>
+                                            )}
                                         </Flex>
                                     </Col>
                                 </Row>
@@ -184,7 +179,7 @@ function PlanResource() {
 
                     </div>
             }
-        </DetailResource >
+        </ResourceLayout >
     );
 }
 

@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { machineEventsResponseSchema } from './schemas/machineEventsResponseSchema.mjs';
+import { machineEventsResponseSchema } from './schemas/machine.events.response.schema.js';
 
 
 export default async function MachineEvents(fastify, opts) {

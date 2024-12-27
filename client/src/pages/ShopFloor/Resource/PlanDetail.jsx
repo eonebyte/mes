@@ -3,7 +3,6 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import SettingsIcon from '@mui/icons-material/Settings';
 import DoneIcon from '@mui/icons-material/Done';
 import TableChartIcon from '@mui/icons-material/TableChart';
-import RemainingPlan from "../../../components/ShopFloors/Plan/RemainingPlan";
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import GppBadIcon from '@mui/icons-material/GppBad';
 import DatasetIcon from '@mui/icons-material/Dataset';
@@ -22,7 +21,7 @@ import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
 import ConfirmReleased from "../../../components/Buttons/ConfirmReleased";
 import ConfirmReady from "../../../components/Buttons/ConfirmReady";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
-
+import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
 
 function PlanDetail() {
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
@@ -107,7 +106,7 @@ function PlanDetail() {
                                     fontWeight: 'bold',
                                     color: getTextColor(isDarkMode),
                                 }}>
-                                    {`<${plan.planNo}> ${plan.status}`}
+                                    {`<${plan.plan_no}> ${plan.status}`}
                                 </p>
 
                             </Flex>
@@ -216,56 +215,52 @@ function PlanDetail() {
                         <Row gutter={[16]}>
                             <Col lg={4} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                                 <div>Part No.</div>
-                                <div style={{ marginBottom: 10 }}><strong>FH-54KJH-8034093</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.order_no}</strong></div>
                                 <div>Revision</div>
-                                <div style={{ marginBottom: 10 }}><strong>A</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.revision}</strong></div>
                                 <div>Project</div>
-                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.project}</strong></div>
                             </Col>
                             <Col lg={4}>
                                 <div>Seq Desc</div>
-                                <div style={{ marginBottom: 10 }}><strong>10-AKL</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.seq_desc}</strong></div>
                                 <div>Part Model</div>
-                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.part_model}</strong></div>
                                 <div>Part Drawing #</div>
-                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing}</strong></div>
                             </Col>
 
                             <Col lg={4}>
                                 <div>Order No.</div>
-                                <div style={{ marginBottom: 10 }}><strong>02394334</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.order_no}</strong></div>
                                 <div>Cust Order</div>
-                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.cust_order}</strong></div>
                                 <div>Batch</div>
-                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.batch}</strong></div>
                             </Col>
 
                             <Col lg={4}>
                                 <div>Plan Qty</div>
-                                <div style={{ marginBottom: 10 }}><strong>10.000.000</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.plan_qty}</strong></div>
                                 <div>ToGo Qty</div>
-                                <div style={{ marginBottom: 10 }}><strong>9.000.000</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.togo_qty}</strong></div>
                                 <div>Output Per Cycle (Std / Act)</div>
-                                <div style={{ marginBottom: 10 }}><strong>2/2</strong></div>
+                                <div style={{ marginBottom: 10 }}><strong>{plan.output_per_cycle}</strong></div>
                             </Col>
                             <Col lg={8}>
 
                                 <Flex align="flex-start" justify="space-between">
                                     <div>
                                         <div>Part Desc</div>
-                                        <div style={{ marginBottom: 10 }}><strong>Description Product</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_desc}</strong></div>
                                         <div>Cycles</div>
-                                        <div style={{ marginBottom: 10 }}><strong>19000</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.cycles}</strong></div>
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                         {plan ? (
-                                            <RemainingPlan target={plan.planQty} progress={plan.progress} />
+                                                <RemainingPlanDetail planQty={plan.plan_qty} toGoQty={plan.togo_qty} outputQty={plan.output_qty} CT={plan.cycletime} />
                                         ) : (
                                             <p>No plan found</p>
                                         )}
-                                        <small>Remaining</small>
-                                        <strong>864+16:30</strong>
-                                    </div>
                                 </Flex>
                             </Col>
                         </Row>

@@ -1,65 +1,86 @@
 class Resource {
-    constructor(id, name, line, lineno, status, plan_qty, progress, uuid) {
+    constructor(id, name, line, lineno, status) {
         this.id = id;
         this.name = name;
         this.line = line;
         this.lineno = lineno;
         this.status = status;
         this.image = "/src/assets/images/machine.png";
-        this.plan_qty = plan_qty;
-        this.progress = progress;
-        this.uuid = uuid;
     }
 }
 
 class Plan {
-    constructor(id, title, planNo, startDate, status, planQty, progress, resourceId) {
+    constructor(id, resource_id, title, plan_no, order_no, part_no, seq_desc,
+        part_drawing, start_date, status, plan_qty, togo_qty,
+        output_qty, good_qty, defect_qty, lost_qty, cycletime,
+        part_model, cust_order, part_desc, spec, cavity, mold,
+        cycles, revision, project, batch, output_per_cycle) {
         this.id = id;
+        this.resource_id = resource_id;
         this.title = title;
-        this.planNo = planNo;
-        this.startDate = startDate;
+        this.plan_no = plan_no;
+        this.order_no = order_no;
+        this.part_no = part_no;
+        this.seq_desc = seq_desc;
+        this.part_drawing = part_drawing;
+        this.start_date = start_date;
         this.status = status;
-        this.planQty = planQty;
-        this.progress = progress;
-        this.resourceId = resourceId;
+        this.plan_qty = plan_qty;
+        this.togo_qty = togo_qty;
+        this.output_qty = output_qty;
+        this.good_qty = good_qty;
+        this.defect_qty = defect_qty;
+        this.lost_qty = lost_qty;
+        this.cycletime = cycletime;
+        this.part_model = part_model;
+        this.cust_order = cust_order;
+        this.part_desc = part_desc;
+        this.spec = spec;
+        this.cavity = cavity;
+        this.mold = mold;
+        this.cycles = cycles;
+        this.revision = revision;
+        this.project = project;
+        this.batch = batch;
+        this.output_per_cycle = output_per_cycle;
     }
 }
 
 const plans = [
     new Plan(
-        108,
-        "Plan to start at 2024-11-26",
-        '1234HJKDS',
-        "2024-11-26T00:00:00Z",
-        "Ready",
-        1000,
-        350,
-        1
-    ),
-    new Plan(
-        109,
-        "Plan to start at 2024-11-26",
-        '12333DDS',
-        "2024-11-26T00:00:00Z",
-        "On Hold",
-        1000,
-        350,
-        1
-    ),
-    new Plan(
-        111,
-        "Plan to start at 2024-11-27",
-        '343423DSDS',
-        "2024-11-27T00:07:00Z",
-        "Released",
-        2000,
-        0,
-        1
+        108, // id
+        1, //resource id
+        '-', //title
+        'JO123', //plan_no
+        'MO23110001', //order no
+        'ZP-S323-05714', //part no
+        '10-ABC',
+        '-', //part drawing
+        '2024-11-26T00:00:00Z', // start date
+        'Running', //status
+        10000, //plan_qty
+        9057, //togo_qty
+        943, //output_qty
+        943, //good_qty
+        0, //defect qty
+        0, //lost qty
+        10, //cycletime
+        '-', //part model
+        '-', //cust order
+        'this part description', //part desc
+        '-', //spec
+        1, //cavity
+        '-', //mold
+        916, //cycles
+        0, //revision
+        '-', //project
+        '-', //batch
+        '2/2' //output per cycle
     ),
 ];
 
 const resources = [
-    new Resource(1, 'MC001', 'Line 1', 101, 'Inspect', 1000, 350),
+    new Resource(1, 'A06', 'L01', 101, 'Inspect', 350),
 ];
 
 export { Resource, Plan, plans, resources };

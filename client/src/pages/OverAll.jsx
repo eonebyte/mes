@@ -8,7 +8,7 @@ import OEEGauge from "../components/Charts/OEEGauge";
 import StatusButton from "../components/Buttons/StatusButton";
 import { useSelector } from "react-redux";
 
-export default function Dashboard() {
+export default function OverAll() {
 
     const isDarkMode = useSelector(state => state.theme.isDarkMode);
 

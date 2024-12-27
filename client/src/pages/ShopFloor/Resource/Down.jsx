@@ -1,7 +1,7 @@
 import { Alert, Col, Spin } from "antd";
 import { resources } from "../../../data/fetchResource";
 import { useSearchParams } from "react-router-dom";
-import DetailResource from "../DetailResource";
+import ResourceLayout from "./ResourceLayout";
 import { useEffect, useState } from "react";
 import DownWithCategory from "../../../components/ShopFloors/Down/DownWithCategory";
 import DownWithoutCategory from "../../../components/ShopFloors/Down/DownWithoutCategory";
@@ -17,7 +17,7 @@ function DownResource() {
     const [resource, setResource] = useState(null);
 
     console.log(resource);
-    
+
 
     useEffect(() => {
         setTimeout(() => {
@@ -29,7 +29,7 @@ function DownResource() {
     }, [resourceId]);
 
     return (
-        <DetailResource>
+        <ResourceLayout>
             {loading ?
                 <Col
                     style={{
@@ -57,7 +57,7 @@ function DownResource() {
                     {/* END BODY CONTENT */}
                 </>
             }
-        </DetailResource>
+        </ResourceLayout>
     );
 }
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import PropTypes from "prop-types";
 import { Layout, theme, Flex, Space, Button, Dropdown, Typography, Menu } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
-import { MoonOutlined, SunOutlined, DashboardOutlined, SettingOutlined, DownOutlined, ExclamationCircleOutlined, HomeOutlined, DatabaseOutlined, ControlOutlined, CarryOutOutlined, FundProjectionScreenOutlined } from "@ant-design/icons";
+import { MoonOutlined, SunOutlined, DashboardOutlined, SettingOutlined, DownOutlined, ExclamationCircleOutlined, HomeOutlined, DatabaseOutlined, ControlOutlined, CarryOutOutlined, FundProjectionScreenOutlined, CloudUploadOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import StatisticDrawer from "../Statistics/StatisticDrawer";
 import MachineProdIcon from "../Icons/MachineProdIcon";
 
@@ -66,6 +66,18 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
             label: 'PLAN',
             key: '/plan',
             icon: <CarryOutOutlined />,
+            children: [ 
+                {
+                    label: 'Import Plan',
+                    key: '/plan/import',
+                    icon: <CloudUploadOutlined />
+                },
+                {
+                    label: 'List Plan',
+                    key: '/plan/list',
+                    icon: <UnorderedListOutlined />
+                },
+            ],
         },
         {
             label: 'REPORT',
