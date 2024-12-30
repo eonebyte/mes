@@ -1,5 +1,5 @@
-import PlanningModule from "../modules/planning/planning.module.js";
+import PlanModule from "../modules/plan/plan.module.js";
 
 export default async function APIV1(fastify, opts) {
-    fastify.register(PlanningModule);
+    fastify.register(PlanModule);
 }

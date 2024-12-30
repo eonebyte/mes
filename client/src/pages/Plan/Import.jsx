@@ -66,14 +66,16 @@ export default function ImportPlan() {
                 const rowData = {};
                 row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
                     let value = cell.value;
+
+                    // LOGIKA CODE DI BAWAH INI DIPINDAHKAN KE BACKEND
                     // Cek jika nilai adalah tipe Date
-                    if (value instanceof Date) {
-                        // Format tanggal dan waktu sesuai kebutuhan (misalnya YYYY-MM-DD HH:mm)
-                        const isoString = value.toISOString(); // Mendapatkan string ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
-                        const datePart = isoString.split('T')[0]; // Mengambil bagian tanggal (YYYY-MM-DD)
-                        const timePart = isoString.split('T')[1].substring(0, 5); // Mengambil bagian waktu (HH:mm)
-                        value = `${datePart} ${timePart}`; // Menggabungkan tanggal dan waktu menjadi format yang diinginkan
-                    }
+                    // if (value instanceof Date) {
+                    //     // Format tanggal dan waktu sesuai kebutuhan (misalnya YYYY-MM-DD HH:mm)
+                    //     const isoString = value.toISOString(); // Mendapatkan string ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
+                    //     const datePart = isoString.split('T')[0]; // Mengambil bagian tanggal (YYYY-MM-DD)
+                    //     const timePart = isoString.split('T')[1].substring(0, 8); // Mengambil bagian waktu (HH:mm)
+                    //     value = `${datePart} ${timePart}`; // Menggabungkan tanggal dan waktu menjadi format yang diinginkan
+                    // }
 
 
                     rowData[`col${colNumber}`] = value;
