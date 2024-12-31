@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import PlanningService from './plan.service.js';
 
 class PlanController {
@@ -14,12 +14,8 @@ class PlanController {
                 }
                 const cust_joborder = await PlanningService.custJobOrder();
                 const document = await PlanningService.documentNo();
-                const product = await PlanningService.getProduct(row.col10.trim());
+                const product = await PlanningService.getProduct(row.col8.trim());
                 const asset = await PlanningService.getAsset(String(row.col1).trim());
-
-                console.log('asset: ', asset);
-                
-
 
                 const user_id = Number(user[0]);
                 const base_document_no = Number(document[0]); // document no terakhir
@@ -28,6 +24,10 @@ class PlanController {
                 const cust_joborder_id = base_cust_joborder + 1 + index
                 const product_id = Number(product[0]);
                 const asset_id = Number(asset[0]);
+
+                const formattedDateDoc = format(parse(row.col5, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd');
+                const formattedStartDate = format(parse(row.col6, 'dd/MM/yyyy HH:mm:ss', new Date()), 'yyyy-MM-dd HH:mm:ss');
+                const formattedEndDate = format(parse(row.col7, 'dd/MM/yyyy HH:mm:ss', new Date()), 'yyyy-MM-dd HH:mm:ss');
 
                 return {
                     AD_CLIENT_ID: 1000000,
@@ -40,26 +40,24 @@ class PlanController {
                     DESC: row.col3 ? row.col3.trim() : null,
                     DOCSTATUS: row.col4.trim(),
                     DOCUMENTNO: document_no,
-                    DATEDOC: row.col5,
-                    STARTDATE: row.col6,
-                    ENDDATE: row.col7,
+                    DATEDOC: formattedDateDoc,
+                    STARTDATE: formattedStartDate,
+                    ENDDATE: formattedEndDate,
                     ISACTIVE: 'Y',
                     ISVERIFIED: row.col4.trim() == 'OP' ? 'Y' : 'N',
                     M_PRODUCT_ID: product_id,
                     PRINT_JOBORDER: 'N',
                     UPDATED: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                     UPDATEDBY: user_id,
-                    QTYPLANNED: row.col11,
+                    QTYPLANNED: row.col9,
                     JOACTION: row.col4.trim() == 'OP' ? 'SE' : 'CO',
                     PRINT_JOBORDERLABEL: 'N',
                     A_ASSET_RUN_ID: null,
-                    ISTRIAL: row.col12,
+                    ISTRIAL: row.col10,
                     ISAUTODROP: 'N',
                     JOTYPE: 'I',
                 };
             }));
-
-            console.log('Mapped data:', mappedData);
 
             reply.send({ message: 'Data imported successfully!', data: mappedData });
         } catch (error) {
