@@ -1,66 +1,36 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Input, Space, Table } from 'antd';
+import { Button, Card, Input, Space, Spin, Table } from 'antd';
 import Highlighter from 'react-highlight-words';
 import LayoutDashboard from '../../components/layouts/LayoutDashboard';
 
 
-const data = [
-    {
-        key: '1',
-        compiste: 1,
-        Rline: 'A1-01 [08]',
-        Rcode: 'R008',
-        Mold: 'Mold A',
-        MoldModel: 'Model A1',
-        LifeCycles: '10',
-        PartNo: 'P001',
-        Revision: 'Rev 1',
-        Seq: '1',
-        PartModel: 'Part A',
-        PartDrawing: 'Drawing A',
-        Qty: 100,
-        DeliveryDate: '2024-01-01',
-        PlanStartTime: '2024-01-02',
-        PlanCompleteTime: '2024-01-10',
-        CycleTime: '5 hours',
-        Cavity: 'Cavity 1',
-        OrderNo: 'O001',
-        MoldDesc: 'Description A',
-        PartDesc: 'Part A Description',
-        Testing: 'N',
-    },
-    {
-        key: '2',
-        compiste: 2,
-        Rline: 'A1-01 [09]',
-        Rcode: 'R009',
-        Mold: 'Mold B',
-        MoldModel: 'Model B1',
-        LifeCycles: '20',
-        PartNo: 'P002',
-        Revision: 'Rev 2',
-        Seq: '2',
-        PartModel: 'Part B',
-        PartDrawing: 'Drawing B',
-        Qty: 200,
-        DeliveryDate: '2024-02-01',
-        PlanStartTime: '2024-02-02',
-        PlanCompleteTime: '2024-02-10',
-        CycleTime: '6 hours',
-        Cavity: 'Cavity 2',
-        OrderNo: 'O002',
-        MoldDesc: 'Description B',
-        PartDesc: 'Part B Description',
-        Testing: 'N',
-    },
-    // Add more data as needed
-];
-
 const ListPlan = () => {
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState('');
     const [searchedColumn, setSearchedColumn] = useState('');
     const searchInput = useRef(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const response = await fetch('http://localhost:3080/api/list-plan');
+                const result = await response.json();
+                if (result && result.data) {
+                    setData(result.data); // Set data ke state
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData(); // Panggil fetchData untuk ambil data
+    }, []);
+
     const handleSearch = (selectedKeys, confirm, dataIndex) => {
         confirm();
         setSearchText(selectedKeys[0]);
@@ -142,8 +112,13 @@ const ListPlan = () => {
                 }}
             />
         ),
-        onFilter: (value, record) =>
-            record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
+        // onFilter: (value, record) =>
+        //     record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
+        onFilter: (value, record) => {
+            // Pengecekan untuk nilai null atau undefined
+            const text = record[dataIndex] || '';  // Jika null/undefined, ganti dengan string kosong
+            return text.toString().toLowerCase().includes(value.toLowerCase());
+        },
         filterDropdownProps: {
             onOpenChange(open) {
                 if (open) {
@@ -167,28 +142,63 @@ const ListPlan = () => {
             ),
     });
 
+    const formatDate = (dateStr) => {
+        const [datePart] = dateStr.split(' '); // ["30-12-2024"]
+        const [day, month, year] = datePart.split('-'); // ["30", "12", "2024"]
+        const formattedDate = new Date(`${year}-${month}-${day}`);
+        const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+        const formatter = new Intl.DateTimeFormat('id-ID', options);
+        return formatter.format(formattedDate); // Output: "30/12/2024"
+    };
+
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return '';
+
+        try {
+            const [datePart, timePart] = dateStr.split(' ');
+            const [day, month, year] = datePart.split('-');
+            const [hours, minutes, seconds] = timePart.split(':');
+            const formattedDate = `${day}/${month}/${year}`;
+            const formattedDateTime = `${formattedDate} ${hours}:${minutes}:${seconds}`;
+            return formattedDateTime;
+        } catch (error) {
+            console.error("Error formatting date/time:", error);
+            return '';  // Jika terjadi error, kembalikan string kosong
+        }
+    };
+
     const columns = [
-        { title: 'Compiste', dataIndex: 'compiste', key: 'compiste', ...getColumnSearchProps('compiste') },
-        { title: 'Rline', dataIndex: 'Rline', key: 'Rline', ...getColumnSearchProps('Rline') },
-        { title: 'Rcode', dataIndex: 'Rcode', key: 'Rcode', ...getColumnSearchProps('Rcode') },
-        { title: 'Mold', dataIndex: 'Mold', key: 'Mold', ...getColumnSearchProps('Mold') },
-        { title: 'Mold Model', dataIndex: 'MoldModel', key: 'MoldModel', ...getColumnSearchProps('MoldModel') },
-        { title: 'LifeCycles', dataIndex: 'LifeCycles', key: 'LifeCycles', ...getColumnSearchProps('LifeCycles') },
-        { title: 'Part No', dataIndex: 'PartNo', key: 'PartNo', ...getColumnSearchProps('PartNo') },
-        { title: 'Revision', dataIndex: 'Revision', key: 'Revision', ...getColumnSearchProps('Revision') },
-        { title: 'Seq', dataIndex: 'Seq', key: 'Seq', ...getColumnSearchProps('Seq') },
-        { title: 'Part Model', dataIndex: 'PartModel', key: 'PartModel', ...getColumnSearchProps('PartModel') },
-        { title: 'Part Drawing', dataIndex: 'PartDrawing', key: 'PartDrawing', ...getColumnSearchProps('PartDrawing') },
-        { title: 'Qty', dataIndex: 'Qty', key: 'Qty', ...getColumnSearchProps('Qty') },
-        { title: 'Delivery Date', dataIndex: 'DeliveryDate', key: 'DeliveryDate', ...getColumnSearchProps('DeliveryDate') },
-        { title: 'Plan Start Time', dataIndex: 'PlanStartTime', key: 'PlanStartTime', ...getColumnSearchProps('PlanStartTime') },
-        { title: 'Plan Complete Time', dataIndex: 'PlanCompleteTime', key: 'PlanCompleteTime', ...getColumnSearchProps('PlanCompleteTime') },
-        { title: 'Cycle Time', dataIndex: 'CycleTime', key: 'CycleTime', ...getColumnSearchProps('CycleTime') },
-        { title: 'Cavity', dataIndex: 'Cavity', key: 'Cavity', ...getColumnSearchProps('Cavity') },
-        { title: 'Order No', dataIndex: 'OrderNo', key: 'OrderNo', ...getColumnSearchProps('OrderNo') },
-        { title: 'Mold Desc', dataIndex: 'MoldDesc', key: 'MoldDesc', ...getColumnSearchProps('MoldDesc') },
-        { title: 'Part Desc', dataIndex: 'PartDesc', key: 'PartDesc', ...getColumnSearchProps('PartDesc') },
-        { title: 'Testing', dataIndex: 'Testing', key: 'Testing', ...getColumnSearchProps('Testing') },
+        { title: 'No', dataIndex: 'no', key: 'no', ...getColumnSearchProps('no') },
+        { title: 'Plan No', dataIndex: 'planNo', key: 'planNo', ...getColumnSearchProps('planNo') },
+        { title: 'Resource code', dataIndex: 'rCode', key: 'rCode', ...getColumnSearchProps('rCode') },
+        { title: 'Mold', dataIndex: 'moldName', key: 'moldName', ...getColumnSearchProps('moldName') },
+        { title: 'Part No', dataIndex: 'partNo', key: 'partNo', ...getColumnSearchProps('partNo') },
+        { title: 'Part Name', dataIndex: 'partName', key: 'partName', ...getColumnSearchProps('partName') },
+        { title: 'User', dataIndex: 'user', key: 'user', ...getColumnSearchProps('user') },
+        { title: 'Plan Status', dataIndex: 'status', key: 'status', ...getColumnSearchProps('status') },
+        { title: 'Qty', dataIndex: 'qty', key: 'qty', ...getColumnSearchProps('qty') },
+        {
+            title: 'Date Doc',
+            dataIndex: 'dateDoc',
+            key: 'dateDoc',
+            ...getColumnSearchProps('dateDoc'),
+            render: (text) => formatDate(text),
+        },
+        {
+            title: 'Start Time',
+            dataIndex: 'planStartTime',
+            key: 'planStartTime',
+            render: (text) => formatDateTime(text),  // Terapkan formatDateTime untuk Start Time
+        },
+        {
+            title: 'Complete Time',
+            dataIndex: 'planCompleteTime',
+            key: 'planCompleteTime',
+            render: (text) => formatDateTime(text),  // Terapkan formatDateTime untuk Complete Time
+        },
+        { title: 'Cycletime', dataIndex: 'cycletime', key: 'cycletime', ...getColumnSearchProps('cycletime') },
+        { title: 'Cavity', dataIndex: 'cavity', key: 'cavity', ...getColumnSearchProps('cavity') },
+        { title: 'Trial', dataIndex: 'isTrial', key: 'isTrial', ...getColumnSearchProps('isTrial') },
     ];
 
     return (
@@ -201,15 +211,18 @@ const ListPlan = () => {
                     }
                 }}
             >
-                <Table
-                    style={{
-                        marginTop: 5,
-                    }}
-                    sty
-                    columns={columns}
-                    dataSource={data}
-                    scroll={{ x: "max-content" }}
-                />
+                <Spin spinning={loading}>
+                    <Table
+                        style={{
+                            marginTop: 5,
+                        }}
+                        rowKey="partNo"
+                        columns={columns}
+                        dataSource={data}
+                        scroll={{ x: "max-content" }}
+                        size='small'
+                    />
+                </Spin>
             </Card>
         </LayoutDashboard>
     );

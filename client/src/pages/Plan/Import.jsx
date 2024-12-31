@@ -20,6 +20,34 @@ export default function ImportPlan() {
         setFileList(fileList);
     };
 
+    const formatDateOnly = (value) => {
+        if (value instanceof Date) {
+            // Mendapatkan string ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
+            const isoString = value.toISOString();
+            // Mengambil bagian tanggal (YYYY-MM-DD)
+            const datePart = isoString.split('T')[0];
+            // Ubah format ke DD/MM/YYYY
+            const [year, month, day] = datePart.split('-');
+            return `${day}/${month}/${year}`; // Format: DD/MM/YYYY
+        }
+        return value;
+    }
+
+    const formatDateTime = (value) => {
+        if (value instanceof Date) {
+            // Mendapatkan string ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
+            const isoString = value.toISOString();
+            // Mengambil bagian tanggal (YYYY-MM-DD)
+            const datePart = isoString.split('T')[0];
+            // Mengambil bagian waktu (HH:mm:ss)
+            const timePart = isoString.split('T')[1].substring(0, 8);
+            // Ubah format ke DD/MM/YYYY HH:mm:ss
+            const [year, month, day] = datePart.split('-');
+            return `${day}/${month}/${year} ${timePart}`; // Format: DD/MM/YYYY HH:mm:ss
+        }
+        return value;
+    }
+
 
     // Fungsi untuk memulai import data dari Excel
     const handleImport = async () => {
@@ -67,16 +95,13 @@ export default function ImportPlan() {
                 row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
                     let value = cell.value;
 
-                    // LOGIKA CODE DI BAWAH INI DIPINDAHKAN KE BACKEND
-                    // Cek jika nilai adalah tipe Date
-                    // if (value instanceof Date) {
-                    //     // Format tanggal dan waktu sesuai kebutuhan (misalnya YYYY-MM-DD HH:mm)
-                    //     const isoString = value.toISOString(); // Mendapatkan string ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
-                    //     const datePart = isoString.split('T')[0]; // Mengambil bagian tanggal (YYYY-MM-DD)
-                    //     const timePart = isoString.split('T')[1].substring(0, 8); // Mengambil bagian waktu (HH:mm)
-                    //     value = `${datePart} ${timePart}`; // Menggabungkan tanggal dan waktu menjadi format yang diinginkan
-                    // }
+                    if (colNumber === 5 && value instanceof Date) {
+                        value = formatDateOnly(value);
+                    }
 
+                    if (value instanceof Date) {
+                        value = formatDateTime(value);
+                    }
 
                     rowData[`col${colNumber}`] = value;
                 });

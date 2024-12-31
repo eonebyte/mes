@@ -7,27 +7,6 @@ class PlanController {
         try {
             const importData = request.body;
 
-            const formatDate = (dateString) => {
-                const dateObj = new Date(dateString);
-                if (isNaN(dateObj.getTime())) {
-                    throw new Error(`Invalid date: ${dateString}`);
-                }
-                const isoString = dateObj.toISOString(); // Mendapatkan string ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
-                const datePart = isoString.split('T')[0]; // Mengambil bagian tanggal (YYYY-MM-DD)
-                const timePart = isoString.split('T')[1].substring(0, 8); // Mengambil bagian waktu (HH:mm:ss)
-                return `${datePart} ${timePart}`;
-            };
-
-            const formatDateDoc = (dateString) => {
-                const dateObj = new Date(dateString);
-                if (isNaN(dateObj.getTime())) {
-                    throw new Error(`Invalid date: ${dateString}`);
-                }
-                const isoString = dateObj.toISOString(); // Mendapatkan string ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
-                const datePart = isoString.split('T')[0]; // Mengambil bagian tanggal (YYYY-MM-DD)
-                return `${datePart}`;
-            };
-
             const mappedData = await Promise.all(importData.map(async (row, index) => {
                 const user = await PlanningService.createdBy(row.col2.trim());
                 if (!user || !user.length > 0) {
@@ -37,6 +16,9 @@ class PlanController {
                 const document = await PlanningService.documentNo();
                 const product = await PlanningService.getProduct(row.col10.trim());
                 const asset = await PlanningService.getAsset(String(row.col1).trim());
+
+                console.log('asset: ', asset);
+                
 
 
                 const user_id = Number(user[0]);
@@ -58,11 +40,11 @@ class PlanController {
                     DESC: row.col3 ? row.col3.trim() : null,
                     DOCSTATUS: row.col4.trim(),
                     DOCUMENTNO: document_no,
-                    DATEDOC: formatDateDoc(row.col5),
-                    STARTDATE: formatDate(row.col6),
-                    ENDDATE: formatDate(row.col7),
-                    ISACTIVE: row.col8.trim(),
-                    ISVERIFIED: row.col9.trim(),
+                    DATEDOC: row.col5,
+                    STARTDATE: row.col6,
+                    ENDDATE: row.col7,
+                    ISACTIVE: 'Y',
+                    ISVERIFIED: row.col4.trim() == 'OP' ? 'Y' : 'N',
                     M_PRODUCT_ID: product_id,
                     PRINT_JOBORDER: 'N',
                     UPDATED: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
@@ -91,7 +73,7 @@ class PlanController {
         try {
             const job_orders = await PlanningService.getJobOrders();
             console.log('job order : ', job_orders);
-
+            reply.send({ message: 'fetch successfully', data: job_orders });
         } catch (error) {
             request.log.error(error);
             reply.status(500).send({ message: `Failed: ${error.message || error}` });
