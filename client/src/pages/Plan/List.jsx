@@ -16,7 +16,7 @@ const ListPlan = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await fetch('http://localhost:3080/api/list-plan');
+                const response = await fetch('http://localhost:3080/api/plans');
                 const result = await response.json();
                 if (result && result.data) {
                     setData(result.data); // Set data ke state
@@ -169,7 +169,21 @@ const ListPlan = () => {
 
     const columns = [
         { title: 'No', dataIndex: 'no', key: 'no', ...getColumnSearchProps('no') },
-        { title: 'Plan No', dataIndex: 'planNo', key: 'planNo', ...getColumnSearchProps('planNo') },
+        {
+            title: 'Plan No',
+            dataIndex: 'planNo',
+            key: 'planNo', ...getColumnSearchProps('planNo'),
+            defaultSortOrder: 'descend',
+            sorter: (a, b) => {
+                // Jika 'planNo' berupa angka, gunakan pembanding numerik
+                if (typeof a.planNo === 'number' && typeof b.planNo === 'number') {
+                    return a.planNo - b.planNo;
+                }
+                // Jika 'planNo' berupa string, gunakan localeCompare untuk membandingkan string
+                return a.planNo.toString().localeCompare(b.planNo.toString());
+            },
+        },
+        { title: 'Description', dataIndex: 'description', key: 'description', ...getColumnSearchProps('description') },
         { title: 'Resource code', dataIndex: 'rCode', key: 'rCode', ...getColumnSearchProps('rCode') },
         { title: 'Mold', dataIndex: 'moldName', key: 'moldName', ...getColumnSearchProps('moldName') },
         { title: 'Part No', dataIndex: 'partNo', key: 'partNo', ...getColumnSearchProps('partNo') },

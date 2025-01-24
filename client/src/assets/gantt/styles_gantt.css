@@ -1,0 +1,96 @@
+html,
+body {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+.gantt_task_link .gantt_link_arrow {
+    margin-top: -10px
+}
+
+
+#header-gantt-custome {
+    background-color: #2c3e50;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 18px;
+}
+
+#header-gantt-custome h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+#zoom_controls {
+    margin: 10px;
+    position: absolute;
+    top: 0;
+    left: 10px;
+    z-index: 10;
+}
+
+.sample_header input,
+.sample_header span,
+.sample_header strong {
+    vertical-align: middle;
+}
+
+#filter_days,
+#filter_hours {
+    display: inline-block;
+}
+
+.sample_header input {
+    margin: 0 0 0 6px;
+}
+
+.sample_header label span {
+    padding-right: 4px;
+}
+
+.sample_header label {
+    cursor: pointer;
+}
+
+.gantt_task_cell.holiday {
+    background-color: #EFF5FD;
+}
+
+.gantt_task_row.gantt_selected .gantt_task_cell.holiday {
+    background-color: #F8EC9C;
+}
+
+.weekend {
+    background: #f4f7f4 !important;
+}
+
+.gantt_selected .weekend {
+    background: #FFF3A1 !important;
+}
+
+
+.controls_bar {
+    border-top: 1px solid #bababa;
+    border-bottom: 1px solid #bababa;
+    clear: both;
+    margin-top: 75px;
+    height: 28px;
+    background: #f1f1f1;
+    color: #494949;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    padding-left: 10px;
+    line-height: 25px
+}
+
+#gantt_here {
+    width: 100%;
+    height: calc(100% - 120px);
+    /* Adjust height if necessary */
+    overflow: auto;
+}

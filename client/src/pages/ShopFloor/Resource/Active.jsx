@@ -9,55 +9,56 @@ import DatasetIcon from '@mui/icons-material/Dataset';
 import ScienceIcon from '@mui/icons-material/Science';
 import PolicyIcon from '@mui/icons-material/Policy';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { plans, resources } from "../../../data/fetchResource";
 import { useSearchParams } from "react-router-dom";
 import ResourceLayout from "./ResourceLayout";
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useMemo, useState } from "react";
 import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 import ChangeCavity from "../../../components/Buttons/ChangeCavity";
+import { useSelector } from "react-redux";
+import { fetchPlanActive, fetchResourceById } from "../../../data/fetchs";
 
 function ActiveResource() {
 
-    const isDarkMode = useSelector((state) => state.theme.isDarkMode);
-
     const [searchParams] = useSearchParams();
-    const resourceId = searchParams.get('resourceId');
+    const resourceId = useMemo(() => Number(searchParams.get('resourceId')), [searchParams]);
+    const { isDarkMode } = useSelector((state) => state.theme); // Dark mode state
 
-    const [loading, setLoading] = useState(true);
+
     const [resource, setResource] = useState(null);
     const [plan, setPlan] = useState(null);
-
-    const [planQty, setPlanQty] = useState(0);
-    const [toGoQty, setToGoQty] = useState(0);
     const [outputQty, setOutputQty] = useState(0);
-    const [resourceActive, setResourceActive] = useState(false);
-
-    const [CT, setCT] = useState(0);
-
+    const [defectQty, setDefectQty] = useState(0);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const resourceData = resources.find((res) => res.id === Number(resourceId));
-        setResource(resourceData);
-        setLoading(false);
-        if (resourceData) {
-            const plan = plans.find(plan => plan.resource_id === resourceData.id);
-            setPlanQty(plan ? plan.plan_qty : 0);
-            setToGoQty(plan ? plan.togo_qty : 0);
-            setOutputQty(plan ? plan.output_qty : 0);
-            setCT(plan ? plan.cycletime : 0);
-            if (plan) {
-                setPlan(plan);
+        const loadResourceAndPlan = async () => {
+            setLoading(true);
+            // Fetch resource data
+            const fetchedResource = await fetchResourceById(resourceId);
+            setResource(fetchedResource);
+            // Fetch plan data
+            if (fetchedResource) {
+                const fetchedPlan = await fetchPlanActive(resourceId);
+                setPlan(fetchedPlan);
+                // Set quantities and resource status based on the fetched plan data
+                if (fetchedPlan) {
+                    setOutputQty(50); // Example value, adjust as needed
+                    setDefectQty(5); // Example value, adjust as needed
+                }
             }
-            if (plan && (plan.status === 'On Hold' || plan.status === 'Ready' || plan.status === 'Release')) {
-                setResourceActive(false); // Set resource inactive jika status sesuai
-            } else {
-                setResourceActive(true); // Aktifkan resource jika status tidak sesuai
-            }
+
+            setLoading(false);
+        };
+
+        if (resourceId) {
+            loadResourceAndPlan();
         }
     }, [resourceId]);
 
+    const toGoQty = useMemo(() => plan ? plan.qty - outputQty : 0, [plan, outputQty]);
+    const goodQty = useMemo(() => outputQty ? outputQty - defectQty : 0, [outputQty, defectQty]);
+    console.log('plan', plan);
 
     return (
         <ResourceLayout>
@@ -78,7 +79,7 @@ function ActiveResource() {
                     </Spin>
                 </Col>
                 :
-                resourceActive ?
+                plan ?
                     <>
                         {/* BODY CONTENT */}
                         <Card
@@ -169,26 +170,26 @@ function ActiveResource() {
                             <Row gutter={[16]}>
                                 <Col lg={7} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                                     <div>Order No.</div>
-                                    <div style={{ marginBottom: 10 }}><strong>{plan.order_no}</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>{plan.planNo}</strong></div>
                                     <div>Part No.</div>
-                                    <div style={{ marginBottom: 10 }}><strong>{plan.part_no}</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>{plan.partNo}</strong></div>
                                     <div>Part Drawing #</div>
-                                    <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing}</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>NULL</strong></div>
                                 </Col>
                                 <Col lg={4}>
                                     <div>ToGo Qty</div>
-                                    <div style={{ marginBottom: 10 }}><strong>{plan.togo_qty}</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>{toGoQty}</strong></div>
                                     <div>Output Qty</div>
-                                    <div style={{ marginBottom: 10 }}><strong>{plan.output_qty}</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>{outputQty}</strong></div>
                                     <div>CT <small>(s)</small></div>
                                     <div style={{ marginBottom: 10 }}><strong>{plan.cycletime}</strong></div>
                                 </Col>
 
                                 <Col lg={4}>
                                     <div>Good Qty</div>
-                                    <div style={{ marginBottom: 10 }}><strong>{plan.good_qty}</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>{goodQty}</strong></div>
                                     <div>Defect Qty</div>
-                                    <div style={{ marginBottom: 10 }}><strong>{plan.defect_qty}</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>{defectQty}</strong></div>
                                     <div>Lost Qty</div>
                                     <div style={{ marginBottom: 10 }}><strong>{plan.lost_qty}</strong></div>
                                 </Col>
@@ -202,7 +203,7 @@ function ActiveResource() {
                                             <div style={{ marginBottom: 10 }}><strong>{plan.cavity}</strong></div>
                                         </div>
                                         {resource ? (
-                                            <RemainingPlanDetail planQty={planQty} toGoQty={toGoQty} outputQty={outputQty} CT={CT} />
+                                            <RemainingPlanDetail planQty={plan.qty} toGoQty={plan.qty - 50} outputQty={50} CT={plan.cycletime} />
                                         ) : (
                                             <p>No resource found</p>
                                         )}

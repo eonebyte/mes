@@ -1,7 +1,6 @@
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { resources } from "../../../data/fetchResource"; // Pastikan import data resource dengan benar
 import LayoutDashboard from "../../../components/layouts/LayoutDashboard";
-import { Button, Card, Col, Row } from "antd";
+import { Button, Card, Col, Row, Skeleton } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import AlarmAddIcon from '@mui/icons-material/AlarmAdd';
 import WavingHandIcon from '@mui/icons-material/WavingHand';
@@ -11,34 +10,55 @@ import HouseSidingIcon from '@mui/icons-material/HouseSiding';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import PropTypes from "prop-types";
 import { Layout } from 'antd';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchResourceById } from "../../../data/fetchs";
 const { Sider, Content } = Layout;
 
 
 const ResourceLayout = ({ children }) => {
-
-
+    const dispatch = useDispatch();
 
     const navigate = useNavigate();
     const location = useLocation();
     const locationPath = location.pathname;
-
     const [searchParams] = useSearchParams();
-    const resourceId = searchParams.get('resourceId');
+    const resourceId = Number(searchParams.get("resourceId"));  // Ambil resourceId dari URL
 
-    // Cari resource berdasarkan uuid
-    const resource = resources.find((res) => res.id === Number(resourceId));
+    const resources = useSelector((state) => state.resources);  // Get the resources from Redux store
+    const resourceFromStore = Array.isArray(resources) ? resources.find(res => res.id === resourceId) : null;
+
+    const [resource, setResource] = useState(resourceFromStore);  // Use resource from Redux initially
+    const [loading, setLoading] = useState(!resourceFromStore);
+
+
 
     useEffect(() => {
-        if (!resource) {
-            navigate("/shopfloor");
+        if (!resourceFromStore && resourceId) { // Jika resource belum ada di Redux dan resourceId ada
+            const loadResource = async () => {
+                setLoading(true);
+                try {
+                    const fetchedResource = await fetchResourceById(resourceId);
+                    setResource(fetchedResource);  // Set data resource ke state lokal
+                    // Dispatch data ke Redux store jika ingin menyimpan untuk penggunaan selanjutnya
+                    // dispatch(setResources([...resources, fetchedResource])); 
+                } catch (error) {
+                    console.error("Error fetching resource:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            loadResource();
         }
-    }, [resource, navigate]);
 
-    // Jika resource tidak ditemukan
-    if (!resource) {
-        return <p>Resource not found</p>;
-    }
+    }, [resourceId, navigate, dispatch]);
+
+    // Redirect jika resource tidak ditemukan
+    useEffect(() => {
+        if (resource === null && !loading) {
+            navigate("/shopfloor");  // Redirect jika data resource null
+        }
+    }, [resource, loading, navigate]);
 
     return (
         <>
@@ -56,33 +76,51 @@ const ResourceLayout = ({ children }) => {
                     >
                         <Row>
                             <Col lg={24} style={{ marginTop: 5 }}>
-                                <Card
-                                    style={{
-                                        width: '100%',
-                                        border: 0,
-                                        borderRadius: 3,
-                                        color: resource.status === 'Inspect'
-                                            ? 'white'
-                                            : 'black',
-                                        backgroundColor: resource.status === 'Running'
-                                            ? '#52c41a'
-                                            : resource.status === 'Down'
-                                                ? '#f5222d'
-                                                : resource.status === 'Inspect'
-                                                    ? '#a8071a'
-                                                    : '#f5222d'
-                                    }}
-                                    styles={{
-                                        body: {
-                                            padding: '5px 5px'
-                                        }
-                                    }}
-                                >
-                                    <p style={{ fontWeight: 'bold', margin: 0 }}>{resource.name}</p>
-                                    <p style={{ marginBottom: 0, margin: 0 }}>{resource.line}</p>
-                                    <img src={resource.image} alt={resource.name} style={{ maxWidth: '100%' }} />
-                                    <p style={{ fontWeight: 'bold', margin: 0 }}>{resource.status}</p>
-                                </Card>
+                                {loading ?
+                                    <Card
+                                        style={{
+                                            width: '100%',
+                                            border: 0,
+                                            borderRadius: 3,
+                                        }}
+                                        styles={{
+                                            body: {
+                                                padding: '5px 5px'
+                                            }
+                                        }}
+                                    >
+                                        <Skeleton active paragraph={{ rows: 5 }} />
+                                    </Card>
+                                    :
+                                    <Card
+                                        style={{
+                                            width: '100%',
+                                            border: 0,
+                                            borderRadius: 3,
+                                            color: resource.status === 'Inspect'
+                                                ? 'white'
+                                                : 'black',
+                                            backgroundColor: resource.status === 'Running'
+                                                ? '#52c41a'
+                                                : resource.status === 'Down'
+                                                    ? '#f5222d'
+                                                    : resource.status === 'Inspect'
+                                                        ? '#a8071a'
+                                                        : '#f5222d'
+                                        }}
+                                        styles={{
+                                            body: {
+                                                padding: '5px 5px'
+                                            }
+                                        }}
+                                    >
+                                        <p style={{ marginBottom: 0, fontWeight: 'bold', margin: 0 }}>{resource.line} | {resource.code}</p>
+                                        <p style={{ marginBottom: 0, margin: 0 }}>{resource.name}</p>
+                                        <img src={resource.image} alt={resource.name} style={{ maxWidth: '100%' }} />
+                                        <p style={{ fontWeight: 'bold', margin: 0 }}>{resource.status}</p>
+                                    </Card>
+                                }
+
                                 <Row gutter={[5]} style={{ width: "100%", margin: '5px 0px' }}>
                                     <Col span={12} style={{ paddingLeft: 0 }}>
                                         <Button onClick={() => navigate(`/resource?resourceId=${resource.id}`)} color="primary" variant={locationPath === '/resource' ? 'solid' : 'outlined'} style={{ width: '100%', padding: '18px 0px', borderRadius: 3 }}>

@@ -3,10 +3,14 @@ import { Upload, Table, message, Card } from "antd";
 import { CloudUploadOutlined } from "@ant-design/icons";
 import ExcelJS from "exceljs";
 import LayoutDashboard from "../../components/layouts/LayoutDashboard";
+import { useSelector } from "react-redux";
+// import { useNavigate } from "react-router-dom";
 
 const { Dragger } = Upload;
 
 export default function ImportPlan() {
+    const user = useSelector((state) => state.auth.user);
+    // const navigate = useNavigate();
     const [fileList, setFileList] = useState([]);
     const [importData, setImportData] = useState([]);
     const [columns, setColumns] = useState([]);
@@ -82,7 +86,11 @@ export default function ImportPlan() {
                     key: `col${colNumber}`,
                 });
             });
-
+            headers.push({
+                title: "User ID", // Kolom baru untuk User
+                dataIndex: "user_id",
+                key: "user_id",
+            });
             setColumns(headers);
 
             // Parsing data dari baris berikutnya
@@ -92,10 +100,11 @@ export default function ImportPlan() {
                 if (rowIndex === 1) return; // Lewati header
 
                 const rowData = {};
+                let hasData = false;
                 row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
                     let value = cell.value;
 
-                    if (colNumber === 5 && value instanceof Date) {
+                    if (colNumber === 3 && value instanceof Date) {
                         value = formatDateOnly(value);
                     }
 
@@ -103,11 +112,21 @@ export default function ImportPlan() {
                         value = formatDateTime(value);
                     }
 
+                    if (value !== null && value !== undefined && value !== "") {
+                        hasData = true; // Jika ada nilai di sel, tandai sebagai baris valid
+                    }
+
                     rowData[`col${colNumber}`] = value;
+
+
                 });
-                rowData.key = `row-${rowIndex}`;
-                console.log(rowData);
-                data.push(rowData);
+
+                rowData['user_id'] = user.id;
+                if (hasData) {
+                    rowData.key = `row-${rowIndex}`;
+                    console.log(rowData);
+                    data.push(rowData);
+                }
             });
 
             setImportData(data);
@@ -161,6 +180,7 @@ export default function ImportPlan() {
                 setFileList([]);
                 setColumns([]);
                 setIsDataImported(false);
+                // navigate('/plan/list');
             } else {
                 messageApi.open({
                     type: 'error',

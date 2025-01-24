@@ -1,9 +1,8 @@
 class Resource {
-    constructor(id, name, line, lineno, status) {
+    constructor(id, line, code, status) {
         this.id = id;
-        this.name = name;
         this.line = line;
-        this.lineno = lineno;
+        this.code = code
         this.status = status;
         this.image = "/src/assets/images/machine.png";
     }
@@ -49,7 +48,7 @@ class Plan {
 const plans = [
     new Plan(
         108, // id
-        1, //resource id
+        1000066, //resource id
         '-', //title
         'JO123', //plan_no
         'MO23110001', //order no
@@ -80,7 +79,7 @@ const plans = [
 ];
 
 const resources = [
-    new Resource(1, 'A06', 'L01', 101, 'Inspect', 350),
+    new Resource(1000000, 'A101', 64, 'Inspect'),
 ];
 
 export { Resource, Plan, plans, resources };

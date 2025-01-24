@@ -33,7 +33,6 @@ export default function RemainingPlanDetail({ planQty, toGoQty, outputQty, CT })
 
     //Rumus Progress Production = (outputQty / planQty) x 100
     const percentage = planQty > 0 ? (outputQty / planQty * 100).toFixed(1) : 0.0;
-    console.log('per',percentage);
     
     const endAngle = planQty > 0 ? (360 * (outputQty / planQty)) : 0;
 

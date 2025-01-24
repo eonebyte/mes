@@ -1,5 +1,5 @@
 import OverAll from "./pages/OverAll";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import IROEEStatus from "./pages/IROEEStatus";
 import './Chart.css'
 import './index.css'
@@ -17,17 +17,54 @@ import Scheduler from "./pages/Scheduler";
 import McRun from "./pages/McRun";
 import Import from "./pages/Plan/Import";
 import ListPlan from "./pages/Plan/List";
+import Login from "./pages/Auth/Login";
+import { Spin } from "antd";
+import { useDispatch, useSelector } from "react-redux";
+import { checkAuthStatus } from "./states/reducers/authSlice";
+import { useEffect } from "react";
+import PropTypes from 'prop-types';
 
+
+function PrivateRoute({ children }) {
+  const { auth } = useSelector((state) => state.auth);
+  if (!auth) {
+    return <Navigate to="/login" />;
+  }
+  return children;
+}
+
+PrivateRoute.propTypes = {
+  children: PropTypes.node.isRequired, 
+};
 
 function App() {
+
+  const dispatch = useDispatch();
+  const { auth, isLoading } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    dispatch(checkAuthStatus());
+  }, [dispatch]);
+
+  if (isLoading) {
+    return <Spin tip="Loading..." spinning={isLoading} fullscreen />;
+  }
+
+  if (!auth) {
+    return <Login />;
+  }
+
 
   return (
     <>
       <Routes>
         <Route path="/" element={<OverAll />}></Route>
 
+        {/* Auth */}
+        <Route path="/login" element={<Login />}></Route>
+
         {/* Shopfloor */}
-        <Route path="/shopfloor" element={<Dashboard />}></Route>
+        <Route path="/shopfloor" element={<PrivateRoute><Dashboard /></PrivateRoute>}></Route>
         <Route path="/resource" element={<Active />}></Route>
         <Route path="/resource/plan" element={<PlanList />}></Route>
         <Route path="/resource/plan/detail" element={<PlanDetail />}></Route>

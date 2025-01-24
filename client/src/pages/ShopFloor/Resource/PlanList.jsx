@@ -4,7 +4,8 @@ import { useSelector } from "react-redux";
 import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { plans } from "../../../data/fetchResource";
+// import { plans } from "../../../data/fetchResource";
+import { fetchPlanByResource } from "../../../data/fetchs";
 
 function PlanResource() {
 
@@ -20,21 +21,31 @@ function PlanResource() {
     const resourceId = searchParams.get('resourceId');
 
     useEffect(() => {
-        const plansData = plans.filter((plan) => plan.resource_id === Number(resourceId));
-        if (plansData.length > 0) {
-            setPlans(plansData);
-        } else {
-            setPlans([]);
-        }
-        setLoading(false);
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const plansData = await fetchPlanByResource(resourceId);
+                if (Array.isArray(plansData)) {
+                    setPlans(plansData);  // Only set the state if it's an array
+                } else {
+                    setPlans([]);  // Handle unexpected data (non-array) by setting an empty array
+                    console.error("Fetched data is not an array");
+                }
+            } catch (error) {
+                setPlans([]);  // In case of error, set an empty array
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
     }, [resourceId]);
 
     function getBackgroundColor(status, isDarkMode) {
-        if (status === 'On Hold') {
+        if (status === 'SP' || status === 'PP') {
             return isDarkMode ? '#333' : '#fff7e6'; // On Hold: terang jika mode terang, gelap jika mode gelap
-        } else if (status === 'Released') {
+        } else if (status === 'DR') {
             return isDarkMode ? '#555' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
-        } else if (status === 'Ready') {
+        } else if (status === 'OP') {
             return isDarkMode ? '#457b9d' : '#bae0ff'; // Ready: biru muda terang jika mode terang
         } else if (status === 'Running') {
             return isDarkMode ? '#457b9d' : '#d9f7be'; // Ready: biru muda terang jika mode terang
@@ -91,22 +102,19 @@ function PlanResource() {
                             </p>
                         </Card>
 
-
-
-
                         {/* Plan List */}
-                        {allPlans && allPlans.map((plan) => (
+                        {allPlans && allPlans.filter(plan => plan.status !== 'RU').map((plan) => (
 
                             <Card
-                                key={plan.id}
+                                key={plan.planId}
                                 title={
                                     <div onClick={() => navigate(`/resource/plan/detail?planId=${plan.id}`, { state: { resourceId: plan.resourceId } })} style={{ cursor: 'pointer' }}>
                                         <Flex align="center" justify="space-between">
                                             <div>
                                                 <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
-                                                    {plan.plan_no}
+                                                    {plan.planNo}
                                                 </p>
-                                                <small>start at {new Date(plan.start_date).toLocaleString()}</small>
+                                                <small>start at {plan.planStartTime}</small>
 
                                             </div>
                                             <div>
@@ -140,33 +148,33 @@ function PlanResource() {
                                 <Row gutter={[16]}>
                                     <Col lg={7} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                                         <div>Order No.</div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.order_no}</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
                                         <div>Part No.</div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_no}</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.partNo}</strong></div>
                                         <div>Part Drawing #</div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing}</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing ? plan.part_drawing : '-'}</strong></div>
                                     </Col>
                                     <Col lg={4}>
                                         <div>Plan Qty</div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.plan_qty}</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.qty}</strong></div>
                                         <div>ToGo Qty</div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.togo_qty}</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>100 example</strong></div>
                                         <div>Part Model </div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_model}</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_model ? plan.part_model : '-'}</strong></div>
                                     </Col>
                                     <Col lg={13}>
 
                                         <Flex align="flex-start" justify="space-between">
                                             <div>
                                                 <div>Part Desc</div>
-                                                <div style={{ marginBottom: 10 }}><strong>{plan.part_desc}</strong></div>
+                                                <div style={{ marginBottom: 10 }}><strong>{plan.part_desc ? plan.part_desc : '-'}</strong></div>
                                                 <div>Spec</div>
-                                                <div style={{ marginBottom: 10 }}><strong>{plan.spec}</strong></div>
+                                                <div style={{ marginBottom: 10 }}><strong>{plan.spec ? plan.spec : '-'}</strong></div>
                                                 <div>Mold #</div>
-                                                <div style={{ marginBottom: 10 }}><strong>{plan.mold}</strong></div>
+                                                <div style={{ marginBottom: 10 }}><strong>{plan.mold ? plan.mold : '-'}</strong></div>
                                             </div>
                                             {allPlans ? (
-                                                <RemainingPlanDetail planQty={plan.plan_qty} toGoQty={plan.togo_qty} outputQty={plan.output_qty} CT={plan.cycletime} />
+                                                <RemainingPlanDetail planQty={plan.qty} toGoQty={100} outputQty={100} CT={plan.cycletime} />
                                             ) : (
                                                 <p>No resource found</p>
                                             )}

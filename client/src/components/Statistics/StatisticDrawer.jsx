@@ -14,8 +14,6 @@ const useStyle = createStyles(() => ({
 
 export default function StatisticDrawer() {
 
-    
-
     const { styles } = useStyle();
     const classNames = {
         body: styles['my-drawer-body']
