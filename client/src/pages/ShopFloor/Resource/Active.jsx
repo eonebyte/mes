@@ -58,7 +58,6 @@ function ActiveResource() {
 
     const toGoQty = useMemo(() => plan ? plan.qty - outputQty : 0, [plan, outputQty]);
     const goodQty = useMemo(() => outputQty ? outputQty - defectQty : 0, [outputQty, defectQty]);
-    console.log('plan', plan);
 
     return (
         <ResourceLayout>

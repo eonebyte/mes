@@ -101,8 +101,8 @@ export default function DashboardResource() {
                                                 </Space>
                                                 <RemainingPlan
                                                     status={resource.status}
-                                                    planQty={resource.planQty}
-                                                    outputQty={resource.outPutQty} />
+                                                    planQty={100}
+                                                    outputQty={50} />
                                             </Flex>
                                             <div style={{ textAlign: 'center' }}>
                                                 <img src={resource.image} alt={resource.code} style={{ maxWidth: '100%' }} />
@@ -112,7 +112,7 @@ export default function DashboardResource() {
                                                     <p style={{ fontWeight: 'bold', margin: 0 }}>{resource.status}</p>
                                                 </Space>
                                                 <Space style={{ flexDirection: 'column', display: 'inline', lineHeight: '1.2', alignItems: 'flex-start' }}>
-                                                    <p style={{ margin: 0 }}><RemainingTime toGoQty={resource.toGoQty} CT={resource.CT} /></p>
+                                                    <p style={{ margin: 0 }}><RemainingTime toGoQty={50} CT={60} /></p>
                                                 </Space>
                                             </Flex>
                                         </Flex>

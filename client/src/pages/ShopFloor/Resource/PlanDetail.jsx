@@ -9,7 +9,7 @@ import DatasetIcon from '@mui/icons-material/Dataset';
 import ScienceIcon from '@mui/icons-material/Science';
 import PolicyIcon from '@mui/icons-material/Policy';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { plans } from "../../../data/fetchResource";
+// import { plans } from "../../../data/fetchResource";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
@@ -22,6 +22,7 @@ import ConfirmReleased from "../../../components/Buttons/ConfirmReleased";
 import ConfirmReady from "../../../components/Buttons/ConfirmReady";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
+import { fetchDetailPlan } from "../../../data/fetchs";
 
 function PlanDetail() {
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
@@ -32,21 +33,32 @@ function PlanDetail() {
     const planId = searchParams.get('planId');
 
     const [loading, setLoading] = useState(true);
-    const [plan, setPlan] = useState(null);
+    const [plan, setPlan] = useState({});
 
 
     useEffect(() => {
-        setTimeout(() => {
-            if (!planId) {
-                navigate("/shopfloor");
+        if (!planId) {
+            navigate("/shopfloor");
+            return;
+        }
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const planData = await fetchDetailPlan(Number(planId))
+                if (planData) {
+                    setPlan(planData);
+                } else {
+                    console.log('plandata: ', planData);
+                    setPlan({});  // Handle unexpected data (non-array) by setting an empty array
+                }
+            } catch (error) {
+                console.error("Error fetching resource:", error);
+            } finally {
+                setLoading(false);
             }
-            const planData = plans.find((plan) => plan.id === Number(planId));
-            if (planData) {
-                setPlan(planData);
-            }
+        }
 
-            setLoading(false);
-        }, 500);
+        fetchData();
     }, [planId, navigate]);
 
     function getBackgroundColor(status, isDarkMode) {
@@ -64,6 +76,7 @@ function PlanDetail() {
         return isDarkMode ? '#ffffff' : '#1677FF'; // Teks putih jika mode gelap, hitam jika terang
     }
 
+console.log('plan detail: ',plan);
 
 
 
@@ -86,101 +99,56 @@ function PlanDetail() {
                     </Spin>
                 </Col>
                 :
-                <>
-                    {/* BODY CONTENT */}
-                    <Card
-                        title={
-                            <Flex align="center" justify="space-between">
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '18px',
-                                    fontWeight: 'bold',
-                                    color: getTextColor(isDarkMode),
-                                }}>
-                                    Single Task
-                                </p>
+                plan ?
+                    <>
+                        {/* BODY CONTENT */}
+                        <Card
+                            title={
+                                <Flex align="center" justify="space-between">
+                                    <p style={{
+                                        margin: 0,
+                                        fontSize: '18px',
+                                        fontWeight: 'bold',
+                                        color: getTextColor(isDarkMode),
+                                    }}>
+                                        Single Task
+                                    </p>
 
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '18px',
-                                    fontWeight: 'bold',
-                                    color: getTextColor(isDarkMode),
-                                }}>
-                                    {`<${plan.plan_no}> ${plan.status}`}
-                                </p>
+                                    <p style={{
+                                        margin: 0,
+                                        fontSize: '18px',
+                                        fontWeight: 'bold',
+                                        color: getTextColor(isDarkMode),
+                                    }}>
+                                        {`<${plan.planNo}> ${plan.status}`}
+                                    </p>
 
-                            </Flex>
-                        }
-                        style={{
-                            border: 0,
-                            borderRadius: 3,
-                            marginBottom: '20px', // Menambahkan margin bawah agar tidak terlalu rapat dengan konten berikutnya
-                            boxShadow: isDarkMode
-                                ? '0 1px 4px rgba(255, 255, 255, 0.2)' // Light shadow untuk dark mode
-                                : '0 1px 4px rgba(0, 0, 0, 0.5)' // Shadow gelap untuk light mode
-                        }}
-                        styles={{
-                            header: {
-                                border: 0,
-                                backgroundColor: getBackgroundColor(plan.status, isDarkMode),
-                                color: getTextColor(isDarkMode),
-                                borderRadius: '3px 3px 0px 0px',
-                            },
-                            body: {
-                                padding: "5px 10px",
-                                borderRadius: 3,
+                                </Flex>
                             }
-                        }}
-                    >
-                        <Row gutter={[16]} style={{ borderBottom: '1px solid #9999', marginBottom: 5 }}>
-                            <Col lg={24} style={{ padding: 0 }}>
-                                {plan.status == 'On Hold' && (
-                                    <Button
-                                        color="primary"
-                                        variant="text"
-                                        style={{
-                                            fontWeight: 600,
-                                            fontFamily: "'Roboto', Arial, sans-serif",
-                                            fontSize: "12px",
-                                            padding: "4px 12px",
-                                        }}
-                                        onClick={ConfirmReleased}
-                                    >
-                                        <DownloadIcon sx={{ fontSize: 18 }} />
-                                        <span>RELEASE</span>
-                                    </Button>
-                                )}
-                                {plan.status == 'Released' && (
-                                    <Button
-                                        color="primary"
-                                        variant="text"
-                                        style={{
-                                            fontWeight: 600,
-                                            fontFamily: "'Roboto', Arial, sans-serif",
-                                            fontSize: "12px",
-                                            padding: "4px 12px",
-                                        }}
-                                        onClick={ConfirmReady}
-                                    >
-                                        <FactCheckIcon sx={{ fontSize: 18 }} />
-                                        <span>READY</span>
-                                    </Button>
-                                )}
-                                {plan.status == 'Ready' && (
-                                    <><Button
-                                        color="primary"
-                                        variant="text"
-                                        style={{
-                                            fontWeight: 600,
-                                            fontFamily: "'Roboto', Arial, sans-serif",
-                                            fontSize: "12px",
-                                            padding: "4px 12px",
-                                        }}
-                                        onClick={ConfirmSetup}
-                                    >
-                                        <SettingsIcon sx={{ fontSize: 18 }} />
-                                        <span>SETUP</span>
-                                    </Button>
+                            style={{
+                                border: 0,
+                                borderRadius: 3,
+                                marginBottom: '20px', // Menambahkan margin bawah agar tidak terlalu rapat dengan konten berikutnya
+                                boxShadow: isDarkMode
+                                    ? '0 1px 4px rgba(255, 255, 255, 0.2)' // Light shadow untuk dark mode
+                                    : '0 1px 4px rgba(0, 0, 0, 0.5)' // Shadow gelap untuk light mode
+                            }}
+                            styles={{
+                                header: {
+                                    border: 0,
+                                    backgroundColor: getBackgroundColor(plan.status, isDarkMode),
+                                    color: getTextColor(isDarkMode),
+                                    borderRadius: '3px 3px 0px 0px',
+                                },
+                                body: {
+                                    padding: "5px 10px",
+                                    borderRadius: 3,
+                                }
+                            }}
+                        >
+                            <Row gutter={[16]} style={{ borderBottom: '1px solid #9999', marginBottom: 5 }}>
+                                <Col lg={24} style={{ padding: 0 }}>
+                                    {plan.status == 'On Hold' && (
                                         <Button
                                             color="primary"
                                             variant="text"
@@ -190,236 +158,284 @@ function PlanDetail() {
                                                 fontSize: "12px",
                                                 padding: "4px 12px",
                                             }}
-                                            onClick={ConfirmComplete}
+                                            onClick={ConfirmReleased}
                                         >
-                                            <DoneIcon sx={{ fontSize: 18 }} />
-                                            <span>COMPLETE</span>
-                                        </Button></>
-                                )}
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                    onClick={ConfirmComplete}
-                                >
-                                    <TableChartIcon sx={{ fontSize: 16 }} />
-                                    <span>MATERIAL</span>
-                                </Button>
-                            </Col>
-                        </Row>
-                        <Row gutter={[16]}>
-                            <Col lg={4} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                                <div>Part No.</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.order_no}</strong></div>
-                                <div>Revision</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.revision}</strong></div>
-                                <div>Project</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.project}</strong></div>
-                            </Col>
-                            <Col lg={4}>
-                                <div>Seq Desc</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.seq_desc}</strong></div>
-                                <div>Part Model</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.part_model}</strong></div>
-                                <div>Part Drawing #</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing}</strong></div>
-                            </Col>
+                                            <DownloadIcon sx={{ fontSize: 18 }} />
+                                            <span>RELEASE</span>
+                                        </Button>
+                                    )}
+                                    {plan.status == 'Released' && (
+                                        <Button
+                                            color="primary"
+                                            variant="text"
+                                            style={{
+                                                fontWeight: 600,
+                                                fontFamily: "'Roboto', Arial, sans-serif",
+                                                fontSize: "12px",
+                                                padding: "4px 12px",
+                                            }}
+                                            onClick={ConfirmReady}
+                                        >
+                                            <FactCheckIcon sx={{ fontSize: 18 }} />
+                                            <span>READY</span>
+                                        </Button>
+                                    )}
+                                    {plan.status == 'Ready' && (
+                                        <><Button
+                                            color="primary"
+                                            variant="text"
+                                            style={{
+                                                fontWeight: 600,
+                                                fontFamily: "'Roboto', Arial, sans-serif",
+                                                fontSize: "12px",
+                                                padding: "4px 12px",
+                                            }}
+                                            onClick={ConfirmSetup}
+                                        >
+                                            <SettingsIcon sx={{ fontSize: 18 }} />
+                                            <span>SETUP</span>
+                                        </Button>
+                                            <Button
+                                                color="primary"
+                                                variant="text"
+                                                style={{
+                                                    fontWeight: 600,
+                                                    fontFamily: "'Roboto', Arial, sans-serif",
+                                                    fontSize: "12px",
+                                                    padding: "4px 12px",
+                                                }}
+                                                onClick={ConfirmComplete}
+                                            >
+                                                <DoneIcon sx={{ fontSize: 18 }} />
+                                                <span>COMPLETE</span>
+                                            </Button></>
+                                    )}
+                                    <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                        onClick={ConfirmComplete}
+                                    >
+                                        <TableChartIcon sx={{ fontSize: 16 }} />
+                                        <span>MATERIAL</span>
+                                    </Button>
+                                </Col>
+                            </Row>
+                            <Row gutter={[16]}>
+                                <Col lg={4} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                                    <div>Part No.</div>
+                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div>Revision</div>
+                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div>Project</div>
+                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                </Col>
+                                <Col lg={4}>
+                                    <div>Seq Desc</div>
+                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div>Part Model</div>
+                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div>Part Drawing #</div>
+                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                </Col>
 
-                            <Col lg={4}>
-                                <div>Order No.</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.order_no}</strong></div>
-                                <div>Cust Order</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.cust_order}</strong></div>
-                                <div>Batch</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.batch}</strong></div>
-                            </Col>
+                                <Col lg={4}>
+                                    <div>Order No.</div>
+                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div>Cust Order</div>
+                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div>Batch</div>
+                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                </Col>
 
-                            <Col lg={4}>
-                                <div>Plan Qty</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.plan_qty}</strong></div>
-                                <div>ToGo Qty</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.togo_qty}</strong></div>
-                                <div>Output Per Cycle (Std / Act)</div>
-                                <div style={{ marginBottom: 10 }}><strong>{plan.output_per_cycle}</strong></div>
-                            </Col>
-                            <Col lg={8}>
+                                <Col lg={4}>
+                                    <div>Plan Qty</div>
+                                    <div style={{ marginBottom: 10 }}><strong>{plan.qty}</strong></div>
+                                    <div>ToGo Qty</div>
+                                    <div style={{ marginBottom: 10 }}><strong>100 example</strong></div>
+                                    <div>Output Per Cycle (Std / Act)</div>
+                                    <div style={{ marginBottom: 10 }}><strong>100 example</strong></div>
+                                </Col>
+                                <Col lg={8}>
 
-                                <Flex align="flex-start" justify="space-between">
-                                    <div>
-                                        <div>Part Desc</div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_desc}</strong></div>
-                                        <div>Cycles</div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.cycles}</strong></div>
-                                    </div>
+                                    <Flex align="flex-start" justify="space-between">
+                                        <div>
+                                            <div>Part Desc</div>
+                                            <div style={{ marginBottom: 10 }}><strong>{plan.part_desc}</strong></div>
+                                            <div>Cycles</div>
+                                            <div style={{ marginBottom: 10 }}><strong>{plan.cycles}</strong></div>
+                                        </div>
                                         {plan ? (
-                                                <RemainingPlanDetail planQty={plan.plan_qty} toGoQty={plan.togo_qty} outputQty={plan.output_qty} CT={plan.cycletime} />
+                                            <RemainingPlanDetail planQty={plan.qty} toGoQty={100} outputQty={100} CT={plan.cycletime} />
                                         ) : (
                                             <p>No plan found</p>
                                         )}
-                                </Flex>
-                            </Col>
-                        </Row>
+                                    </Flex>
+                                </Col>
+                            </Row>
 
-                        {/* Row 2 */}
-                        <Row>
-                            <Col lg={24} style={{ padding: 0 }}>
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                >
-                                    <GroupWorkIcon sx={{ fontSize: 18 }} />
-                                    <span>CAVITY</span>
-                                </Button>
+                            {/* Row 2 */}
+                            <Row>
+                                <Col lg={24} style={{ padding: 0 }}>
+                                    <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                        <GroupWorkIcon sx={{ fontSize: 18 }} />
+                                        <span>CAVITY</span>
+                                    </Button>
 
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                >
-                                    <GppBadIcon sx={{ fontSize: 18 }} />
-                                    <span>DEFECT</span>
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                >
-                                    <DatasetIcon sx={{ fontSize: 16 }} />
-                                    <span>LOT</span>
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                >
-                                    <ScienceIcon sx={{ fontSize: 16 }} />
-                                    <span>FAI</span>
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                >
-                                    <PolicyIcon sx={{ fontSize: 16 }} />
-                                    <span>PQC</span>
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    variant="text"
-                                    style={{
-                                        fontWeight: 600,
-                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                        fontSize: "12px",
-                                        padding: "4px 12px",
-                                    }}
-                                >
-                                    <CloudUploadIcon sx={{ fontSize: 16 }} />
-                                    <span>PARAMETER</span>
-                                </Button>
+                                    <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                        <GppBadIcon sx={{ fontSize: 18 }} />
+                                        <span>DEFECT</span>
+                                    </Button>
+                                    <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                        <DatasetIcon sx={{ fontSize: 16 }} />
+                                        <span>LOT</span>
+                                    </Button>
+                                    <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                        <ScienceIcon sx={{ fontSize: 16 }} />
+                                        <span>FAI</span>
+                                    </Button>
+                                    <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                        <PolicyIcon sx={{ fontSize: 16 }} />
+                                        <span>PQC</span>
+                                    </Button>
+                                    <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
+                                    >
+                                        <CloudUploadIcon sx={{ fontSize: 16 }} />
+                                        <span>PARAMETER</span>
+                                    </Button>
 
-                                {/* STATION */}
-                                <h1 style={{ marginTop: 0 }}>Station</h1>
-                                <Card
-                                    style={{
-                                        border: 0,
-                                        width: 'fit-content',
-                                        padding: 0,
-                                        marginBottom: '20px',
-                                        boxShadow: isDarkMode
-                                            ? '0 1px 4px rgba(255, 255, 255, 0.2)' // Light shadow untuk dark mode
-                                            : '0 2px 4px rgba(0, 0, 0, 0.5)' // Shadow gelap untuk light mode
-                                    }}
-                                    styles={{
-                                        body: {
+                                    {/* STATION */}
+                                    <h1 style={{ marginTop: 0 }}>Station</h1>
+                                    <Card
+                                        style={{
+                                            border: 0,
+                                            width: 'fit-content',
                                             padding: 0,
-                                            borderRadius: 0
-                                        }
-                                    }}
-                                >
-                                    <Row>
-                                        <Col>
-                                            <div style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                height: '100%',
-                                                backgroundColor: '#1677FF',
-                                                color: 'white',
-                                                borderTopLeftRadius: '8px', // Radius atas kiri
-                                                borderBottomLeftRadius: '8px' // Radius bawah kiri
-                                            }}>
-                                                <span style={{
-                                                    marginLeft: 15,
-                                                    marginRight: 15,
-                                                    marginBottom: 0,
-                                                    fontSize: 48,
-                                                    marginTop: 0,
-                                                    fontWeight: 'bold'
+                                            marginBottom: '20px',
+                                            boxShadow: isDarkMode
+                                                ? '0 1px 4px rgba(255, 255, 255, 0.2)' // Light shadow untuk dark mode
+                                                : '0 2px 4px rgba(0, 0, 0, 0.5)' // Shadow gelap untuk light mode
+                                        }}
+                                        styles={{
+                                            body: {
+                                                padding: 0,
+                                                borderRadius: 0
+                                            }
+                                        }}
+                                    >
+                                        <Row>
+                                            <Col>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    height: '100%',
+                                                    backgroundColor: '#1677FF',
+                                                    color: 'white',
+                                                    borderTopLeftRadius: '8px', // Radius atas kiri
+                                                    borderBottomLeftRadius: '8px' // Radius bawah kiri
                                                 }}>
-                                                    1
-                                                </span>
-                                            </div>
+                                                    <span style={{
+                                                        marginLeft: 15,
+                                                        marginRight: 15,
+                                                        marginBottom: 0,
+                                                        fontSize: 48,
+                                                        marginTop: 0,
+                                                        fontWeight: 'bold'
+                                                    }}>
+                                                        1
+                                                    </span>
+                                                </div>
 
-                                        </Col>
-                                        <Col>
-                                            <div style={{
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'flex-start',
-                                                justifyContent: 'center', // Menjadikan konten center secara vertikal
-                                                height: '100%',
-                                                lineHeight: '1.2'
-                                            }}>
-                                                <strong style={{ marginRight: 50, marginLeft: 15, fontSize: 24 }}>A06</strong>
-                                                <span style={{ marginRight: 50, marginLeft: 15, fontSize: 20 }}>CL00006</span>
-                                            </div>
-                                        </Col>
-                                    </Row>
-                                </Card>
+                                            </Col>
+                                            <Col>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'flex-start',
+                                                    justifyContent: 'center', // Menjadikan konten center secara vertikal
+                                                    height: '100%',
+                                                    lineHeight: '1.2'
+                                                }}>
+                                                    <strong style={{ marginRight: 50, marginLeft: 15, fontSize: 24 }}>A06</strong>
+                                                    <span style={{ marginRight: 50, marginLeft: 15, fontSize: 20 }}>CL00006</span>
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                    </Card>
+                                </Col>
+                            </Row>
+                        </Card>
+
+
+
+                        <Row>
+                            <Col>
+                                <Button style={{ margin: '5px 0px' }} onClick={() => navigate(-1)} color="primary" variant="filled">
+                                    <ArrowLeftOutlined />
+                                </Button>
                             </Col>
                         </Row>
-                    </Card>
-
-
-
-                    <Row>
-                        <Col>
-                            <Button style={{ margin: '5px 0px' }} onClick={() => navigate(-1)} color="primary" variant="filled">
-                                <ArrowLeftOutlined />
-                            </Button>
-                        </Col>
-                    </Row>
-                </>
+                    </>
+                    :
+                    <div>No plan data available.</div>
             }
         </LayoutDashboard>
     );

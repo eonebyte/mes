@@ -108,7 +108,7 @@ function PlanResource() {
                             <Card
                                 key={plan.planId}
                                 title={
-                                    <div onClick={() => navigate(`/resource/plan/detail?planId=${plan.id}`, { state: { resourceId: plan.resourceId } })} style={{ cursor: 'pointer' }}>
+                                    <div onClick={() => navigate(`/resource/plan/detail?planId=${plan.planId}`, { state: { resourceId: plan.resourceId } })} style={{ cursor: 'pointer' }}>
                                         <Flex align="center" justify="space-between">
                                             <div>
                                                 <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>

@@ -1,41 +1,57 @@
 import { Alert, Card, Col, Flex, Space, Spin, Tabs } from "antd";
-import { resources } from "../../../data/fetchResource";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ResourceLayout from "./ResourceLayout";
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import SwipeUpIcon from '@mui/icons-material/SwipeUp';
 import HouseSidingIcon from '@mui/icons-material/HouseSiding';
 import InputIcon from '@mui/icons-material/Input';
 import RemainingMold from "../../../components/ShopFloors/Mold/RemainingMold";
 import ConfirmTeardown from "../../../components/Buttons/ConfirmTeardown";
+import { fetchResourceById } from "../../../data/fetchs";
 
 const onChange = (key) => {
     console.log(key);
 };
 
 function MoldResource() {
-
+    const dispatch = useDispatch();
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
     const navigate = useNavigate();
 
     const [searchParams] = useSearchParams();
     const resourceId = searchParams.get('resourceId');
 
-    const [loading, setLoading] = useState(true);
-    const [resource, setResource] = useState(null);
+    const resources = useSelector((state) => state.resources);  // Get the resources from Redux store
+    const resourceFromStore = Array.isArray(resources) ? resources.find(res => res.id === resourceId) : null;
 
-    console.log(resource);
-
-
+    const [resource, setResource] = useState(resourceFromStore);  // Use resource from Redux initially
+    const [loading, setLoading] = useState(!resourceFromStore);
 
     useEffect(() => {
-        setTimeout(() => {
-            const resourceData = resources.find((res) => res.id === Number(resourceId));
-            setResource(resourceData);
-            setLoading(false);
-        }, 500);
-    }, [resourceId]);
+        if (!resourceFromStore && resourceId) { // Jika resource belum ada di Redux dan resourceId ada
+            const loadResource = async () => {
+                setLoading(true);
+                try {
+                    const fetchedResource = await fetchResourceById(resourceId);
+                    setResource(fetchedResource);  // Set data resource ke state lokal
+                    // Dispatch data ke Redux store jika ingin menyimpan untuk penggunaan selanjutnya
+                    // dispatch(setResources([...resources, fetchedResource])); 
+                } catch (error) {
+                    console.error("Error fetching resource:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            loadResource();
+        }
+    }, [resourceId, navigate, dispatch]);
+
+    useEffect(() => {
+        if (resource === null && !loading) {
+            navigate("/shopfloor");  // Redirect jika data resource null
+        }
+    }, [resource, loading, navigate]);
 
     const moldTabData = {
         tabs: [

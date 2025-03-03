@@ -15,7 +15,8 @@ class PlansController {
                 const cust_joborder = await PlanningService.custJobOrderId();
                 const document = await PlanningService.documentNo();
                 const product = await PlanningService.getProduct(row.col6.trim());
-                const asset = await PlanningService.getAsset(String(row.col1).trim());
+                const asset = await PlanningService.getAssetId(String(row.col1).trim());
+                const mold = await PlanningService.getMoldId(String(row.col9).trim());
 
                 const base_document_no = Number(document[0]); // document no terakhir
                 const base_cust_joborder = Number(cust_joborder[0]); // jo id terakhir
@@ -23,6 +24,7 @@ class PlansController {
                 const cust_joborder_id = base_cust_joborder + 1 + index
                 const product_id = Number(product[0]);
                 const asset_id = Number(asset[0]);
+                const mold_id = Number(mold[0]);
 
                 const formattedDateDoc = format(
                     parse(row.col3, 'dd/MM/yyyy', new Date()),
@@ -59,6 +61,7 @@ class PlansController {
                     ISTRIAL: row.col8,
                     ISAUTODROP: 'N',
                     JOTYPE: 'I',
+                    MOLD_ID: mold_id
                 };
             }));
 
@@ -70,14 +73,14 @@ class PlansController {
                 CUST_JOBORDER_ID, DATEDOC, DESCRIPTION, DOCSTATUS, DOCUMENTNO,
                 STARTDATE, ENDDATE, ISACTIVE, ISVERIFIED, M_PRODUCT_ID, PRINT_JOBORDER, 
                 UPDATED, UPDATEDBY, QTYPLANNED, JOACTION, PRINT_JOBORDERLABEL, 
-                A_ASSET_RUN_ID, ISTRIAL, ISAUTODROP, JOTYPE
+                A_ASSET_RUN_ID, ISTRIAL, ISAUTODROP, JOTYPE, M_PRODUCTMOLD_ID
             ) VALUES (
                 :AD_CLIENT_ID, :AD_ORG_ID, :A_ASSET_ID, TO_DATE(:CREATED, 'YYYY-MM-DD HH24:MI:SS'), :CREATEDBY,
                 :CUST_JOBORDER_ID, TO_DATE(:DATEDOC, 'YYYY-MM-DD HH24:MI:SS'), :DESCRIPTION, :DOCSTATUS, :DOCUMENTNO,
                 TO_DATE(:STARTDATE, 'YYYY-MM-DD HH24:MI:SS'), TO_DATE(:ENDDATE, 'YYYY-MM-DD HH24:MI:SS'), 
                 :ISACTIVE, :ISVERIFIED, :M_PRODUCT_ID, :PRINT_JOBORDER,
                 TO_DATE(:UPDATED, 'YYYY-MM-DD HH24:MI:SS'), :UPDATEDBY, :QTYPLANNED, :JOACTION, :PRINT_JOBORDERLABEL, 
-                :A_ASSET_RUN_ID, :ISTRIAL, :ISAUTODROP, :JOTYPE
+                :A_ASSET_RUN_ID, :ISTRIAL, :ISAUTODROP, :JOTYPE, :M_PRODUCTMOLD_ID
             )
             `;
 
@@ -108,6 +111,7 @@ class PlansController {
                     ISTRIAL: data.ISTRIAL,
                     ISAUTODROP: data.ISAUTODROP,
                     JOTYPE: data.JOTYPE,
+                    M_PRODUCTMOLD_ID: data.MOLD_ID
                 };
 
                 await connection.execute(insertQuery, binds);
@@ -143,7 +147,7 @@ class PlansController {
         }
     }
 
-    static async getPlan(request, reply) {
+    static async getPlansByResource(request, reply) {
         const { resourceId } = request.query;
         try {
             const job_orders = await PlanningService.findByResource(resourceId);
@@ -161,6 +165,18 @@ class PlansController {
             const job_orders = await PlanningService.findActivePlan(resourceId);
             console.log('job order : ', job_orders);
             reply.send({ message: 'fetch successfully', data: job_orders });
+        } catch (error) {
+            request.log.error(error);
+            reply.status(500).send({ message: `Failed: ${error.message || error}` });
+        }
+    }
+
+    static async getDetailPlan(request, reply) {
+        const { planId } = request.query;
+        try {
+            const job_order = await PlanningService.findDetailPlan(planId);
+            const planData = job_order.length > 0 ? job_order[0] : null;
+            reply.send({ message: 'fetch successfully', data: planData });
         } catch (error) {
             request.log.error(error);
             reply.status(500).send({ message: `Failed: ${error.message || error}` });

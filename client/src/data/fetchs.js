@@ -37,7 +37,7 @@ export const fetchResourceById = async (resourceId) => {
 
 export const fetchPlanByResource = async (resourceId) => {
     try {
-        const response = await fetch(`http://localhost:3080/api/plans/plan?resourceId=${resourceId}`);
+        const response = await fetch(`http://localhost:3080/api/plans/resource/plans?resourceId=${resourceId}`);
         const result = await response.json();
         if (result && result.data && result.data.length > 0) {
             return result.data;
@@ -55,6 +55,20 @@ export const fetchPlanActive = async (resourceId) => {
         const result = await response.json();
         if (result && result.data && result.data.length > 0) {
             return result.data[0];
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching resource:", error);
+        return null;
+    }
+}
+
+export const fetchDetailPlan = async (planId) => {
+    try {
+        const response = await fetch(`http://localhost:3080/api/plans/plan/detail?planId=${planId}`);
+        const result = await response.json();
+        if (result && result.data) {
+            return result.data;  // Mengembalikan objek
         }
         return null;
     } catch (error) {
