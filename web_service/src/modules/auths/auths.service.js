@@ -1,5 +1,5 @@
 class AuthsService {
-    static async getUser(server, name, pwd) {
+    async getUser(server, name, pwd) {
         let dbClient;
         try {
             dbClient = await server.pg.connect();

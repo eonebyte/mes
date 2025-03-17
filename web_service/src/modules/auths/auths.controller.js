@@ -1,5 +1,3 @@
-import AuthsService from "../../modules/auths/auths.service.js";
-
 class AuthsController {
 
     static async login(request, reply) {
@@ -9,7 +7,10 @@ class AuthsController {
             return reply.code(400).send({ success: false, message: 'Username and password are required' });
         }
 
-        const user = await AuthsService.getUser(request.server, username, password);
+        const authsService = request.server.authsService;
+        const server = request.server;
+
+        const user = await authsService.getUser(server, username, password);
         console.log('user: ', user);
 
         if (user) {
