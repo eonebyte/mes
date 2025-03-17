@@ -129,16 +129,13 @@ class ResourcesService {
                 if (timeDiff > 300) {
                     statusMachine = 'Downtime';
     
-                    // Ambil waktu saat ini sebagai start downtime baru
-                    const now = new Date();
-    
                     // Insert event Running jika ada last downtime
                     if (lastDowntimeEnd) {
                         const runningQuery = `
                             INSERT INTO a_asset_events (a_asset_id, start_time, end_time, status) 
-                            VALUES ($1, $2, $3, 'Running')
+                            VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta', 'Running')
                         `;
-                        await dbClient.query(runningQuery, [a_asset_id, lastDowntimeEnd, now]);
+                        await dbClient.query(runningQuery, [a_asset_id, lastDowntimeEnd]);
                     }
     
                     // Insert event Downtime baru
