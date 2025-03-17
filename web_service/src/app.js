@@ -7,12 +7,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cors from '@fastify/cors';
-import APIV1 from './plugins/api.v1.js';
+import Main from './plugins/main.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default async function build(opts = {}) {
+async function build(opts = {}) {
     const app = Fastify(opts);
 
     const DB_USER = process.env.DB_USER;
@@ -20,7 +20,7 @@ export default async function build(opts = {}) {
     const DB_NAME = process.env.DB_NAME;
     const DB_HOST = process.env.DB_HOST;
 
-   
+
 
     await app.register(cors, {
         origin: true,
@@ -51,10 +51,12 @@ export default async function build(opts = {}) {
     // plugins
 
     await app.register(formbody);
-    await app.register(APIV1);
+    await app.register(Main);
 
     return app;
 }
+
+export default build;
 
 
 

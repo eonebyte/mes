@@ -4,9 +4,11 @@ import PlanModule from "../modules/plans/plans.module.js";
 import ResourceModule from "../modules/resources/resources.module.js";
 
 
-export default async function APIV1(fastify, opts) {
+async function Main(fastify, opts) {
     fastify.register(AuthsModule);
     fastify.register(ResourceModule);
     fastify.register(PlanModule);
     fastify.register(GanttsModule);
 }
+
+export default Main;
