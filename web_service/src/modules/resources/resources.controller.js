@@ -34,7 +34,7 @@ class ResourceController {
         }
     }
 
-    static async insertLog(request, reply) {
+    static async insertResourceLog(request, reply) {
         const { a_asset_id } = request.body;
 
         if (!a_asset_id) {
@@ -42,7 +42,7 @@ class ResourceController {
         }
 
         try {
-            const result = await request.server.resourcesService.createLog(request.server, a_asset_id);
+            const result = await request.server.resourcesService.createResourceLog(request.server, a_asset_id);
             reply.send({ message: 'Log inserted and last running time updated', data: result });
         } catch (error) {
             request.log.error(error);

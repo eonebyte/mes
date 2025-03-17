@@ -91,76 +91,90 @@ class ResourcesService {
         }
     }
 
-    async createLog(server, a_asset_id, reasons = '-') {
+    async createResourceLog(server, a_asset_id, reasons = '-') {
         let dbClient;
         try {
             dbClient = await server.pg.connect();
-
-            // 1️⃣ Ambil last running time sebelum update
+    
+            // Ambil last downtime event
+            const getLastDowntimeQuery = `
+                SELECT end_time FROM a_asset_events 
+                WHERE a_asset_id = $1 AND status = 'Downtime' 
+                ORDER BY end_time DESC LIMIT 1
+            `;
+            const { rows: downtimeRows } = await dbClient.query(getLastDowntimeQuery, [a_asset_id]);
+            const lastDowntimeEnd = downtimeRows.length > 0 ? downtimeRows[0].end_time : null;
+    
+            // Ambil last running time sebelum update
             const getLastRunningTimeQuery = `
-            SELECT lastrunningtime, status FROM a_asset WHERE a_asset_id = $1
-        `;
+                SELECT lastrunningtime FROM a_asset WHERE a_asset_id = $1
+            `;
             const { rows } = await dbClient.query(getLastRunningTimeQuery, [a_asset_id]);
-
-            if (rows.length === 0) {
-                throw new Error("Asset tidak ditemukan");
-            }
-
+    
+            if (rows.length === 0) throw new Error("Asset tidak ditemukan");
+    
             const lastRunningTime = rows[0].lastrunningtime;
-            let statusMachine = rows[0].status;
-            let reasonDowntime = reasons; // Default status
+            let statusMachine = 'Running';
             let timeDiff = 0;
-
+    
             if (lastRunningTime) {
-
                 const timeDiffQuery = `
-                    SELECT EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Asia/Jakarta' - CAST($1 AS TIMESTAMP))) AS time_diff
+                    SELECT EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Asia/Jakarta' - $1::TIMESTAMP)) AS time_diff
                 `;
-
                 const { rows: timeRows } = await dbClient.query(timeDiffQuery, [lastRunningTime]);
                 timeDiff = timeRows[0].time_diff;
                 console.log(`Time difference: ${timeDiff} seconds`);
-
-                // Jika lebih dari 300 detik, masukkan downtime ke a_asset_downtime
+    
+                // Jika lebih dari 300 detik, masukkan downtime ke a_asset_events
                 if (timeDiff > 300) {
                     statusMachine = 'Downtime';
+    
+                    // Ambil waktu saat ini sebagai start downtime baru
+                    const now = new Date();
+    
+                    // Insert event Running jika ada last downtime
+                    if (lastDowntimeEnd) {
+                        const runningQuery = `
+                            INSERT INTO a_asset_events (a_asset_id, start_time, end_time, status) 
+                            VALUES ($1, $2, $3, 'Running')
+                        `;
+                        await dbClient.query(runningQuery, [a_asset_id, lastDowntimeEnd, now]);
+                    }
+    
+                    // Insert event Downtime baru
                     const downtimeQuery = `
-                    INSERT INTO a_asset_downtime (a_asset_id, start_time, end_time, reasons) 
-                    VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta', $3)
-                `;
-                    await dbClient.query(downtimeQuery, [a_asset_id, lastRunningTime, reasonDowntime]);
+                        INSERT INTO a_asset_events (a_asset_id, start_time, end_time, status, reasons) 
+                        VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta', 'Downtime', $3)
+                    `;
+                    await dbClient.query(downtimeQuery, [a_asset_id, lastRunningTime, reasons]);
                 }
             }
-
-            // Insert log dengan status yang sudah ditentukan
-            const query = `
-                WITH inserted_log AS (
-                    INSERT INTO a_asset_log (a_asset_id, status, log_time) 
-                    VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta')
-                    RETURNING log_time
-                )
-                UPDATE a_asset 
-                SET lastrunningtime = NOW() AT TIME ZONE 'Asia/Jakarta', status = $2
-                WHERE a_asset_id = $1;
+    
+            // ✅ Insert ke `a_asset_log` untuk mencatat status terbaru
+            const logQuery = `
+                INSERT INTO a_asset_log (a_asset_id, status, log_time) 
+                VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta')
             `;
-
-            await dbClient.query(query, [a_asset_id, statusMachine]);
-            return { success: true, message: `Log inserted with status: ${statusMachine}`, timeDif: timeDiff };
-
+            await dbClient.query(logQuery, [a_asset_id, statusMachine]);
+    
+            // ✅ Update asset status
+            const updateAssetQuery = `
+                UPDATE a_asset 
+                SET lastrunningtime = NOW() AT TIME ZONE 'Asia/Jakarta', status = $1
+                WHERE a_asset_id = $2
+            `;
+            await dbClient.query(updateAssetQuery, [statusMachine, a_asset_id]);
+    
+            return { success: true, message: `Log inserted with status: ${statusMachine}`, timeDiff };
+    
         } catch (error) {
-            console.error("Error in insertLogAndUpdateLastRunning:", error.message, error.stack);
+            console.error("Error:", error.message);
             throw new Error(`Database query failed: ${error.message}`);
         } finally {
-            // Pastikan koneksi selalu ditutup
-            if (dbClient) {
-                try {
-                    dbClient.release();
-                } catch (closeError) {
-                    console.error('Error closing connection:', closeError);
-                }
-            }
+            if (dbClient) dbClient.release();
         }
     }
+    
 
     async createStartDowntime(server, a_asset_id, reasons) {
         let dbClient;
