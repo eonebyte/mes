@@ -19,6 +19,9 @@ async function build(opts = {}) {
     const DB_PASSWORD = process.env.DB_PASSWORD;
     const DB_NAME = process.env.DB_NAME;
     const DB_HOST = process.env.DB_HOST;
+    const REDIS_HOST = process.env.REDIS_HOST;
+    const REDIS_PORT = process.env.REDIS_PORT;
+    const REDIS_PASS = process.env.REDIS_PASS;
 
 
 
@@ -38,18 +41,29 @@ async function build(opts = {}) {
         }
     })
 
-    await app.register(import('@fastify/postgres'), {
+    await app.register(await import('@fastify/postgres'), {
         connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
     });
-
     // Test PostgreSQL connection
     const client = await app.pg.connect();
     await client.query('SELECT NOW()');
     console.log('Connected to PostgreSQL successfully');
     client.release();
 
-    // plugins
+    try {
+        await app.register(await import('@fastify/redis'), {
+            host: REDIS_HOST,
+            port: REDIS_PORT,
+            password: REDIS_PASS,
+        });
+        // Tes ping Redis setelah koneksi
+        const pong = await app.redis.ping();
+        console.log('Redis Ping:', pong);
+    } catch (err) {
+        console.error('❌ Redis Connection Failed:', err);
+    }
 
+    // modules
     await app.register(formbody);
     await app.register(Main);
 

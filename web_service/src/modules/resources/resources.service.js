@@ -1,4 +1,16 @@
+import { DateTime } from 'luxon'
+
 class ResourcesService {
+
+    async saveTimestampToRedis(server, redisKey) {
+        const nowJakarta = DateTime.now().setZone("Asia/Jakarta").toFormat("yyyy-MM-dd HH:mm:ss");
+
+        await server.redis.set(redisKey, nowJakarta, 'EX', 300); // Expire dalam 300 detik (opsional)
+
+        console.log(`✅ Timestamp disimpan ke Redis: ${nowJakarta}`);
+    }
+
+
     async findAll(server) {
         let dbClient;
         try {
@@ -91,87 +103,128 @@ class ResourcesService {
         }
     }
 
-    async createResourceLog(server, a_asset_id, reasons = '-') {
+    async getLastRunningTime(redisClient, dbClient, a_asset_id) {
+        let lastRunningTime = await redisClient.get(`lastrunningtime:${a_asset_id}`);
+
+        if (!lastRunningTime) {
+            const query = `SELECT lastrunningtime FROM a_asset WHERE a_asset_id = $1`;
+            const { rows } = await dbClient.query(query, [a_asset_id]);
+
+            if (rows.length === 0) throw new Error("Asset tidak ditemukan");
+
+            lastRunningTime = rows[0].lastrunningtime;
+            if (lastRunningTime) {
+                await redisClient.setex(`lastrunningtime:${a_asset_id}`, 300, lastRunningTime);
+            }
+        }
+        return lastRunningTime;
+    }
+
+    async getLastDowntime(redisClient, dbClient, a_asset_id) {
+        let lastDowntime = await redisClient.get(`lastdowntime:${a_asset_id}`);
+
+        if (!lastDowntime) {
+            const query = `
+            SELECT id, start_time, status FROM a_asset_events 
+            WHERE a_asset_id = $1 AND end_time IS NULL
+            ORDER BY start_time DESC LIMIT 1
+        `;
+            const { rows } = await dbClient.query(query, [a_asset_id]);
+
+            if (rows.length > 0) {
+                lastDowntime = rows[0];
+                lastDowntime.start_time = DateTime.fromJSDate(new Date(lastDowntime.start_time))
+                    .setZone('Asia/Jakarta')
+                    .toFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
+                await redisClient.setex(`lastdowntime:${a_asset_id}`, 300, lastDowntime.start_time);
+            }
+        }
+        return lastDowntime;
+    }
+
+    async createResourceEvent(server, a_asset_id, reasons = '-') {
         let dbClient;
         try {
             dbClient = await server.pg.connect();
-    
-            // Ambil last downtime event
-            const getLastDowntimeQuery = `
-                SELECT end_time FROM a_asset_events 
-                WHERE a_asset_id = $1 AND status = 'Downtime' 
-                ORDER BY end_time DESC LIMIT 1
-            `;
-            const { rows: downtimeRows } = await dbClient.query(getLastDowntimeQuery, [a_asset_id]);
-            const lastDowntimeEnd = downtimeRows.length > 0 ? downtimeRows[0].end_time : null;
-    
-            // Ambil last running time sebelum update
-            const getLastRunningTimeQuery = `
-                SELECT lastrunningtime FROM a_asset WHERE a_asset_id = $1
-            `;
-            const { rows } = await dbClient.query(getLastRunningTimeQuery, [a_asset_id]);
-    
-            if (rows.length === 0) throw new Error("Asset tidak ditemukan");
-    
-            const lastRunningTime = rows[0].lastrunningtime;
-            let statusMachine = 'Running';
+            const redisClient = server.redis; // Ambil Redis dari Fastify instance
+
+
+            const lastRunningTime = await this.getLastRunningTime(redisClient, dbClient, a_asset_id);
+            const lastDowntime = await this.getLastDowntime(redisClient, dbClient, a_asset_id);
+
             let timeDiff = 0;
-    
+
             if (lastRunningTime) {
-                const timeDiffQuery = `
-                    SELECT EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'Asia/Jakarta' - $1::TIMESTAMP)) AS time_diff
-                `;
-                const { rows: timeRows } = await dbClient.query(timeDiffQuery, [lastRunningTime]);
-                timeDiff = timeRows[0].time_diff;
-                console.log(`Time difference: ${timeDiff} seconds`);
-    
-                // Jika lebih dari 300 detik, masukkan downtime ke a_asset_events
+                const now = DateTime.now().setZone('Asia/Jakarta');
+                const last = DateTime.fromJSDate(new Date(lastRunningTime));
+
+                console.log('this now :', now);
+                console.log('this last :', last);
+
+
+                if (now.isValid && last.isValid) {
+                    timeDiff = now.diff(last, 'seconds').seconds;
+                    console.log('timeDiff:', timeDiff);
+                } else {
+                    console.error('Error parsing date:', { now, last });
+                }
+
                 if (timeDiff > 300) {
-                    statusMachine = 'Downtime';
-    
-                    // Insert event Running jika ada last downtime
-                    if (lastDowntimeEnd) {
-                        const runningQuery = `
-                            INSERT INTO a_asset_events (a_asset_id, start_time, end_time, status) 
-                            VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta', 'Running')
-                        `;
-                        await dbClient.query(runningQuery, [a_asset_id, lastDowntimeEnd]);
-                    }
-    
-                    // Insert event Downtime baru
-                    const downtimeQuery = `
-                        INSERT INTO a_asset_events (a_asset_id, start_time, end_time, status, reasons) 
-                        VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta', 'Downtime', $3)
+                    if (lastDowntime.status === 'RUNNING') {
+                        // hanya dijalankan ketika tidak ada downtime yg sedang berlangsung
+                        const insertDowntimeQuery = `
+                        INSERT INTO a_asset_events (a_asset_id, start_time, status, reasons) 
+                        VALUES ($1, NOW() AT TIME ZONE 'Asia/Jakarta', 'DOWNTIME', $2)
                     `;
-                    await dbClient.query(downtimeQuery, [a_asset_id, lastRunningTime, reasons]);
+                        await dbClient.query(insertDowntimeQuery, [a_asset_id, reasons]);
+                        await redisClient.setex(`lastdowntime:${a_asset_id}`, 300, lastDowntime.start_time);
+                    } else {
+                        const closeDowntimeQuery = `
+                        UPDATE a_asset_events SET end_time = NOW() AT TIME ZONE 'Asia/Jakarta' WHERE status = 'DOWNTIME' AND id = $1
+                    `;
+                        await dbClient.query(closeDowntimeQuery, [a_asset_id]);
+                        await redisClient.setex(`lastdowntime:${a_asset_id}`, 300, lastDowntime.start_time);
+                    }
+                }
+
+                if (lastDowntime.status === 'RUNNING') {
+                    const closeRunningtimeQuery = `
+                        UPDATE a_asset_events SET end_time = NOW() AT TIME ZONE 'Asia/Jakarta' WHERE status = 'RUNNING' AND id = $1
+                    `;
+                    await dbClient.query(closeRunningtimeQuery, [lastDowntime.id]);
+
+                    if (lastDowntime.status === 'DOWNTIME') {
+                        const insertRunningQuery = `
+                            INSERT INTO a_asset_events (a_asset_id, start_time, status)
+                            VALUES ($1, NOW() AT TIME ZONE 'Asia/Jakarta', 'RUNNING')
+                            `;
+                        await dbClient.query(insertRunningQuery, [lastDowntime.id]);
+                    }
                 }
             }
-    
-            // ✅ Insert ke `a_asset_log` untuk mencatat status terbaru
-            const logQuery = `
-                INSERT INTO a_asset_log (a_asset_id, status, log_time) 
-                VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta')
-            `;
+
+            const logQuery = `INSERT INTO a_asset_log (a_asset_id, status, log_time) VALUES ($1, $2, NOW() AT TIME ZONE 'Asia/Jakarta')`;
             await dbClient.query(logQuery, [a_asset_id, statusMachine]);
-    
-            // ✅ Update asset status
-            const updateAssetQuery = `
-                UPDATE a_asset 
-                SET lastrunningtime = NOW() AT TIME ZONE 'Asia/Jakarta', status = $1
-                WHERE a_asset_id = $2
-            `;
-            await dbClient.query(updateAssetQuery, [statusMachine, a_asset_id]);
-    
+
+            const updateQuery = `UPDATE a_asset SET lastrunningtime = NOW() AT TIME ZONE 'Asia/Jakarta', status = $1 WHERE a_asset_id = $2 RETURNING lastrunningtime`;
+            const { rows: updateLastRunnngRows } = await dbClient.query(updateQuery, [statusMachine, a_asset_id]);
+
+            if (updateLastRunnngRows.length > 0) {
+                const updateLastRunningTime = updateLastRunnngRows[0].lastrunningtime;
+                console.log('Updated Last Running Time:', updateLastRunningTime);
+                await redisClient.setex(`lastrunningtime:${a_asset_id}`, 300, updateLastRunningTime);
+            } else {
+                console.error(`❌ Error: Tidak bisa update lastrunningtime untuk asset ${a_asset_id}`);
+            }
+
             return { success: true, message: `Log inserted with status: ${statusMachine}`, timeDiff };
-    
         } catch (error) {
-            console.error("Error:", error.message);
             throw new Error(`Database query failed: ${error.message}`);
         } finally {
             if (dbClient) dbClient.release();
         }
     }
-    
 
     async createStartDowntime(server, a_asset_id, reasons) {
         let dbClient;
