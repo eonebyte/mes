@@ -1,6 +1,10 @@
+import fp from 'fastify-plugin';
 import PlansController from "./plans.controller.js"
+import PlansService from "./plans.service.js";
 
 async function PlansModule(server, opts) {
+    server.decorate('plansService', new PlansService());
+    
     server.post('/api/import-plan', PlansController.importPlan);
     server.get('/api/plans', PlansController.getPlans);
     server.get('/api/plans/resource/plans', PlansController.getPlansByResource);
@@ -8,4 +12,4 @@ async function PlansModule(server, opts) {
     server.get('/api/plans/plan/detail', PlansController.getDetailPlan);
 }
 
-export default PlansModule;
+export default fp(PlansModule);

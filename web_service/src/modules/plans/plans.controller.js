@@ -1,132 +1,137 @@
 import { format, parse } from 'date-fns';
-import PlanningService from './plans.service.js';
-import oracleConnection from "../../configs/oracle.connection.js";
-
 
 class PlansController {
 
     static async importPlan(request, reply) {
-        let connection;
+        let dbClient;
         try {
-            connection = await oracleConnection.openConnection();
+            dbClient = await request.server.pg.connect();
             const importData = request.body;
 
+            await dbClient.query('BEGIN');
+
             const mappedData = await Promise.all(importData.map(async (row, index) => {
-                const cust_joborder = await PlanningService.custJobOrderId();
-                const document = await PlanningService.documentNo();
-                const product = await PlanningService.getProduct(row.col6.trim());
-                const asset = await PlanningService.getAssetId(String(row.col1).trim());
-                const mold = await PlanningService.getMoldId(String(row.col9).trim());
 
-                const base_document_no = Number(document[0]); // document no terakhir
-                const base_cust_joborder = Number(cust_joborder[0]); // jo id terakhir
-                const document_no = (base_document_no + 1 + index).toString();
-                const cust_joborder_id = base_cust_joborder + 1 + index
-                const product_id = Number(product[0]);
-                const asset_id = Number(asset[0]);
-                const mold_id = Number(mold[0]);
+                try {
+                    // Pastikan semua nilai tidak undefined/null
+                    if (!row.col1 || !row.col3 || !row.col4 || !row.col5 || !row.col6) {
+                        throw new Error(`Data tidak valid pada baris ke-${index + 1}`);
+                    }
 
-                const formattedDateDoc = format(
-                    parse(row.col3, 'dd/MM/yyyy', new Date()),
-                    'yyyy-MM-dd'
-                ) + ' 00:00:00';
+                    const cust_joborder = await request.server.plansService.custJobOrderId(request.server);
+                    const document = await request.server.plansService.documentNo(request.server);
+                    const product = await request.server.plansService.getProduct(request.server, row.col6.trim());
+                    const asset = await request.server.plansService.getAssetId(request.server, String(row.col1).trim());
+                    const mold = await request.server.plansService.getMoldId(request.server, String(row.col9).trim());
 
-                const formattedStartDate = format(parse(row.col4, 'dd/MM/yyyy HH:mm:ss', new Date()), 'yyyy-MM-dd HH:mm:ss');
-                const formattedEndDate = format(parse(row.col5, 'dd/MM/yyyy HH:mm:ss', new Date()), 'yyyy-MM-dd HH:mm:ss');
+                    const document_no = (Number(document) + 1 + index).toString();
+                    const cust_joborder_id = Number(cust_joborder) + 1 + index;
+                    const product_id = Number(product);
+                    const asset_id = Number(asset);
+                    const mold_id = Number(mold);
 
-                return {
-                    AD_CLIENT_ID: 1000000,
-                    AD_ORG_ID: 1000000,
-                    A_ASSET_ID: asset_id, // cari pakai rcode
-                    CREATED: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-                    RCODE: String(row.col1).trim(),
-                    CREATEDBY: row.user_id,
-                    CUST_JOBORDER_ID: cust_joborder_id,
-                    DESCRIPTION: row.col2 ? row.col2.trim() : null,
-                    DOCSTATUS: 'DR',
-                    DOCUMENTNO: document_no,
-                    DATEDOC: formattedDateDoc,
-                    STARTDATE: formattedStartDate,
-                    ENDDATE: formattedEndDate,
-                    ISACTIVE: 'Y',
-                    ISVERIFIED: 'N',
-                    M_PRODUCT_ID: product_id,
-                    PRINT_JOBORDER: 'N',
-                    UPDATED: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-                    UPDATEDBY: row.user_id,
-                    QTYPLANNED: row.col7,
-                    JOACTION: 'CO',
-                    PRINT_JOBORDERLABEL: 'N',
-                    A_ASSET_RUN_ID: null,
-                    ISTRIAL: row.col8,
-                    ISAUTODROP: 'N',
-                    JOTYPE: 'I',
-                    MOLD_ID: mold_id
-                };
+                    const formattedDateDoc = format(parse(row.col3, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd') + ' 00:00:00';
+                    const formattedStartDate = format(parse(row.col4, 'dd/MM/yyyy HH:mm:ss', new Date()), 'yyyy-MM-dd HH:mm:ss');
+                    const formattedEndDate = format(parse(row.col5, 'dd/MM/yyyy HH:mm:ss', new Date()), 'yyyy-MM-dd HH:mm:ss');
+
+                    return {
+                        AD_CLIENT_ID: 1000000,
+                        AD_ORG_ID: 1000000,
+                        A_ASSET_ID: asset_id,
+                        CREATED: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
+                        RCODE: String(row.col1).trim(),
+                        CREATEDBY: row.user_id,
+                        CUST_JOBORDER_ID: cust_joborder_id,
+                        DESCRIPTION: row.col2 ? row.col2.trim() : null,
+                        DOCSTATUS: 'DR',
+                        DOCUMENTNO: document_no,
+                        DATEDOC: formattedDateDoc,
+                        STARTDATE: formattedStartDate,
+                        ENDDATE: formattedEndDate,
+                        ISACTIVE: 'Y',
+                        ISVERIFIED: 'N',
+                        M_PRODUCT_ID: product_id,
+                        PRINT_JOBORDER: 'N',
+                        UPDATED: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
+                        UPDATEDBY: row.user_id,
+                        QTYPLANNED: row.col7,
+                        JOACTION: 'CO',
+                        PRINT_JOBORDERLABEL: 'N',
+                        A_ASSET_RUN_ID: null,
+                        ISTRIAL: row.col8,
+                        ISAUTODROP: 'N',
+                        JOTYPE: 'I',
+                        MOLD_ID: mold_id
+                    };
+                } catch (error) {
+                    request.log.error(`Error mapping row ${index + 1}: ${error.message}`);
+                    return null; // Abaikan data yang error
+                }
             }));
 
             // Loop untuk setiap data yang telah dipetakan
             for (let data of mappedData) {
                 const insertQuery = `
-            INSERT INTO PLASTIK.CUST_JOBORDER (
-                AD_CLIENT_ID, AD_ORG_ID, A_ASSET_ID, CREATED, CREATEDBY, 
-                CUST_JOBORDER_ID, DATEDOC, DESCRIPTION, DOCSTATUS, DOCUMENTNO,
-                STARTDATE, ENDDATE, ISACTIVE, ISVERIFIED, M_PRODUCT_ID, PRINT_JOBORDER, 
-                UPDATED, UPDATEDBY, QTYPLANNED, JOACTION, PRINT_JOBORDERLABEL, 
-                A_ASSET_RUN_ID, ISTRIAL, ISAUTODROP, JOTYPE, M_PRODUCTMOLD_ID
-            ) VALUES (
-                :AD_CLIENT_ID, :AD_ORG_ID, :A_ASSET_ID, TO_DATE(:CREATED, 'YYYY-MM-DD HH24:MI:SS'), :CREATEDBY,
-                :CUST_JOBORDER_ID, TO_DATE(:DATEDOC, 'YYYY-MM-DD HH24:MI:SS'), :DESCRIPTION, :DOCSTATUS, :DOCUMENTNO,
-                TO_DATE(:STARTDATE, 'YYYY-MM-DD HH24:MI:SS'), TO_DATE(:ENDDATE, 'YYYY-MM-DD HH24:MI:SS'), 
-                :ISACTIVE, :ISVERIFIED, :M_PRODUCT_ID, :PRINT_JOBORDER,
-                TO_DATE(:UPDATED, 'YYYY-MM-DD HH24:MI:SS'), :UPDATEDBY, :QTYPLANNED, :JOACTION, :PRINT_JOBORDERLABEL, 
-                :A_ASSET_RUN_ID, :ISTRIAL, :ISAUTODROP, :JOTYPE, :M_PRODUCTMOLD_ID
-            )
-            `;
+                    INSERT INTO adempiere.cust_joborder (
+                        ad_client_id, ad_org_id, a_asset_id, created, created_by, 
+                        cust_joborder_id, datedoc, description, docstatus, documentno,
+                        startdate, enddate, isactive, isverified, m_product_id, print_joborder, 
+                        updated, updated_by, qtyplanned, joaction, print_joborderlabel, 
+                        a_asset_run_id, istrial, isautodrop, jotype, mold_id
+                    ) VALUES (
+                        $1, $2, $3, $4::TIMESTAMP, $5, 
+                        $6, $7::TIMESTAMP, $8, $9, $10,
+                        $11::TIMESTAMP, $12::TIMESTAMP, 
+                        $13, $14, $15, $16, 
+                        $17::TIMESTAMP, $18, $19, $20, $21, 
+                        $22, $23, $24, $25, $26
+                    )
+                `;
 
                 // Parameter binds untuk query
-                const binds = {
-                    AD_CLIENT_ID: data.AD_CLIENT_ID,
-                    AD_ORG_ID: data.AD_ORG_ID,
-                    A_ASSET_ID: data.A_ASSET_ID,
-                    CREATED: data.CREATED,
-                    CREATEDBY: data.CREATEDBY, // Pastikan menggunakan CREATEDBY
-                    CUST_JOBORDER_ID: data.CUST_JOBORDER_ID,
-                    DATEDOC: data.DATEDOC,
-                    DESCRIPTION: data.DESCRIPTION || null,
-                    DOCSTATUS: data.DOCSTATUS,
-                    DOCUMENTNO: data.DOCUMENTNO,
-                    STARTDATE: data.STARTDATE,
-                    ENDDATE: data.ENDDATE,
-                    ISACTIVE: data.ISACTIVE,
-                    ISVERIFIED: data.ISVERIFIED,
-                    M_PRODUCT_ID: data.M_PRODUCT_ID,
-                    PRINT_JOBORDER: data.PRINT_JOBORDER,
-                    UPDATED: data.UPDATED,
-                    UPDATEDBY: data.UPDATEDBY,
-                    QTYPLANNED: data.QTYPLANNED,
-                    JOACTION: data.JOACTION,
-                    PRINT_JOBORDERLABEL: data.PRINT_JOBORDERLABEL,
-                    A_ASSET_RUN_ID: data.A_ASSET_RUN_ID,
-                    ISTRIAL: data.ISTRIAL,
-                    ISAUTODROP: data.ISAUTODROP,
-                    JOTYPE: data.JOTYPE,
-                    M_PRODUCTMOLD_ID: data.MOLD_ID
-                };
+                const binds = [
+                    data.AD_CLIENT_ID,
+                    data.AD_ORG_ID,
+                    data.A_ASSET_ID,
+                    data.CREATED,
+                    data.CREATEDBY,
+                    data.CUST_JOBORDER_ID,
+                    data.DATEDOC,
+                    data.DESCRIPTION || null,
+                    data.DOCSTATUS,
+                    data.DOCUMENTNO,
+                    data.STARTDATE,
+                    data.ENDDATE,
+                    data.ISACTIVE,
+                    data.ISVERIFIED,
+                    data.M_PRODUCT_ID,
+                    data.PRINT_JOBORDER,
+                    data.UPDATED,
+                    data.UPDATEDBY,
+                    data.QTYPLANNED,
+                    data.JOACTION,
+                    data.PRINT_JOBORDERLABEL,
+                    data.A_ASSET_RUN_ID || null,
+                    data.ISTRIAL,
+                    data.ISAUTODROP,
+                    data.JOTYPE,
+                    data.MOLD_ID
+                ];
 
-                await connection.execute(insertQuery, binds);
+                await dbClient.query(insertQuery, binds);
             }
-            await connection.commit();
 
+            await dbClient.query('COMMIT');
             reply.send({ message: 'Data imported and inserted successfully!', data: mappedData });
         } catch (error) {
+            await dbClient.query('ROLLBACK'); // Jika error, batalkan transaksi
             request.log.error(error); // Gunakan request.log
             reply.status(500).send({ message: `Failed: ${error.message || error}` });
         } finally {
             // Tutup koneksi
-            if (connection) {
+            if (dbClient) {
                 try {
-                    await connection.close();
+                    await dbClient.release();
                     console.log('Connection closed.');
                 } catch (closeErr) {
                     console.error('Error closing connection:', closeErr);
@@ -138,7 +143,7 @@ class PlansController {
 
     static async getPlans(request, reply) {
         try {
-            const job_orders = await PlanningService.findAll();
+            const job_orders = await request.server.plansService.findAll(request.server);
             console.log('job order : ', job_orders);
             reply.send({ message: 'fetch successfully', data: job_orders });
         } catch (error) {
@@ -150,7 +155,7 @@ class PlansController {
     static async getPlansByResource(request, reply) {
         const { resourceId } = request.query;
         try {
-            const job_orders = await PlanningService.findByResource(resourceId);
+            const job_orders = await request.server.plansService.findByResource(request.server, resourceId);
             console.log('job order : ', job_orders);
             reply.send({ message: 'fetch successfully', data: job_orders });
         } catch (error) {

@@ -97,14 +97,14 @@ const ResourceLayout = ({ children }) => {
                                             width: '100%',
                                             border: 0,
                                             borderRadius: 3,
-                                            color: resource.status === 'Inspect'
+                                            color: resource.status === 'INSPECT'
                                                 ? 'white'
                                                 : 'black',
-                                            backgroundColor: resource.status === 'Running'
+                                            backgroundColor: resource.status === 'RUNNING'
                                                 ? '#52c41a'
-                                                : resource.status === 'Down'
+                                                : resource.status === 'DOWN'
                                                     ? '#f5222d'
-                                                    : resource.status === 'Inspect'
+                                                    : resource.status === 'INSPECT'
                                                         ? '#a8071a'
                                                         : '#f5222d'
                                         }}

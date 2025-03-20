@@ -2,13 +2,14 @@ import oracleConnection from "../../configs/oracle.connection.js";
 
 class PlansService {
 
-    constructor(no, planId, documentNo, assetId, userId, docStatus, dateDoc,
+    constructor(no, planId, documentNo, assetId, resourceCode, userId, docStatus, dateDoc,
         startTime, completeTime, cycletime, cavity, isActive, isVerified,
         productId, partName, qty, isTrial, mold, moldName, description) {
         this.no = no;
         this.planId = planId;
         this.planNo = documentNo;
         this.resourceId = assetId;
+        this.resourceCode = resourceCode;
         this.user = userId;
         this.status = docStatus;
         this.dateDoc = dateDoc;
@@ -27,140 +28,127 @@ class PlansService {
         this.description = description;
     }
 
-    static async findAll() {
-        let connection;
+    async findAll(server) {
+        let dbClient;
         try {
-            connection = await oracleConnection.openConnection();
+            dbClient = await server.pg.connect(); // PostgreSQL pakai pool
 
             const query = `
-            SELECT
-                jo.CUST_JOBORDER_ID,
-                jo.DOCUMENTNO, 
-                aa.A_ASSET_ID, 
-                au.NAME,
-                jo.DOCSTATUS,
-                TO_CHAR(jo.DATEDOC, 'DD-MM-YYYY HH24:MI:SS') AS DATEDOC,
-                TO_CHAR(jo.STARTDATE, 'DD-MM-YYYY HH24:MI:SS') AS STARTDATE,
-                TO_CHAR(jo.ENDDATE, 'DD-MM-YYYY HH24:MI:SS') AS ENDDATE,
-                mp.CYCLETIME,
-                mp.CAVITY,
-                jo.ISACTIVE, 
-                jo.ISVERIFIED,
-                mp.VALUE,
-                mp.NAME,
-                jo.QTYPLANNED, 
-                jo.ISTRIAL, 
-                mp2.VALUE MOLD, 
-                mp2.NAME MOLDNAME,
-                jo.DESCRIPTION
-            FROM
-                CUST_JOBORDER jo
-            JOIN 
-                A_ASSET aa ON jo.A_ASSET_ID = aa.A_ASSET_ID
-            JOIN 
-                AD_USER au ON jo.CREATEDBY = au.AD_USER_ID
-            JOIN 
-                M_PRODUCT mp ON jo.M_PRODUCT_ID = mp.M_PRODUCT_ID
-            LEFT JOIN 
-                CUST_PRODUCT_MOLD cpm ON jo.M_PRODUCT_ID = cpm.CUST_PRODUCT_MOLD_ID
-            LEFT JOIN 
-                M_PRODUCT mp2 ON cpm.M_PRODUCT_ID = mp2.M_PRODUCT_ID
-            WHERE
-                DATEDOC >= TO_DATE('2025-01-01', 'YYYY-MM-DD')
-                AND jo.DOCSTATUS <> 'CL'
-            ORDER BY
-                jo.DOCUMENTNO DESC
-            `;
+                SELECT
+                    jo.cust_joborder_id,
+                    jo.documentno, 
+                    aa.a_asset_id,
+                    aa.value AS resource_code,
+                    au.name AS created_by,
+                    jo.docstatus,
+                    TO_CHAR(jo.datedoc, 'DD-MM-YYYY HH24:MI:SS') AS datedoc,
+                    TO_CHAR(jo.startdate, 'DD-MM-YYYY HH24:MI:SS') AS startdate,
+                    TO_CHAR(jo.enddate, 'DD-MM-YYYY HH24:MI:SS') AS enddate,
+                    mp.cycletime,
+                    mp.cavity,
+                    jo.isactive, 
+                    jo.isverified,
+                    mp.value AS product_value,
+                    mp.name AS product_name,
+                    jo.qtyplanned, 
+                    jo.istrial, 
+                    mp2.value AS mold, 
+                    mp2.name AS moldname,
+                    jo.description
+                FROM cust_joborder jo
+                JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
+                JOIN ad_user au ON jo.created_by = au.ad_user_id
+                JOIN m_product mp ON jo.m_product_id = mp.m_product_id
+                LEFT JOIN m_product mp2 ON jo.mold_id = mp2.m_product_id
+                WHERE jo.datedoc >= DATE '2024-01-01' 
+                AND jo.docstatus <> 'CL'
+                ORDER BY jo.documentno DESC
+        `;
 
-            const result = await connection.execute(query);
+            const result = await dbClient.query(query); // PostgreSQL pakai query()
 
             if (result.rows.length > 0) {
-                const jobOrders = result.rows.map((row, index) => new PlansService(
-                    index + 1, row[0], row[1], row[2], row[3], row[4], row[5], row[6],
-                    row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16], row[17], row[18]
+                return result.rows.map((row, index) => new PlansService(
+                    index + 1, row.cust_joborder_id, row.documentno, row.a_asset_id, row.resource_code,
+                    row.created_by, row.docstatus, row.datedoc, row.startdate, row.enddate,
+                    row.cycletime, row.cavity, row.isactive, row.isverified,
+                    row.product_value, row.product_name, row.qtyplanned, row.istrial,
+                    row.mold, row.moldname, row.description
                 ));
-
-                return jobOrders;
             }
 
             return null;
         } catch (error) {
-            throw new Error(`Failed to fetch All Job Orders: ${error}`)
+            throw new Error(`Failed to fetch All Job Orders: ${error}`);
         } finally {
-            if (connection) {
-                await connection.close();
+            if (dbClient) {
+                dbClient.release(); // PostgreSQL pakai release() untuk pool
             }
         }
     }
 
-    static async findByResource(resourceId) {
-        let connection;
+
+    async findByResource(server, resourceId) {
+        let dbClient;
         try {
-            connection = await oracleConnection.openConnection();
+            dbClient = await server.pg.connect(); // PostgreSQL pakai pool.connect()
 
             const query = `
             SELECT
-                jo.CUST_JOBORDER_ID,
-                jo.DOCUMENTNO, 
-                aa.A_ASSET_ID, 
-                au.NAME,
-                jo.DOCSTATUS,
-                TO_CHAR(jo.DATEDOC, 'DD-MM-YYYY HH24:MI:SS') AS DATEDOC,
-                TO_CHAR(jo.STARTDATE, 'DD-MM-YYYY HH24:MI:SS') AS STARTDATE,
-                TO_CHAR(jo.ENDDATE, 'DD-MM-YYYY HH24:MI:SS') AS ENDDATE,
-                mp.CYCLETIME,
-                mp.CAVITY,
-                jo.ISACTIVE, 
-                jo.ISVERIFIED,
-                mp.VALUE,
-                mp.NAME,
-                jo.QTYPLANNED, 
-                jo.ISTRIAL, 
-                mp2.VALUE MOLD, 
-                mp2.NAME MOLDNAME,
-                jo.DESCRIPTION
-            FROM
-                CUST_JOBORDER jo
-            JOIN 
-                A_ASSET aa ON jo.A_ASSET_ID = aa.A_ASSET_ID
-            JOIN 
-                AD_USER au ON jo.CREATEDBY = au.AD_USER_ID
-            JOIN 
-                M_PRODUCT mp ON jo.M_PRODUCT_ID = mp.M_PRODUCT_ID
-            LEFT JOIN 
-                CUST_PRODUCT_MOLD cpm ON jo.M_PRODUCT_ID = cpm.CUST_PRODUCT_MOLD_ID
-            LEFT JOIN 
-                M_PRODUCT mp2 ON cpm.M_PRODUCT_ID = mp2.M_PRODUCT_ID
-            WHERE
-                DATEDOC >= TO_DATE('2025-01-01', 'YYYY-MM-DD')
-                AND jo.DOCSTATUS <> 'CL'
-                AND jo.A_ASSET_ID = :resourceId
-            ORDER BY
-                jo.DOCUMENTNO DESC
-            `;
+                jo.cust_joborder_id,
+                jo.documentno, 
+                aa.a_asset_id, 
+                au.name AS created_by,
+                jo.docstatus,
+                TO_CHAR(jo.datedoc, 'DD-MM-YYYY HH24:MI:SS') AS datedoc,
+                TO_CHAR(jo.startdate, 'DD-MM-YYYY HH24:MI:SS') AS startdate,
+                TO_CHAR(jo.enddate, 'DD-MM-YYYY HH24:MI:SS') AS enddate,
+                mp.cycletime,
+                mp.cavity,
+                jo.isactive, 
+                jo.isverified,
+                mp.value AS product_value,
+                mp.name AS product_name,
+                jo.qtyplanned, 
+                jo.istrial, 
+                mp2.value AS mold, 
+                mp2.name AS moldname,
+                jo.description
+            FROM cust_joborder jo
+            JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
+            JOIN ad_user au ON jo.created_by = au.ad_user_id
+            JOIN m_product mp ON jo.m_product_id = mp.m_product_id
+            LEFT JOIN m_product mp2 ON jo.mold_id = mp2.m_product_id
+            WHERE jo.datedoc >= DATE '2024-01-01' 
+            AND jo.docstatus <> 'CL'
+            AND jo.a_asset_id = $1
+            ORDER BY jo.documentno DESC
+        `;
 
-            const result = await connection.execute(query, [resourceId]);
+            const result = await dbClient.query(query, [resourceId]); // PostgreSQL pakai query() dengan binding parameter
 
             if (result.rows.length > 0) {
-                const jobOrders = result.rows.map((row, index) => new PlansService(
-                    index + 1, row[0], row[1], row[2], row[3], row[4], row[5], row[6],
-                    row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16], row[17], row[18]
+                return result.rows.map((row, index) => new PlansService(
+                    index + 1, row.cust_joborder_id, row.documentno, row.a_asset_id,
+                    row.created_by, row.docstatus, row.datedoc, row.startdate, row.enddate,
+                    row.cycletime, row.cavity, row.isactive, row.isverified,
+                    row.product_value, row.product_name, row.qtyplanned, row.istrial,
+                    row.mold, row.moldname, row.description
                 ));
-
-                return jobOrders;
             }
 
             return null;
         } catch (error) {
-            throw new Error(`Failed to fetch All Job Orders: ${error}`)
+            throw new Error(`Failed to fetch Job Orders by Resource: ${error}`);
         } finally {
-            if (connection) {
-                await connection.close();
+            if (dbClient) {
+                dbClient.release(); // PostgreSQL pakai release() untuk pool
             }
         }
     }
 
-    static async findActivePlan(resourceId) {
+
+    async findActivePlan(resourceId) {
         let connection;
         try {
             connection = await oracleConnection.openConnection();
@@ -223,12 +211,12 @@ class PlansService {
             throw new Error(`Failed to fetch All Job Orders: ${error}`)
         } finally {
             if (connection) {
-                await connection.close();
+                await dbClient.release();
             }
         }
     }
 
-    static async findDetailPlan(planId) {
+    async findDetailPlan(planId) {
         let connection;
         try {
             connection = await oracleConnection.openConnection();
@@ -290,14 +278,14 @@ class PlansService {
             throw new Error(`Failed to fetch All Job Orders: ${error}`)
         } finally {
             if (connection) {
-                await connection.close();
+                await dbClient.release();
             }
         }
     }
 
 
 
-    static async createdBy(username) {
+    async createdBy(username) {
         let connection;
         try {
             connection = await oracleConnection.openConnection();
@@ -319,147 +307,131 @@ class PlansService {
             throw new Error(`Failed to fetch create By: ${error.message}`);
         } finally {
             if (connection) {
-                await connection.close();
+                await dbClient.release();
             }
         }
     }
 
-    static async documentNo() {
-        let connection;
+    async documentNo(server) {
+        let dbClient;
         try {
-            connection = await oracleConnection.openConnection();
+            dbClient = await server.pg.connect();
 
             const query = `
-            SELECT 
-                DOCUMENTNO
-            FROM 
-                CUST_JOBORDER
-            WHERE 
-                CUST_JOBORDER_ID = (
-                SELECT MAX(CUST_JOBORDER_ID) FROM CUST_JOBORDER
-            )
-            `;
-            const result = await connection.execute(query);
+                SELECT documentno FROM cust_joborder ORDER BY cust_joborder_id DESC LIMIT 1;
+                `;
+            const result = await dbClient.query(query);
 
-            if (result.rows && result.rows.length > 0) {
-
-                return result.rows[0];
+            if (result.rows.length > 0) {
+                return result.rows[0].documentno;
             }
 
             return null;
         } catch (error) {
             throw new Error(`Failed to fetch document no: ${error.message}`);
         } finally {
-            if (connection) {
-                await connection.close();
+            if (dbClient) {
+                await dbClient.release();
             }
         }
     }
 
-    static async custJobOrderId() {
-        let connection;
+    async custJobOrderId(server) {
+        let dbClient;
         try {
-            connection = await oracleConnection.openConnection();
+            dbClient = await server.pg.connect();
 
             const query = `
-            SELECT 
-                CUST_JOBORDER_ID
-            FROM 
-                CUST_JOBORDER
-            WHERE 
-                CUST_JOBORDER_ID = (
-                SELECT MAX(CUST_JOBORDER_ID) FROM CUST_JOBORDER
-            )
+                SELECT cust_joborder_id FROM cust_joborder ORDER BY cust_joborder_id DESC LIMIT 1;
             `;
-            const result = await connection.execute(query);
+            const result = await dbClient.query(query);
 
-            if (result.rows && result.rows.length > 0) {
-
-                return result.rows[0];
+            if (result.rows.length > 0) {
+                return result.rows[0].cust_joborder_id;
             }
 
             return null;
         } catch (error) {
             throw new Error(`Failed to fetch customer job order id: ${error.message}`);
         } finally {
-            if (connection) {
-                await connection.close();
+            if (dbClient) {
+                await dbClient.release();
             }
         }
     }
 
-    static async getProduct(partno) {
-        let connection;
+    async getProduct(server, partno) {
+        let dbClient;
         try {
-            connection = await oracleConnection.openConnection();
+            dbClient = await server.pg.connect();
 
             const query = `
-            SELECT M_PRODUCT_ID FROM M_PRODUCT WHERE VALUE = :partno
+                SELECT m_product_id FROM m_product WHERE value = $1
             `;
-            const result = await connection.execute(query, [partno]);
+            const result = await dbClient.query(query, [partno]);
 
-            if (result.rows && result.rows.length > 0) {
+            if (result.rows.length > 0) {
 
-                return result.rows[0];
+                return result.rows[0].m_product_id;
             }
 
             return null;
         } catch (error) {
             throw new Error(`Failed to fetch product id: ${error.message}`);
         } finally {
-            if (connection) {
-                await connection.close();
+            if (dbClient) {
+                await dbClient.release();
             }
         }
     }
 
-    static async getAssetId(machineno) {
-        let connection;
+    async getAssetId(server, machineno) {
+        let dbClient;
         try {
-            connection = await oracleConnection.openConnection();
+            dbClient = await server.pg.connect();
 
             const query = `
-            SELECT A_ASSET_ID FROM A_ASSET WHERE VALUE = :machineno
+            SELECT a_asset_id FROM a_asset WHERE value = $1
             `;
-            const result = await connection.execute(query, [machineno]);
+            const result = await dbClient.query(query, [machineno]);
 
-            if (result.rows && result.rows.length > 0) {
+            if (result.rows.length > 0) {
 
-                return result.rows[0];
+                return result.rows[0].a_asset_id;
             }
 
             return null;
         } catch (error) {
             throw new Error(`Failed to fetch asset id: ${error.message}`);
         } finally {
-            if (connection) {
-                await connection.close();
+            if (dbClient) {
+                await dbClient.release();
             }
         }
     }
 
-    static async getMoldId(moldno) {
-        let connection;
+    async getMoldId(server, moldno) {
+        let dbClient;
         try {
-            connection = await oracleConnection.openConnection();
+            dbClient = await server.pg.connect();
 
             const query = `
-            SELECT M_PRODUCT_ID FROM M_PRODUCT
-            WHERE VALUE = :moldno AND M_PRODUCT_CATEGORY_ID = 1000015
+                SELECT m_product_id FROM m_product
+                WHERE value = $1 AND m_product_category_id = 1000025
             `;
-            const result = await connection.execute(query, [moldno]);
+            const result = await dbClient.query(query, [moldno]);
 
-            if (result.rows && result.rows.length > 0) {
+            if (result.rows.length > 0) {
 
-                return result.rows[0];
+                return result.rows[0].m_product_id;
             }
 
             return null;
         } catch (error) {
             throw new Error(`Failed to fetch asset id: ${error.message}`);
         } finally {
-            if (connection) {
-                await connection.close();
+            if (dbClient) {
+                await dbClient.release();
             }
         }
     }

@@ -184,7 +184,7 @@ const ListPlan = () => {
             },
         },
         { title: 'Description', dataIndex: 'description', key: 'description', ...getColumnSearchProps('description') },
-        { title: 'Resource code', dataIndex: 'rCode', key: 'rCode', ...getColumnSearchProps('rCode') },
+        { title: 'Resource code', dataIndex: 'resourceCode', key: 'resourceCode', ...getColumnSearchProps('resourceCode') },
         { title: 'Mold', dataIndex: 'moldName', key: 'moldName', ...getColumnSearchProps('moldName') },
         { title: 'Part No', dataIndex: 'partNo', key: 'partNo', ...getColumnSearchProps('partNo') },
         { title: 'Part Name', dataIndex: 'partName', key: 'partName', ...getColumnSearchProps('partName') },

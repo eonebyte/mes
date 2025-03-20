@@ -94,6 +94,7 @@ export default function DashboardResource() {
 
                                     >
                                         <Flex gap="40px" vertical>
+                                            {/* CARD HEADER */}
                                             <Flex align="flex-start" justify="space-between">
                                                 <Space style={{ flexDirection: 'column', display: 'inline', lineHeight: '1.2', alignItems: 'flex-start' }}>
                                                     <p style={{ fontWeight: 'bold', margin: 0 }}>{resource.line}</p>
@@ -107,6 +108,7 @@ export default function DashboardResource() {
                                             <div style={{ textAlign: 'center' }}>
                                                 <img src={resource.image} alt={resource.code} style={{ maxWidth: '100%' }} />
                                             </div>
+                                            {/* CARD FOOTER */}
                                             <Flex align="flex-end" justify="space-between">
                                                 <Space style={{ flexDirection: 'column', display: 'inline', lineHeight: '1.2', alignItems: 'flex-start' }}>
                                                     <p style={{ fontWeight: 'bold', margin: 0 }}>{resource.status}</p>
