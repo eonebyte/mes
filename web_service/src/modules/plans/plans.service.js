@@ -34,50 +34,66 @@ class PlansService {
             dbClient = await server.pg.connect(); // PostgreSQL pakai pool
 
             const query = `
-                SELECT
-                    jo.cust_joborder_id,
-                    jo.documentno, 
-                    aa.a_asset_id,
-                    aa.value AS resource_code,
-                    au.name AS created_by,
-                    jo.docstatus,
-                    TO_CHAR(jo.datedoc, 'DD-MM-YYYY HH24:MI:SS') AS datedoc,
-                    TO_CHAR(jo.startdate, 'DD-MM-YYYY HH24:MI:SS') AS startdate,
-                    TO_CHAR(jo.enddate, 'DD-MM-YYYY HH24:MI:SS') AS enddate,
-                    mp.cycletime,
-                    mp.cavity,
-                    jo.isactive, 
-                    jo.isverified,
-                    mp.value AS product_value,
-                    mp.name AS product_name,
-                    jo.qtyplanned, 
-                    jo.istrial, 
-                    mp2.value AS mold, 
-                    mp2.name AS moldname,
-                    jo.description
-                FROM cust_joborder jo
-                JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
-                JOIN ad_user au ON jo.created_by = au.ad_user_id
-                JOIN m_product mp ON jo.m_product_id = mp.m_product_id
-                LEFT JOIN m_product mp2 ON jo.mold_id = mp2.m_product_id
-                WHERE jo.datedoc >= DATE '2024-01-01' 
-                AND jo.docstatus <> 'CL'
-                ORDER BY jo.documentno DESC
+            SELECT
+                jo.cust_joborder_id,
+                jo.documentno, 
+                aa.a_asset_id,
+                aa.value AS resource_code,
+                au.name AS created_by,
+                jo.docstatus,
+                TO_CHAR(jo.datedoc, 'DD-MM-YYYY HH24:MI:SS') AS datedoc,
+                TO_CHAR(jo.startdate, 'DD-MM-YYYY HH24:MI:SS') AS startdate,
+                TO_CHAR(jo.enddate, 'DD-MM-YYYY HH24:MI:SS') AS enddate,
+                mp.cycletime,
+                mp.cavity,
+                jo.isactive, 
+                jo.isverified,
+                mp.value AS product_value,
+                mp.name AS product_name,
+                jo.qtyplanned, 
+                jo.istrial, 
+                mp2.value AS mold, 
+                mp2.name AS moldname,
+                jo.description
+            FROM cust_joborder jo
+            JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
+            JOIN ad_user au ON jo.created_by = au.ad_user_id
+            JOIN m_product mp ON jo.m_product_id = mp.m_product_id
+            LEFT JOIN m_product mp2 ON jo.mold_id = mp2.m_product_id
+            WHERE jo.datedoc >= DATE '2024-01-01' 
+            AND jo.docstatus <> 'CL'
+            ORDER BY jo.documentno DESC
         `;
 
             const result = await dbClient.query(query); // PostgreSQL pakai query()
 
             if (result.rows.length > 0) {
-                return result.rows.map((row, index) => new PlansService(
-                    index + 1, row.cust_joborder_id, row.documentno, row.a_asset_id, row.resource_code,
-                    row.created_by, row.docstatus, row.datedoc, row.startdate, row.enddate,
-                    row.cycletime, row.cavity, row.isactive, row.isverified,
-                    row.product_value, row.product_name, row.qtyplanned, row.istrial,
-                    row.mold, row.moldname, row.description
-                ));
+                return result.rows.map((row, index) => ({
+                    no: index + 1,
+                    planId: row.cust_joborder_id,
+                    planNo: row.documentno,
+                    resourceId: row.a_asset_id,
+                    resourceCode: row.resource_code,
+                    user: row.created_by,
+                    status: row.docstatus,
+                    dateDoc: row.datedoc,
+                    planStartTime: row.startdate,
+                    planCompleteTime: row.enddate,
+                    cycletime: row.cycletime,
+                    cavity: row.cavity,
+                    isActive: row.isactive,
+                    isVerified: row.isverified,
+                    partNo: row.product_value,
+                    partName: row.product_name,
+                    qty: row.qtyplanned,
+                    isTrial: row.istrial,
+                    mold: row.mold,
+                    moldName: row.moldname,
+                    description: row.description
+                }));
             }
 
-            return null;
+            return [];
         } catch (error) {
             throw new Error(`Failed to fetch All Job Orders: ${error}`);
         } finally {
@@ -98,6 +114,7 @@ class PlansService {
                 jo.cust_joborder_id,
                 jo.documentno, 
                 aa.a_asset_id, 
+                aa.value AS resource_code,
                 au.name AS created_by,
                 jo.docstatus,
                 TO_CHAR(jo.datedoc, 'DD-MM-YYYY HH24:MI:SS') AS datedoc,
@@ -128,16 +145,32 @@ class PlansService {
             const result = await dbClient.query(query, [resourceId]); // PostgreSQL pakai query() dengan binding parameter
 
             if (result.rows.length > 0) {
-                return result.rows.map((row, index) => new PlansService(
-                    index + 1, row.cust_joborder_id, row.documentno, row.a_asset_id,
-                    row.created_by, row.docstatus, row.datedoc, row.startdate, row.enddate,
-                    row.cycletime, row.cavity, row.isactive, row.isverified,
-                    row.product_value, row.product_name, row.qtyplanned, row.istrial,
-                    row.mold, row.moldname, row.description
-                ));
+                return result.rows.map((row, index) => ({
+                    no: index + 1,
+                    planId: row.cust_joborder_id,
+                    planNo: row.documentno,
+                    resourceId: row.a_asset_id,
+                    resourceCode: row.resource_code,
+                    user: row.created_by,
+                    status: row.docstatus,
+                    dateDoc: row.datedoc,
+                    planStartTime: row.startdate,
+                    planCompleteTime: row.enddate,
+                    cycletime: row.cycletime,
+                    cavity: row.cavity,
+                    isActive: row.isactive,
+                    isVerified: row.isverified,
+                    partNo: row.product_value,
+                    partName: row.product_name,
+                    qty: row.qtyplanned,
+                    isTrial: row.istrial,
+                    mold: row.mold,
+                    moldName: row.moldname,
+                    description: row.description
+                }));
             }
 
-            return null;
+            return [];
         } catch (error) {
             throw new Error(`Failed to fetch Job Orders by Resource: ${error}`);
         } finally {
@@ -146,6 +179,7 @@ class PlansService {
             }
         }
     }
+
 
 
     async findActivePlan(resourceId) {

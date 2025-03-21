@@ -40,6 +40,9 @@ function PlanResource() {
         fetchData();
     }, [resourceId]);
 
+    console.log('this All Plans :', allPlans);
+    
+
     function getBackgroundColor(status, isDarkMode) {
         if (status === 'SP' || status === 'PP') {
             return isDarkMode ? '#333' : '#fff7e6'; // On Hold: terang jika mode terang, gelap jika mode gelap
