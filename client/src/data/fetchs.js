@@ -76,3 +76,17 @@ export const fetchDetailPlan = async (planId) => {
         return null;
     }
 }
+
+export const fetchMolds = async () => {
+    try {
+        const response = await fetch(`http://localhost:3080/api/molds`);
+        const result = await response.json();
+        if (result && result.data) {
+            return result.data;  // Mengembalikan objek
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching resource:", error);
+        return null;
+    }
+}

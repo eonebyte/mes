@@ -76,7 +76,7 @@ function PlanDetail() {
         return isDarkMode ? '#ffffff' : '#1677FF'; // Teks putih jika mode gelap, hitam jika terang
     }
 
-console.log('plan detail: ',plan);
+    console.log('plan detail: ', plan);
 
 
 
@@ -164,7 +164,7 @@ console.log('plan detail: ',plan);
                                             <span>RELEASE</span>
                                         </Button>
                                     )}
-                                    {plan.status == 'Released' && (
+                                    {plan.status == 'DR' && (
                                         <Button
                                             color="primary"
                                             variant="text"
@@ -177,10 +177,10 @@ console.log('plan detail: ',plan);
                                             onClick={ConfirmReady}
                                         >
                                             <FactCheckIcon sx={{ fontSize: 18 }} />
-                                            <span>READY</span>
+                                            <span>OPEN</span>
                                         </Button>
                                     )}
-                                    {plan.status == 'Ready' && (
+                                    {plan.status == 'OP' && (
                                         <><Button
                                             color="primary"
                                             variant="text"
@@ -228,29 +228,29 @@ console.log('plan detail: ',plan);
                             </Row>
                             <Row gutter={[16]}>
                                 <Col lg={4} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                                    <div>Part No.</div>
-                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div>Part No/Part Name</div>
+                                    <div style={{ marginBottom: 10 }}><strong>{plan.partNo}/{plan.partName}</strong></div>
                                     <div>Revision</div>
-                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                     <div>Project</div>
-                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                 </Col>
                                 <Col lg={4}>
                                     <div>Seq Desc</div>
-                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                     <div>Part Model</div>
-                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                     <div>Part Drawing #</div>
-                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                 </Col>
 
                                 <Col lg={4}>
                                     <div>Order No.</div>
-                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                     <div>Cust Order</div>
-                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>{plan.planNo}</strong></div>
                                     <div>Batch</div>
-                                    <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
+                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                 </Col>
 
                                 <Col lg={4}>
@@ -266,9 +266,9 @@ console.log('plan detail: ',plan);
                                     <Flex align="flex-start" justify="space-between">
                                         <div>
                                             <div>Part Desc</div>
-                                            <div style={{ marginBottom: 10 }}><strong>{plan.part_desc}</strong></div>
+                                            <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                             <div>Cycles</div>
-                                            <div style={{ marginBottom: 10 }}><strong>{plan.cycles}</strong></div>
+                                            <div style={{ marginBottom: 10 }}><strong>{plan.cycletime}</strong></div>
                                         </div>
                                         {plan ? (
                                             <RemainingPlanDetail planQty={plan.qty} toGoQty={100} outputQty={100} CT={plan.cycletime} />
@@ -400,7 +400,7 @@ console.log('plan detail: ',plan);
                                                         marginTop: 0,
                                                         fontWeight: 'bold'
                                                     }}>
-                                                        1
+                                                        {plan.lineno}
                                                     </span>
                                                 </div>
 
@@ -414,8 +414,8 @@ console.log('plan detail: ',plan);
                                                     height: '100%',
                                                     lineHeight: '1.2'
                                                 }}>
-                                                    <strong style={{ marginRight: 50, marginLeft: 15, fontSize: 24 }}>A06</strong>
-                                                    <span style={{ marginRight: 50, marginLeft: 15, fontSize: 20 }}>CL00006</span>
+                                                    <strong style={{ marginRight: 50, marginLeft: 15, fontSize: 24 }}>{plan.mcno}</strong>
+                                                    <span style={{ marginRight: 50, marginLeft: 15, fontSize: 20 }}>{plan.moldName}</span>
                                                 </div>
                                             </Col>
                                         </Row>

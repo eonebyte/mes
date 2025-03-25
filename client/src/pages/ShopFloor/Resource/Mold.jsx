@@ -10,6 +10,7 @@ import RemainingMold from "../../../components/ShopFloors/Mold/RemainingMold";
 import ConfirmTeardown from "../../../components/Buttons/ConfirmTeardown";
 import { fetchResourceById } from "../../../data/fetchs";
 
+
 const onChange = (key) => {
     console.log(key);
 };
@@ -27,6 +28,9 @@ function MoldResource() {
 
     const [resource, setResource] = useState(resourceFromStore);  // Use resource from Redux initially
     const [loading, setLoading] = useState(!resourceFromStore);
+
+    console.log('this resource :', resource);
+
 
     useEffect(() => {
         if (!resourceFromStore && resourceId) { // Jika resource belum ada di Redux dan resourceId ada
@@ -53,6 +57,37 @@ function MoldResource() {
         }
     }, [resource, loading, navigate]);
 
+    const handleTeardown = async () => {
+        if (!resource.mold_id || !resource.id) {
+            console.error("Resource atau Mold belum dipilih!");
+            return;
+        }
+
+        setLoading(true); // Show loading spinner
+
+        try {
+            const response = await fetch('http://localhost:3080/api/molds/resource/teardown', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    resourceId: resource.id
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal menyimpan data!');
+            }
+            console.log("Setup berhasil!");
+            navigate(`/resource/mold?resourceId=${resourceId}`);
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            setLoading(false); // Hide loading spinner
+        }
+    };
+
     const moldTabData = {
         tabs: [
             {
@@ -67,7 +102,7 @@ function MoldResource() {
                     </>
                 ),
                 key: "1",
-                children: (
+                children: resource?.mold_id ? (
                     <Card
                         style={{
                             boxShadow: '0 1px 4px rgba(0, 0, 0, 0.5)',
@@ -76,7 +111,7 @@ function MoldResource() {
                             backgroundColor: isDarkMode ? '#333' : '#fff',
                             cursor: 'pointer',
                         }}
-                        onClick={() => ConfirmTeardown('CL000006')}
+                        onClick={() => ConfirmTeardown(resource.mold_name, handleTeardown)}
                         styles={{
                             body: { padding: 10 }
                         }}
@@ -87,19 +122,27 @@ function MoldResource() {
                                 {/* Mold Section */}
                                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, marginBottom: 10 }}>
                                     <span style={{ fontSize: '14px' }}>Mold #</span>
-                                    <span style={{ fontSize: '16px', fontWeight: '600' }}>CL000006</span>
+                                    {resource && resource.mold_name ? (
+                                        <span style={{ fontSize: '16px', fontWeight: '600' }}>{resource.mold_name}</span>
+                                    ) : (
+                                        <span>Loading mold name...</span>
+                                    )}
                                 </div>
 
                                 {/* Available life cycles */}
-                                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, marginBottom: 10 }}>
+                                {/* <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, marginBottom: 10 }}>
                                     <span style={{ fontSize: '14px' }}>Available life cycles</span>
                                     <span style={{ fontSize: '16px', fontWeight: '600' }}>71.5%</span>
-                                </div>
+                                </div> */}
 
                                 {/* Setup Time */}
                                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
                                     <span style={{ fontSize: '14px' }}>Setup Time</span>
-                                    <span style={{ fontSize: '16px', fontWeight: '600' }}>2024-11-13 00:42:55</span>
+                                    {resource && resource.setuptime ? (
+                                        <span style={{ fontSize: '16px', fontWeight: '600' }}>{resource.setuptime}</span>
+                                    ) : (
+                                        <span>Loading mold name...</span>
+                                    )}
                                 </div>
                             </div>
 
@@ -110,6 +153,8 @@ function MoldResource() {
                         </div>
 
                     </Card>
+                ) : (
+                    <span style={{ fontSize: '14px', color: '#888' }}>Tidak ada mold terpasang</span> // Tampilkan pesan jika mold_id kosong
                 )
             },
             {
@@ -118,13 +163,13 @@ function MoldResource() {
                         <Flex align="center">
                             <InputIcon sx={{ fontSize: 18, marginRight: 1 }} />
                             <span>
-                                MOLD
+                                MOLD HISTORY 
                             </span>
                         </Flex>
                     </>
                 ),
                 key: "2",
-                children: "This tab contains detailed information about the mold.",
+                children: "COMING SOON",
             },
         ],
     };
@@ -152,7 +197,17 @@ function MoldResource() {
                     {/* BODY CONTENT */}
                     <Card
                         title={
-                            <div onClick={() => navigate(`/resource/mold/setup?resourceId=${resource.id}`)} style={{ cursor: 'pointer' }}>
+                            <div
+                                onClick={() => {
+                                    if (!resource.mold_id) {
+                                        navigate(`/resource/mold/setup?resourceId=${resource.id}`);
+                                    }
+                                }}
+                                style={{
+                                    cursor: resource.mold_id ? 'not-allowed' : 'pointer',
+                                    opacity: resource.mold_id ? 0.5 : 1
+                                }}
+                            >
                                 <Flex align="center" justify="flex-start">
                                     <Space>
                                         <div
@@ -201,11 +256,12 @@ function MoldResource() {
                             }
                         }}
                     >
-                        <Tabs
+                        {resource ? <Tabs
                             onChange={onChange}
                             type="card"
                             items={moldTabData.tabs}
-                        />
+                        /> : <span>Loading mold name...</span>
+                        }
                     </Card>
                 </>
             }

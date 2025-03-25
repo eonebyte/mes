@@ -41,7 +41,7 @@ function PlanResource() {
     }, [resourceId]);
 
     console.log('this All Plans :', allPlans);
-    
+
 
     function getBackgroundColor(status, isDarkMode) {
         if (status === 'SP' || status === 'PP') {
@@ -151,9 +151,9 @@ function PlanResource() {
                                 <Row gutter={[16]}>
                                     <Col lg={7} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                                         <div>Order No.</div>
-                                        <div style={{ marginBottom: 10 }}><strong>Null</strong></div>
-                                        <div>Part No.</div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.partNo}</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                        <div>Part No/Part Name</div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.partNo}/{plan.partName}</strong></div>
                                         <div>Part Drawing #</div>
                                         <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing ? plan.part_drawing : '-'}</strong></div>
                                     </Col>

@@ -179,7 +179,7 @@ class PlansController {
     static async getDetailPlan(request, reply) {
         const { planId } = request.query;
         try {
-            const job_order = await PlanningService.findDetailPlan(planId);
+            const job_order = await request.server.plansService.findDetailPlan(request.server, planId);
             const planData = job_order.length > 0 ? job_order[0] : null;
             reply.send({ message: 'fetch successfully', data: planData });
         } catch (error) {

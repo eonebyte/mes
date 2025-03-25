@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Input, Space, Spin, Table } from 'antd';
+import { EyeOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Card, Descriptions, Input, Modal, Space, Spin, Table } from 'antd';
 import Highlighter from 'react-highlight-words';
 import LayoutDashboard from '../../components/layouts/LayoutDashboard';
 
@@ -11,6 +11,9 @@ const ListPlan = () => {
     const [searchText, setSearchText] = useState('');
     const [searchedColumn, setSearchedColumn] = useState('');
     const searchInput = useRef(null);
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedData, setSelectedData] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -167,6 +170,11 @@ const ListPlan = () => {
         }
     };
 
+    const handleViewDetail = (record) => {
+        setSelectedData(record);
+        setModalVisible(true);
+    };
+
     const columns = [
         { title: 'No', dataIndex: 'no', key: 'no', ...getColumnSearchProps('no') },
         {
@@ -213,6 +221,15 @@ const ListPlan = () => {
         { title: 'Cycletime', dataIndex: 'cycletime', key: 'cycletime', ...getColumnSearchProps('cycletime') },
         { title: 'Cavity', dataIndex: 'cavity', key: 'cavity', ...getColumnSearchProps('cavity') },
         { title: 'Trial', dataIndex: 'isTrial', key: 'isTrial', ...getColumnSearchProps('isTrial') },
+        {
+            title: "Action",
+            key: "action",
+            render: (text, record) => (
+                <Button type="link" onClick={() => handleViewDetail(record)}>
+                    <EyeOutlined />
+                </Button>
+            ),
+        },
     ];
 
     return (
@@ -238,6 +255,40 @@ const ListPlan = () => {
                     />
                 </Spin>
             </Card>
+
+            {/* Modal untuk menampilkan detail */}
+            <Modal
+                title="Plan Detail"
+                open={modalVisible}
+                onCancel={() => setModalVisible(false)}
+                footer={[
+                    <Button key="close" onClick={() => setModalVisible(false)}>
+                        Close
+                    </Button>,
+                ]}
+                width={1000}
+            >
+                {selectedData && (
+                    <Descriptions bordered column={1} size="small">
+                        <Descriptions.Item label="No">{selectedData.no}</Descriptions.Item>
+                        <Descriptions.Item label="Plan No">{selectedData.planNo}</Descriptions.Item>
+                        <Descriptions.Item label="Description">{selectedData.description}</Descriptions.Item>
+                        <Descriptions.Item label="Resource Code">{selectedData.resourceCode}</Descriptions.Item>
+                        <Descriptions.Item label="Mold">{selectedData.moldName}</Descriptions.Item>
+                        <Descriptions.Item label="Part No">{selectedData.partNo}</Descriptions.Item>
+                        <Descriptions.Item label="Part Name">{selectedData.partName}</Descriptions.Item>
+                        <Descriptions.Item label="User">{selectedData.user}</Descriptions.Item>
+                        <Descriptions.Item label="Plan Status">{selectedData.status}</Descriptions.Item>
+                        <Descriptions.Item label="Quantity">{selectedData.qty}</Descriptions.Item>
+                        <Descriptions.Item label="Date Doc">{selectedData.dateDoc}</Descriptions.Item>
+                        <Descriptions.Item label="Start Time">{selectedData.planStartTime}</Descriptions.Item>
+                        <Descriptions.Item label="Complete Time">{selectedData.planCompleteTime}</Descriptions.Item>
+                        <Descriptions.Item label="Cycletime">{selectedData.cycletime}</Descriptions.Item>
+                        <Descriptions.Item label="Cavity">{selectedData.cavity}</Descriptions.Item>
+                        <Descriptions.Item label="Trial">{selectedData.isTrial}</Descriptions.Item>
+                    </Descriptions>
+                )}
+            </Modal>
         </LayoutDashboard>
     );
 };

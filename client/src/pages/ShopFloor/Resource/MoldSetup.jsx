@@ -4,9 +4,9 @@ import LayoutDashboard from '../../../components/layouts/LayoutDashboard';
 import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { resources } from '../../../data/fetchResource';
 import { useSelector } from 'react-redux';
 import UploadIcon from '@mui/icons-material/Upload';
+import { fetchMolds, fetchResourceById } from '../../../data/fetchs';
 
 const StepMoldSetup = () => {
     const navigate = useNavigate();
@@ -14,23 +14,47 @@ const StepMoldSetup = () => {
     const { token } = theme.useToken();
     const [current, setCurrent] = useState(1);
     const [selectedOption, setSelectedOption] = useState(null);
+    const [molds, setMolds] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [resource, setResource] = useState(null);
 
 
     const [searchParams] = useSearchParams();
     const resourceId = searchParams.get('resourceId');
 
-    const [loading, setLoading] = useState(true);
-    const [resource, setResource] = useState(null);
-
-    const moldOptions = Array.from({ length: 20 }, (_, index) => ({
-        value: `AC00000${index + 1}`,
-        label: `AC00000${index + 1}`,
-    }));
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const moldsData = await fetchMolds();
+                if (Array.isArray(moldsData)) {
+                    const formattedMolds = moldsData.map(mold => ({
+                        value: mold.m_product_id,
+                        label: mold.name
+                    }));
+                    setMolds(formattedMolds);
+                } else {
+                    setMolds([]);
+                    console.error("Fetched data is not an array");
+                }
+            } catch (error) {
+                setMolds([]);  // In case of error, set an empty array
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchData();
+    }, []);
 
     useEffect(() => {
-        const resourceData = resources.find((res) => res.id === Number(resourceId));
-        setResource(resourceData);
-        setLoading(false);
+        const getResource = async () => {
+            if (!resourceId) return; // Cegah fetch jika ID tidak ada
+
+            const data = await fetchResourceById(resourceId);
+            setResource(data); // Set hasil ke state
+            setLoading(false);
+        };
+
+        getResource();
     }, [resourceId]);
 
     const next = () => {
@@ -39,35 +63,44 @@ const StepMoldSetup = () => {
         }
     };
 
-    const handleSelectChange = (value) => {
-        setSelectedOption(value); // Simpan nilai pilihan
+    const handleSelectChange = (_, option) => {
+        setSelectedOption({
+            id: option.value,    // Simpan ID mold
+            label: option.label, // Simpan Nama mold
+        });
     };
 
-    const handleSetup = async () => {
-        setLoading(true); // Show loading spinner
-        navigate(`/resource/mold?resourceId=${resource.id}`)
-        // try {
-        //     const response = await fetch('/your-endpoint', {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //         },
-        //         body: JSON.stringify({
-        //             resourceId, // Sending resourceId
-        //             modlId: selectedOption, // Sending moldId
-        //         }),
-        //     });
 
-        //     if (response.ok) {
-        //         navigate('/resource');
-        //     } else {
-        //         console.error('Failed to submit data');
-        //     }
-        // } catch (error) {
-        //     console.error('Error:', error);
-        // } finally {
-        //     setLoading(false); // Hide loading spinner
-        // }
+    const handleSetup = async () => {
+        if (!selectedOption?.id || !resource?.id) {
+            console.error("Resource atau Mold belum dipilih!");
+            return;
+        }
+
+        setLoading(true); // Show loading spinner
+
+        try {
+            const response = await fetch('http://localhost:3080/api/molds/resource/setup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    resourceId: resource.id,
+                    moldId: selectedOption.id,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal menyimpan data!');
+            }
+            console.log("Setup berhasil!");
+            navigate(`/resource/mold?resourceId=${resource.id}`);
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            setLoading(false); // Hide loading spinner
+        }
     };
 
     const steps = [
@@ -77,7 +110,7 @@ const StepMoldSetup = () => {
         },
         {
             title: 'Mold #',
-            description: current >= 2 ? selectedOption : '',
+            description: current >= 2 ? selectedOption?.label : '',
             content: (
                 <>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '150px', margin: '10px, 0px' }}>
@@ -86,7 +119,7 @@ const StepMoldSetup = () => {
                             placeholder="Select a Mold"
                             onChange={handleSelectChange}
                             filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                            options={moldOptions}
+                            options={molds}
                             style={{ width: '250px', textAlign: 'left' }} />
                         <button
                             onClick={next}
@@ -112,12 +145,12 @@ const StepMoldSetup = () => {
             content: (
                 <>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '150px', margin: '10px, 0px' }}>
-                        <span style={{ color: isDarkMode ? 'white' : 'black', marginRight: 15, fontSize: 18 }}>{current >= 2 ? selectedOption : ''}</span>
+                        <span style={{ color: isDarkMode ? 'white' : 'black', marginRight: 15, fontSize: 18 }}>{current >= 2 ? selectedOption?.label : ''}</span>
                         <ArrowForwardIcon style={{ color: isDarkMode ? 'white' : '#000' }} />
                         <span style={{ color: isDarkMode ? 'white' : 'black', marginLeft: 15, fontSize: 18 }}>{resource ? resource.name : ''}</span>
 
                     </div>
-                    <div style={{lineHeight: 0, marginBottom: 15}}>
+                    <div style={{ lineHeight: 0, marginBottom: 15 }}>
                         <Button onClick={handleSetup} type='primary'>
                             <UploadIcon /> SETUP
                         </Button>
@@ -149,9 +182,9 @@ const StepMoldSetup = () => {
         border: `1px dashed ${token.colorBorder}`,
         marginTop: 10,
     };
-    
 
-    
+
+
 
     return (
         <>

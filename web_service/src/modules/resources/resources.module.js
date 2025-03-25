@@ -7,9 +7,6 @@ async function ResourcesModule(server, opts) {
 
     server.get('/api/resources', ResourcesController.getResources);
     server.get('/api/resource', ResourcesController.getResource);
-    server.post('/api/resource/log', ResourcesController.insertResourceEvent);
-    server.post('/api/resource/log/start-downtime', ResourcesController.startDowntime);
-    server.post('/api/resource/log/end-downtime', ResourcesController.endDowntime);
 }
 
 export default fp(ResourcesModule);

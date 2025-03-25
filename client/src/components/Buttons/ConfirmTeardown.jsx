@@ -2,13 +2,13 @@ import { CheckOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Divider, Modal, Space } from "antd";
 
 
-const ConfirmTeardown = (mold) => {
+const ConfirmTeardown = (mold, onTeardown) => {
     Modal.confirm({
         title: 'Confirm Teardown',
         content: (
             <>
                 <Divider />
-                <span style={{ fontSize: '18px' }}>Teardown Mold {mold} ?</span>
+                <span style={{ fontSize: '18px' }}>Teardown Mold : <strong>{mold}</strong> ?</span>
                 <Divider />
             </>
 
@@ -46,8 +46,8 @@ const ConfirmTeardown = (mold) => {
                             fontWeight: '600',
                             padding: '5px 10px'
                         }}
-                        onClick={() => {
-                            alert('OK');
+                        onClick={async () => {
+                            await onTeardown();
                             Modal.destroyAll();
                         }}
                     >
