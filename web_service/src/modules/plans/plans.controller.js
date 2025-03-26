@@ -177,9 +177,14 @@ class PlansController {
     }
 
     static async getDetailPlan(request, reply) {
-        const { planId } = request.query;
+        const { planId, moldId } = request.query;
         try {
-            const job_order = await request.server.plansService.findDetailPlan(request.server, planId);
+            let job_order;
+            if (planId) {
+                job_order = await request.server.plansService.findDetailPlan(request.server, planId);
+            } else {
+                job_order = await request.server.plansService.findDetailPlanWithMold(request.server, moldId);
+            }
             const planData = job_order.length > 0 ? job_order[0] : null;
             reply.send({ message: 'fetch successfully', data: planData });
         } catch (error) {

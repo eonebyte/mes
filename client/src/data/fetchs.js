@@ -39,13 +39,13 @@ export const fetchPlanByResource = async (resourceId) => {
     try {
         const response = await fetch(`http://localhost:3080/api/plans/resource/plans?resourceId=${resourceId}`);
         const result = await response.json();
-        if (result && result.data && result.data.length > 0) {
+        if (result && result.data) {
             return result.data;
         }
-        return null;
+        return { singleTaskPlans: [], multipleTaskPlans: [] };
     } catch (error) {
         console.error("Error fetching resource:", error);
-        return null;
+        return { singleTaskPlans: [], multipleTaskPlans: [] };
     }
 }
 
@@ -63,9 +63,15 @@ export const fetchPlanActive = async (resourceId) => {
     }
 }
 
-export const fetchDetailPlan = async (planId) => {
+export const fetchDetailPlan = async (planId, moldId) => {
     try {
-        const response = await fetch(`http://localhost:3080/api/plans/plan/detail?planId=${planId}`);
+        const params = new URLSearchParams();
+        if (planId) params.append("planId", planId);
+        if (moldId) params.append("moldId", moldId);
+
+        // Fetch data dengan query parameters yang valid
+        const response = await fetch(`http://localhost:3080/api/plans/plan/detail?${params.toString()}`);
+
         const result = await response.json();
         if (result && result.data) {
             return result.data;  // Mengembalikan objek

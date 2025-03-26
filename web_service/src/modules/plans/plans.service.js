@@ -79,7 +79,7 @@ class PlansService {
                     dateDoc: row.datedoc,
                     planStartTime: row.startdate,
                     planCompleteTime: row.enddate,
-                    cycletime: row.cycletime,
+                    cycletime: Math.floor(row.cycletime),
                     cavity: row.cavity,
                     isActive: row.isactive,
                     isVerified: row.isverified,
@@ -145,34 +145,61 @@ class PlansService {
 
             const result = await dbClient.query(query, [resourceId]); // PostgreSQL pakai query() dengan binding parameter
 
-            if (result.rows.length > 0) {
-                return result.rows.map((row, index) => ({
-                    no: index + 1,
-                    planId: row.cust_joborder_id,
-                    planNo: row.documentno,
-                    resourceId: row.a_asset_id,
-                    resourceCode: row.resource_code,
-                    user: row.created_by,
-                    status: row.docstatus,
-                    dateDoc: row.datedoc,
-                    planStartTime: row.startdate,
-                    planCompleteTime: row.enddate,
-                    cycletime: row.cycletime,
-                    cavity: row.cavity,
-                    isActive: row.isactive,
-                    isVerified: row.isverified,
-                    partNo: row.product_value,
-                    partName: row.product_name,
-                    qty: Math.floor(row.qtyplanned),
-                    isTrial: row.istrial,
-                    mold: row.mold,
-                    moldName: row.moldname,
-                    mold_id: row.mold_id,
-                    description: row.description
-                }));
-            }
+            const jobOrders = result.rows.map((row, index) => ({
+                no: index + 1,
+                planId: row.cust_joborder_id,
+                planNo: row.documentno,
+                resourceId: row.a_asset_id,
+                resourceCode: row.resource_code,
+                user: row.created_by,
+                status: row.docstatus,
+                dateDoc: row.datedoc,
+                planStartTime: row.startdate,
+                planCompleteTime: row.enddate,
+                cycletime: Math.floor(row.cycletime),
+                cavity: row.cavity,
+                isActive: row.isactive,
+                isVerified: row.isverified,
+                partNo: row.product_value,
+                partName: row.product_name,
+                qty: Math.floor(row.qtyplanned),
+                isTrial: row.istrial,
+                mold: row.mold,
+                moldName: row.moldname,
+                mold_id: row.mold_id,
+                description: row.description
+            }));
 
-            return [];
+            // Mengelompokkan berdasarkan mold_id
+            const groupedPlans = jobOrders.reduce((acc, job) => {
+                const key = job.mold_id;
+                const mold_name = job.moldName;
+                if (!acc[key]) {
+                    acc[key] = {
+                        moldId: key,
+                        mold_name: mold_name || 'undefined',
+                        data: []
+                    };
+                }
+                acc[key].data.push(job);
+                return acc;
+            }, {});
+
+            const singleTaskPlans = [];
+            const multipleTaskPlans = [];
+
+            Object.values(groupedPlans).forEach((group) => {
+                if (group.data.length > 1) {
+                    multipleTaskPlans.push(group);
+                } else {
+                    singleTaskPlans.push(...group.data);
+                }
+            });
+
+            return {
+                singleTaskPlans,
+                multipleTaskPlans
+            };
         } catch (error) {
             throw new Error(`Failed to fetch Job Orders by Resource: ${error}`);
         } finally {
@@ -181,7 +208,6 @@ class PlansService {
             }
         }
     }
-
 
 
     async findActivePlan(resourceId) {
@@ -328,6 +354,114 @@ class PlansService {
             }));
 
             return jobOrders;
+        } catch (error) {
+            throw new Error(`Failed to fetch Job Order Details: ${error}`);
+        } finally {
+            if (dbClient) {
+                dbClient.release();
+            }
+        }
+    }
+
+    async findDetailPlanWithMold(server, moldId) {
+        let dbClient;
+        try {
+            dbClient = await server.pg.connect();
+
+            const query = `
+                SELECT
+                    jo.cust_joborder_id,
+                    jo.documentno, 
+                    aa.a_asset_id, 
+                    au.name AS created_by,
+                    jo.docstatus,
+                    TO_CHAR(jo.datedoc, 'DD-MM-YYYY HH24:MI:SS') AS datedoc,
+                    TO_CHAR(jo.startdate, 'DD-MM-YYYY HH24:MI:SS') AS startdate,
+                    TO_CHAR(jo.enddate, 'DD-MM-YYYY HH24:MI:SS') AS enddate,
+                    mp.cycletime,
+                    mp.cavity,
+                    jo.isactive, 
+                    jo.isverified,
+                    mp.value AS product_value,
+                    mp.name AS product_name,
+                    CAST(jo.qtyplanned AS INTEGER) AS qtyplanned, -- Menghilangkan desimal
+                    jo.istrial, 
+                    mp2.value AS mold, 
+                    mp2.name AS moldname,
+                    jo.description,
+                    jo.mold_id AS mold_id
+                FROM cust_joborder jo
+                JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
+                JOIN ad_user au ON jo.created_by = au.ad_user_id
+                JOIN m_product mp ON jo.m_product_id = mp.m_product_id
+                LEFT JOIN m_product mp2 ON jo.mold_id = mp2.m_product_id
+                WHERE
+                    jo.datedoc >= TO_DATE('2024-01-01', 'YYYY-MM-DD')
+                    AND jo.docstatus <> 'CL'
+                    AND mp2.m_product_id = $1
+                ORDER BY
+                    jo.documentno DESC
+        `;
+
+            const result = await dbClient.query(query, [moldId]);
+
+            if (result.rows.length === 0) {
+                return null;
+            }
+
+            const jobOrders = await Promise.all(result.rows.map(async (row, index) => {
+                const station = await this.getStation(server, parseInt(row.a_asset_id));
+
+                return {
+                    no: index + 1,
+                    planId: row.cust_joborder_id,
+                    planNo: row.documentno,
+                    resourceId: row.a_asset_id,
+                    createdBy: row.created_by,
+                    status: row.docstatus,
+                    dateDoc: row.datedoc,
+                    planStartTime: row.startdate,
+                    planCompleteTime: row.enddate,
+                    cycletime: row.cycletime,
+                    cavity: row.cavity,
+                    isActive: row.isactive,
+                    isVerified: row.isverified,
+                    partNo: row.product_value,
+                    partName: row.product_name,
+                    qty: row.qtyplanned,
+                    isTrial: row.istrial,
+                    mold: row.mold,
+                    moldName: row.moldname,
+                    description: row.description,
+                    lineno: station?.lineno || null,
+                    mcno: station?.value || null,
+                    mold_id: row.mold_id
+                };
+            }));
+
+            const groupedPlans = jobOrders.reduce((acc, job) => {
+                const key = job.mold_id;
+                const mold_name = job.moldName;
+                if (!acc[key]) {
+                    acc[key] = {
+                        moldId: key,
+                        mold_name: mold_name || 'undefined',
+                        data: []
+                    };
+                }
+                acc[key].data.push(job);
+                return acc;
+            }, {});
+
+            const multipleTaskPlans = [];
+
+            Object.values(groupedPlans).forEach((group) => {
+                if (group.data.length > 1) {
+                    multipleTaskPlans.push(group);
+                }
+            });
+
+            return multipleTaskPlans;
         } catch (error) {
             throw new Error(`Failed to fetch Job Order Details: ${error}`);
         } finally {
@@ -521,7 +655,7 @@ class PlansService {
         }
     }
 
-    
+
 }
 
 export default PlansService;

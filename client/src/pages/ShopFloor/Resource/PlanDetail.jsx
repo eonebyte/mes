@@ -31,25 +31,36 @@ function PlanDetail() {
 
     const [searchParams] = useSearchParams();
     const planId = searchParams.get('planId');
+    const moldId = searchParams.get('moldId');
 
     const [loading, setLoading] = useState(true);
-    const [plan, setPlan] = useState({});
+    const [singlePlan, setSinglePlan] = useState({});
+    const [multiplePlan, setMultiplePlan] = useState({});
 
 
     useEffect(() => {
-        if (!planId) {
+        if (!planId && !moldId) {
             navigate("/shopfloor");
             return;
         }
         const fetchData = async () => {
             setLoading(true);
             try {
-                const planData = await fetchDetailPlan(Number(planId))
-                if (planData) {
-                    setPlan(planData);
+                let singlePlanData;
+                let multiplePlanData;
+                if (planId) {
+                    singlePlanData = await fetchDetailPlan(planId, null);
                 } else {
-                    console.log('plandata: ', planData);
-                    setPlan({});  // Handle unexpected data (non-array) by setting an empty array
+                    multiplePlanData = await fetchDetailPlan(planId, null);
+                }
+
+                if (singlePlanData) {
+                    setSinglePlan(singlePlanData);
+                } else if (multiplePlanData) {
+                    setMultiplePlan(multiplePlanData)
+                } else {
+                    setSinglePlan({});  // Handle unexpected data (non-array) by setting an empty array
+                    setMultiplePlan({});  // Handle unexpected data (non-array) by setting an empty array
                 }
             } catch (error) {
                 console.error("Error fetching resource:", error);
