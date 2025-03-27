@@ -442,10 +442,16 @@ class PlansService {
             const groupedPlans = jobOrders.reduce((acc, job) => {
                 const key = job.mold_id;
                 const mold_name = job.moldName;
+                const jo_status = job.status;
+                const lineno = job.lineno;
+                const mcno = job.mcno;
                 if (!acc[key]) {
                     acc[key] = {
                         moldId: key,
                         mold_name: mold_name || 'undefined',
+                        jo_status: jo_status,
+                        lineno: lineno,
+                        mcno: mcno,
                         data: []
                     };
                 }
