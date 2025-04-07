@@ -1,42 +1,15 @@
 import { CheckOutlined, StopOutlined } from "@ant-design/icons";
-import { Button, Divider, Modal, notification, Select, Space } from "antd";
+import { Button, Divider, Modal, notification, Space } from "antd";
 
+import HoldIcon from '../../assets/hold-icon.svg';
 
-const ConfirmSetup = ({ planId, resourceId, onSuccess }) => {
-
-    let selectedStatus = null;
-    const onChange = (value) => {
-        selectedStatus = value;
-    };
-    const onSearch = (value) => {
-        selectedStatus = value;
-    };
+const ConfirmStartActive = ({ planId, resourceId, onSuccess }) => {
     Modal.confirm({
-        title: 'Confirm Setup',
+        title: 'Confirm Complete',
         content: (
-            <> <Divider />
-                <Select
-                    showSearch
-                    style={{ width: '100%' }}
-                    placeholder="Select a setup"
-                    optionFilterProp="label"
-                    onChange={onChange}
-                    onSearch={onSearch}
-                    options={[
-                        {
-                            value: 'SETUP_MOLD',
-                            label: 'Setup Mold',
-                        },
-                        {
-                            value: 'TEARDOWN_MOLD',
-                            label: 'Teardown Mold',
-                        },
-                        {
-                            value: 'SETTINGS',
-                            label: 'Settings',
-                        },
-                    ]}
-                />
+            <>
+                <Divider />
+                <span style={{ fontSize: '18px' }}>Are you sure to complete the task ?</span>
                 <Divider />
             </>
 
@@ -69,6 +42,23 @@ const ConfirmSetup = ({ planId, resourceId, onSuccess }) => {
                         color="default"
                         variant="text"
                         style={{
+                            color: '#fa8c16', // Menetapkan warna border
+                            fontSize: '18px',
+                            fontWeight: '600',
+                            padding: '5px 10px'
+                        }}
+                        onClick={() => {
+                            alert('HOLD');
+                            Modal.destroyAll();
+                        }}
+                    >
+                        <img src={HoldIcon} alt="Hold Icon" width="24px" height="24px" />
+                        HOLD
+                    </Button>
+                    <Button
+                        color="default"
+                        variant="text"
+                        style={{
                             color: '#52c41a',
                             fontSize: '18px',
                             fontWeight: '600',
@@ -80,12 +70,12 @@ const ConfirmSetup = ({ planId, resourceId, onSuccess }) => {
                                 headers: {
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ planId, resourceId, status: selectedStatus }),
+                                body: JSON.stringify({ planId, resourceId, status: 'START' }),
                             })
                                 .then(() => {
                                     notification.success({
                                         message: 'Status Updated',
-                                        description: `Plan status changed to ${selectedStatus}`,
+                                        description: 'Plan status changed to START.',
                                     });
                                     Modal.destroyAll();
                                     onSuccess?.();
@@ -108,4 +98,4 @@ const ConfirmSetup = ({ planId, resourceId, onSuccess }) => {
     });
 };
 
-export default ConfirmSetup;
+export default ConfirmStartActive;

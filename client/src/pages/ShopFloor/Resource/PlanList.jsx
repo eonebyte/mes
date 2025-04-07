@@ -53,8 +53,8 @@ function PlanResource() {
             return isDarkMode ? '#333' : '#fff7e6'; // On Hold: terang jika mode terang, gelap jika mode gelap
         } else if (status === 'DR') {
             return isDarkMode ? '#555' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
-        } else if (status === 'OP') {
-            return isDarkMode ? '#457b9d' : '#bae0ff'; // Ready: biru muda terang jika mode terang
+        } else if (status === 'CO') {
+            return isDarkMode ? '#457b9d' : '#bae0ff'; // Ready: biru muda terang jika mode terang, CO = OPEN
         } else if (status === 'Running') {
             return isDarkMode ? '#457b9d' : '#d9f7be'; // Ready: biru muda terang jika mode terang
         }

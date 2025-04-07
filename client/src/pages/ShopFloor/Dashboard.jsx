@@ -15,12 +15,14 @@ const getCardBackgroundColor = (status) => {
     switch (status) {
         case 'RUNNING':
             return '#52c41a';
-        case 'DOWN':
+        case 'SM':
             return '#f5222d';
-        case 'INSPECT':
-            return '#a8071a';
+        case 'TM':
+            return '#f5222d';
+        case 'STG':
+            return '#1677ff';
         case 'STANDBY':
-            return '#C0C0C0';
+            return '#fff';
         default:
             return '#f5222d'; // Default color if none match
     }

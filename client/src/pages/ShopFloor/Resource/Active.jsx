@@ -12,14 +12,13 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useSearchParams } from "react-router-dom";
 import ResourceLayout from "./ResourceLayout";
 import { useEffect, useMemo, useState } from "react";
-import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 import ChangeCavity from "../../../components/Buttons/ChangeCavity";
 import { useSelector } from "react-redux";
 import { fetchPlanActive, fetchResourceById } from "../../../data/fetchs";
+import ConfirmStartActive from "../../../components/Buttons/ConfirmStartActive";
 
 function ActiveResource() {
-
     const [searchParams] = useSearchParams();
     const resourceId = useMemo(() => Number(searchParams.get('resourceId')), [searchParams]);
     const { isDarkMode } = useSelector((state) => state.theme); // Dark mode state
@@ -31,26 +30,26 @@ function ActiveResource() {
     const [defectQty, setDefectQty] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const loadResourceAndPlan = async () => {
-            setLoading(true);
-            // Fetch resource data
-            const fetchedResource = await fetchResourceById(resourceId);
-            setResource(fetchedResource);
-            // Fetch plan data
-            if (fetchedResource) {
-                const fetchedPlan = await fetchPlanActive(resourceId);
-                setPlan(fetchedPlan);
-                // Set quantities and resource status based on the fetched plan data
-                if (fetchedPlan) {
-                    setOutputQty(50); // Example value, adjust as needed
-                    setDefectQty(5); // Example value, adjust as needed
-                }
+    const loadResourceAndPlan = async () => {
+        setLoading(true);
+        // Fetch resource data
+        const fetchedResource = await fetchResourceById(resourceId);
+        setResource(fetchedResource);
+        // Fetch plan data
+        if (fetchedResource) {
+            const fetchedPlan = await fetchPlanActive(resourceId);
+            setPlan(fetchedPlan);
+            // Set quantities and resource status based on the fetched plan data
+            if (fetchedPlan) {
+                setOutputQty(50); // Example value, adjust as needed
+                setDefectQty(5); // Example value, adjust as needed
             }
+        }
 
-            setLoading(false);
-        };
+        setLoading(false);
+    };
 
+    useEffect(() => {
         if (resourceId) {
             loadResourceAndPlan();
         }
@@ -131,7 +130,7 @@ function ActiveResource() {
                                             fontSize: "12px",
                                             padding: "4px 12px",
                                         }}
-                                        onClick={ConfirmSetup}
+                                        onClick={() => ConfirmSetup({ planId: plan.planId, resourceId: plan.resourceId, onSuccess: loadResourceAndPlan })}
                                     >
                                         <SettingsIcon sx={{ fontSize: 18 }} />
                                         <span>SETUP</span>
@@ -146,10 +145,10 @@ function ActiveResource() {
                                             fontSize: "12px",
                                             padding: "4px 12px",
                                         }}
-                                        onClick={ConfirmComplete}
+                                        onClick={() => ConfirmStartActive({ planId: plan.planId, resourceId: plan.resourceId, onSuccess: loadResourceAndPlan })}
                                     >
                                         <DoneIcon sx={{ fontSize: 18 }} />
-                                        <span>COMPLETE</span>
+                                        <span>START</span>
                                     </Button>
                                     <Button
                                         color="primary"

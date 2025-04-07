@@ -141,6 +141,7 @@ class PlansController {
     }
 
 
+
     static async getPlans(request, reply) {
         try {
             const job_orders = await request.server.plansService.findAll(request.server);
@@ -167,7 +168,7 @@ class PlansController {
     static async getActivePlan(request, reply) {
         const { resourceId } = request.query;
         try {
-            const job_orders = await PlanningService.findActivePlan(resourceId);
+            const job_orders = await request.server.plansService.findActivePlan(request.server, resourceId);
             console.log('job order : ', job_orders);
             reply.send({ message: 'fetch successfully', data: job_orders });
         } catch (error) {
@@ -192,6 +193,57 @@ class PlansController {
             reply.status(500).send({ message: `Failed: ${error.message || error}` });
         }
     }
+
+    static async toOpen(request, reply) {
+        try {
+            const { planId, status } = request.body;
+
+            if (!planId || !status) {
+                return reply.code(400).send({
+                    success: false,
+                    message: 'planId and status are required.',
+                });
+            }
+
+            // Panggil service yang kamu buat
+            const result = await request.server.plansService.updateJOStatusComplete(request.server, planId, status);
+
+            return reply.code(result.success ? 200 : 500).send(result);
+        } catch (error) {
+            console.error('Error in updatePlansStatus controller:', error);
+            return reply.code(500).send({
+                success: false,
+                message: 'Internal server error.',
+                error,
+            });
+        }
+    }
+
+    static async toEvent(request, reply) {
+        try {
+            const { planId, resourceId, status } = request.body;
+
+            if (!planId || !status) {
+                return reply.code(400).send({
+                    success: false,
+                    message: 'planId and status are required.',
+                });
+            }
+
+            // Panggil service yang kamu buat
+            const result = await request.server.plansService.updateJOActiveOnMachine(request.server, planId, resourceId, status);
+
+            return reply.code(result.success ? 200 : 500).send(result);
+        } catch (error) {
+            console.error('Error in updatePlansStatus controller:', error);
+            return reply.code(500).send({
+                success: false,
+                message: 'Internal server error.',
+                error,
+            });
+        }
+    }
+
 }
 
 export default PlansController;

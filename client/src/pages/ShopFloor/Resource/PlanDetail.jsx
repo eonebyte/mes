@@ -17,12 +17,13 @@ import LayoutDashboard from "../../../components/layouts/LayoutDashboard";
 import DownloadIcon from '@mui/icons-material/Download';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 
-import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
+import ConfirmStart from "../../../components/Buttons/ConfirmStart";
 import ConfirmReleased from "../../../components/Buttons/ConfirmReleased";
 import ConfirmReady from "../../../components/Buttons/ConfirmReady";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
 import { fetchDetailPlan } from "../../../data/fetchs";
+
 
 function PlanDetail() {
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
@@ -40,37 +41,36 @@ function PlanDetail() {
     console.log('this multi Plan :', multiplePlan);
     console.log('this multi Plan data :', multiplePlan.data);
 
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            let singlePlanData;
+            let multiplePlanData;
+            if (planId) {
+                singlePlanData = await fetchDetailPlan(planId, null);
+            } else {
+                multiplePlanData = await fetchDetailPlan(null, moldId);
+            }
 
+            if (singlePlanData) {
+                setSinglePlan(singlePlanData);
+            } else if (multiplePlanData) {
+                setMultiplePlan(multiplePlanData)
+            } else {
+                setSinglePlan({});  // Handle unexpected data (non-array) by setting an empty array
+                setMultiplePlan({});  // Handle unexpected data (non-array) by setting an empty array
+            }
+        } catch (error) {
+            console.error("Error fetching resource:", error);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     useEffect(() => {
         if (!planId && !moldId) {
             navigate("/shopfloor");
             return;
-        }
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                let singlePlanData;
-                let multiplePlanData;
-                if (planId) {
-                    singlePlanData = await fetchDetailPlan(planId, null);
-                } else {
-                    multiplePlanData = await fetchDetailPlan(null, moldId);
-                }
-
-                if (singlePlanData) {
-                    setSinglePlan(singlePlanData);
-                } else if (multiplePlanData) {
-                    setMultiplePlan(multiplePlanData)
-                } else {
-                    setSinglePlan({});  // Handle unexpected data (non-array) by setting an empty array
-                    setMultiplePlan({});  // Handle unexpected data (non-array) by setting an empty array
-                }
-            } catch (error) {
-                console.error("Error fetching resource:", error);
-            } finally {
-                setLoading(false);
-            }
         }
 
         fetchData();
@@ -189,13 +189,14 @@ function PlanDetail() {
                                                         fontSize: "12px",
                                                         padding: "4px 12px",
                                                     }}
-                                                    onClick={ConfirmReady}
+                                                    onClick={() => ConfirmReady({ planId: singlePlan.planId, onSuccess: fetchData })}
                                                 >
                                                     <FactCheckIcon sx={{ fontSize: 18 }} />
                                                     <span>OPEN</span>
                                                 </Button>
                                             )}
-                                            {singlePlan.status == 'OP' && (
+                                            {/* CO = OPEN */}
+                                            {singlePlan.status == 'CO' && (
                                                 <><Button
                                                     color="primary"
                                                     variant="text"
@@ -205,7 +206,7 @@ function PlanDetail() {
                                                         fontSize: "12px",
                                                         padding: "4px 12px",
                                                     }}
-                                                    onClick={ConfirmSetup}
+                                                    onClick={() => ConfirmStart({ planId: singlePlan.planId, navidate: navigate, resourceId: singlePlan.resourceId })}
                                                 >
                                                     <SettingsIcon sx={{ fontSize: 18 }} />
                                                     <span>SETUP</span>
@@ -219,10 +220,10 @@ function PlanDetail() {
                                                             fontSize: "12px",
                                                             padding: "4px 12px",
                                                         }}
-                                                        onClick={ConfirmComplete}
+                                                        onClick={() => ConfirmStart({ planId: singlePlan.planId, navidate: navigate, resourceId: singlePlan.resourceId })}
                                                     >
                                                         <DoneIcon sx={{ fontSize: 18 }} />
-                                                        <span>COMPLETE</span>
+                                                        <span>START</span>
                                                     </Button></>
                                             )}
                                             <Button
@@ -234,7 +235,7 @@ function PlanDetail() {
                                                     fontSize: "12px",
                                                     padding: "4px 12px",
                                                 }}
-                                                onClick={ConfirmComplete}
+                                                onClick={() => ConfirmStart({ planId: singlePlan.planId, navidate: navigate, resourceId: singlePlan.resourceId })}
                                             >
                                                 <TableChartIcon sx={{ fontSize: 16 }} />
                                                 <span>MATERIAL</span>
@@ -544,7 +545,7 @@ function PlanDetail() {
                                                             fontSize: "12px",
                                                             padding: "4px 12px",
                                                         }}
-                                                        onClick={ConfirmComplete}
+                                                        onClick={ConfirmStart}
                                                     >
                                                         <DoneIcon sx={{ fontSize: 18 }} />
                                                         <span>COMPLETE</span>
@@ -559,7 +560,7 @@ function PlanDetail() {
                                                     fontSize: "12px",
                                                     padding: "4px 12px",
                                                 }}
-                                                onClick={ConfirmComplete}
+                                                onClick={ConfirmStart}
                                             >
                                                 <TableChartIcon sx={{ fontSize: 16 }} />
                                                 <span>MATERIAL</span>

@@ -139,6 +139,7 @@ class PlansService {
             LEFT JOIN m_product mp2 ON jo.mold_id = mp2.m_product_id
             WHERE jo.datedoc >= DATE '2024-01-01' 
             AND jo.docstatus <> 'CL'
+            AND jo.iscurrent <> 'Y'
             AND jo.a_asset_id = $1
             ORDER BY jo.documentno DESC
         `;
@@ -210,70 +211,81 @@ class PlansService {
     }
 
 
-    async findActivePlan(resourceId) {
-        let connection;
+    async findActivePlan(server, resourceId) {
+        let dbClient;
         try {
-            connection = await oracleConnection.openConnection();
+            dbClient = await server.pg.connect();
 
             const query = `
             SELECT
-                jo.CUST_JOBORDER_ID,
-                jo.DOCUMENTNO, 
-                aa.A_ASSET_ID, 
-                au.NAME,
-                jo.DOCSTATUS,
-                TO_CHAR(jo.DATEDOC, 'DD-MM-YYYY HH24:MI:SS') AS DATEDOC,
-                TO_CHAR(jo.STARTDATE, 'DD-MM-YYYY HH24:MI:SS') AS STARTDATE,
-                TO_CHAR(jo.ENDDATE, 'DD-MM-YYYY HH24:MI:SS') AS ENDDATE,
-                mp.CYCLETIME,
-                mp.CAVITY,
-                jo.ISACTIVE, 
-                jo.ISVERIFIED,
-                mp.VALUE,
-                mp.NAME,
-                jo.QTYPLANNED, 
-                jo.ISTRIAL, 
-                mp2.VALUE MOLD, 
-                mp2.NAME MOLDNAME,
-                jo.DESCRIPTION
-            FROM
-                CUST_JOBORDER jo
-            JOIN 
-                A_ASSET aa ON jo.A_ASSET_ID = aa.A_ASSET_ID
-            JOIN 
-                AD_USER au ON jo.CREATEDBY = au.AD_USER_ID
-            JOIN 
-                M_PRODUCT mp ON jo.M_PRODUCT_ID = mp.M_PRODUCT_ID
-            LEFT JOIN 
-                CUST_PRODUCT_MOLD cpm ON jo.M_PRODUCT_ID = cpm.CUST_PRODUCT_MOLD_ID
-            LEFT JOIN 
-                M_PRODUCT mp2 ON cpm.M_PRODUCT_ID = mp2.M_PRODUCT_ID
+                jo.cust_joborder_id,
+                jo.documentno, 
+                aa.a_asset_id, 
+                au.name AS created_by,
+                jo.docstatus,
+                TO_CHAR(jo.datedoc, 'DD-MM-YYYY HH24:MI:SS') AS datedoc,
+                TO_CHAR(jo.startdate, 'DD-MM-YYYY HH24:MI:SS') AS startdate,
+                TO_CHAR(jo.enddate, 'DD-MM-YYYY HH24:MI:SS') AS enddate,
+                mp.cycletime,
+                mp.cavity,
+                jo.isactive, 
+                jo.isverified,
+                mp.value AS product_value,
+                mp.name AS product_name,
+                CAST(jo.qtyplanned AS INTEGER) AS qtyplanned,
+                jo.istrial, 
+                mp2.value AS mold, 
+                mp2.name AS moldname,
+                jo.description
+            FROM cust_joborder jo
+            JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
+            JOIN ad_user au ON jo.created_by = au.ad_user_id
+            JOIN m_product mp ON jo.m_product_id = mp.m_product_id
+            LEFT JOIN m_product mp2 ON jo.mold_id = mp2.m_product_id
             WHERE
-                DATEDOC >= TO_DATE('2025-01-01', 'YYYY-MM-DD')
-                AND jo.DOCSTATUS <> 'CL'
-                AND jo.DOCSTATUS = 'RU'
-                AND jo.A_ASSET_ID = :resourceId
+                jo.datedoc >= TO_DATE('2025-01-01', 'YYYY-MM-DD')
+                AND jo.iscurrent = 'Y'
+                AND jo.docstatus NOT IN ('DR', 'CL')
+                AND jo.a_asset_id = $1
             ORDER BY
-                jo.DOCUMENTNO DESC
-            `;
+                jo.documentno DESC
+        `;
 
-            const result = await connection.execute(query, [resourceId]);
+            const result = await dbClient.query(query, [resourceId]);
 
-            if (result.rows.length > 0) {
-                const jobOrders = result.rows.map((row, index) => new PlansService(
-                    index + 1, row[0], row[1], row[2], row[3], row[4], row[5], row[6],
-                    row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16], row[17], row[18]
-                ));
-
-                return jobOrders;
+            if (result.rows.length === 0) {
+                return null;
             }
 
-            return null;
+            const jobOrders = result.rows.map((row, index) => ({
+                no: index + 1,
+                planId: row.cust_joborder_id,
+                planNo: row.documentno,
+                resourceId: row.a_asset_id,
+                createdBy: row.created_by,
+                status: row.docstatus,
+                dateDoc: row.datedoc,
+                planStartTime: row.startdate,
+                planCompleteTime: row.enddate,
+                cycletime: row.cycletime,
+                cavity: row.cavity,
+                isActive: row.isactive,
+                isVerified: row.isverified,
+                partNo: row.product_value,
+                partName: row.product_name,
+                qty: row.qtyplanned,
+                isTrial: row.istrial,
+                mold: row.mold,
+                moldName: row.moldname,
+                description: row.description
+            }));
+
+            return jobOrders;
         } catch (error) {
-            throw new Error(`Failed to fetch All Job Orders: ${error}`)
+            throw new Error(`Failed to fetch active job orders: ${error}`);
         } finally {
-            if (connection) {
-                await dbClient.release();
+            if (dbClient) {
+                dbClient.release();
             }
         }
     }
@@ -660,6 +672,139 @@ class PlansService {
             }
         }
     }
+
+    async updateJOStatusComplete(server, planId, confirmStatus) {
+        let dbClient;
+
+        // Peta status ke docstatus
+        const statusMap = {
+            NO_NEED_CALIBRATION: 'CO', //CO = complete
+            REQ_CALIBRATION: 'CA',
+        };
+
+
+        const docstatus = statusMap[confirmStatus];
+
+        if (!docstatus) {
+            return {
+                success: false,
+                message: 'Invalid confirm status provided.',
+            };
+        }
+
+        try {
+            dbClient = await server.pg.connect();
+
+            const query = `
+            UPDATE cust_joborder 
+            SET docstatus = $1  
+            WHERE cust_joborder_id = $2
+        `;
+
+            const result = await dbClient.query(query, [docstatus, planId]);
+
+            if (result.rowCount === 0) {
+                return {
+                    success: false,
+                    message: 'No job order found with the given ID.',
+                };
+            }
+
+            return {
+                success: true,
+                message: `Job order status updated to '${docstatus}' successfully.`,
+            };
+
+        } catch (error) {
+            console.error('Error updating job order status:', error);
+            return {
+                success: false,
+                message: 'Failed to update job order status.',
+                error,
+            };
+        } finally {
+            if (dbClient) dbClient.release();
+        }
+    }
+
+    async updateJOActiveOnMachine(server, planId, resourceId, confirmStatus) {
+        let dbClient;
+
+        // Peta status ke docstatus
+        const statusMap = {
+            START: 'RUNNING',
+            STOP: 'STANDBY',
+            SETUP_MOLD: 'SM',
+            TEARDOWN_MOLD: 'TM',
+            SETTINGS: 'STG',
+            // dst...
+        };
+
+
+        const status = statusMap[confirmStatus?.trim()];
+
+        if (!status) {
+            return {
+                success: false,
+                message: 'Invalid confirm status provided.',
+            };
+        }
+
+        try {
+            dbClient = await server.pg.connect();
+            await dbClient.query('BEGIN');
+
+            const queryUpdateStatusAsset = `
+                UPDATE a_asset 
+                SET status = $1  
+                WHERE a_asset_id = $2
+            `;
+
+            const rowRueryUpdateStatusAsset = await dbClient.query(queryUpdateStatusAsset, [status, resourceId]);
+
+            if (rowRueryUpdateStatusAsset.rowCount === 0) {
+                await dbClient.query('ROLLBACK');
+                return {
+                    success: false,
+                    message: 'No job order found with the given ID.',
+                };
+            }
+
+            const queryUpdateStatusJO = `
+                UPDATE cust_joborder
+                SET iscurrent = 'Y' 
+                WHERE cust_joborder_id = $1 AND a_asset_id = $2
+            `;
+
+            const rowQueryUpdateStatusJO = await dbClient.query(queryUpdateStatusJO, [planId, resourceId]);
+
+            if (rowQueryUpdateStatusJO.rowCount === 0) {
+                await dbClient.query('ROLLBACK');
+                return {
+                    success: false,
+                    message: 'No job order found with the given ID.',
+                };
+            }
+
+            await dbClient.query('COMMIT');
+
+            return {
+                success: true,
+                message: `Job order status updated to '${status}' successfully.`,
+            };
+
+        } catch (error) {
+            console.error('Error updating job order status:', error);
+            return {
+                success: false,
+                message: 'Failed to update job order status.',
+                error,
+            };
+        } finally {
+            if (dbClient) dbClient.release();
+        }
+    }
+
 
 
 }

@@ -1,9 +1,9 @@
 import { CheckOutlined, StopOutlined } from "@ant-design/icons";
-import { Button, Divider, Modal, Space } from "antd";
+import { Button, Divider, Modal, notification, Space } from "antd";
 
 import HoldIcon from '../../assets/hold-icon.svg';
 
-const ConfirmComplete = () => {
+const ConfirmStart = ({ planId, navidate, resourceId }) => {
     Modal.confirm({
         title: 'Confirm Complete',
         content: (
@@ -65,8 +65,28 @@ const ConfirmComplete = () => {
                             padding: '5px 10px'
                         }}
                         onClick={() => {
-                            alert('OK');
-                            Modal.destroyAll();
+                            fetch('http://localhost:3080/api/plans/status/event', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ planId, resourceId, status: 'START' }),
+                            })
+                                .then(() => {
+                                    notification.success({
+                                        message: 'Status Updated',
+                                        description: 'Plan status changed to START.',
+                                    });
+                                    Modal.destroyAll();
+                                    navidate(`/resource?resourceId=${resourceId}`);
+                                })
+                                .catch(error => {
+                                    notification.error({
+                                        message: 'Error',
+                                        description: 'Failed to update plan status.',
+                                    });
+                                    console.error('Error:', error);
+                                });
                         }}
                     >
                         <CheckOutlined style={{ fontSize: '24px', color: '#52c41ad' }} />
@@ -78,4 +98,4 @@ const ConfirmComplete = () => {
     });
 };
 
-export default ConfirmComplete;
+export default ConfirmStart;

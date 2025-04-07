@@ -1,7 +1,7 @@
 import { CheckOutlined, SettingFilled, StopOutlined } from "@ant-design/icons";
-import { Button, Divider, Modal, Space } from "antd";
+import { Button, Divider, Modal, notification, Space } from "antd";
 
-const ConfirmReady = () => {
+const ConfirmReady = ({ planId, onSuccess }) => {
     Modal.confirm({
         title: 'Plan Preparations',
         content: (
@@ -51,8 +51,28 @@ const ConfirmReady = () => {
                             textAlign: 'center', // Center the text inside the button
                         }}
                         onClick={() => {
-                            alert('HOLD');
-                            Modal.destroyAll();
+                            fetch('http://localhost:3080/api/plans/status/open', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ planId, status: 'NO_NEED_CALIBRATION' }),
+                            })
+                                .then(() => {
+                                    notification.success({
+                                        message: 'Status Updated',
+                                        description: 'Plan status changed to NO NEED CALIBRATION.',
+                                    });
+                                    Modal.destroyAll();
+                                    onSuccess?.();
+                                })
+                                .catch(error => {
+                                    notification.error({
+                                        message: 'Error',
+                                        description: 'Failed to update plan status.',
+                                    });
+                                    console.error('Error:', error);
+                                });
                         }}
                     >
                         <CheckOutlined style={{ fontSize: '14px', color: 'red' }} />

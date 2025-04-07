@@ -13,6 +13,7 @@ import { Layout } from 'antd';
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchResourceById } from "../../../data/fetchs";
+import { setResourceStore } from "../../../states/reducers/resourceSlice";
 const { Sider, Content } = Layout;
 
 
@@ -31,23 +32,22 @@ const ResourceLayout = ({ children }) => {
     const [resource, setResource] = useState(resourceFromStore);  // Use resource from Redux initially
     const [loading, setLoading] = useState(!resourceFromStore);
 
-
+    const loadResource = async () => {
+        setLoading(true);
+        try {
+            const fetchedResource = await fetchResourceById(resourceId);
+            setResource(fetchedResource);  // Set data resource ke state lokal
+            // Dispatch data ke Redux store jika ingin menyimpan untuk penggunaan selanjutnya
+            dispatch(setResourceStore(fetchedResource));
+        } catch (error) {
+            console.error("Error fetching resource:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (!resourceFromStore && resourceId) { // Jika resource belum ada di Redux dan resourceId ada
-            const loadResource = async () => {
-                setLoading(true);
-                try {
-                    const fetchedResource = await fetchResourceById(resourceId);
-                    setResource(fetchedResource);  // Set data resource ke state lokal
-                    // Dispatch data ke Redux store jika ingin menyimpan untuk penggunaan selanjutnya
-                    // dispatch(setResources([...resources, fetchedResource])); 
-                } catch (error) {
-                    console.error("Error fetching resource:", error);
-                } finally {
-                    setLoading(false);
-                }
-            };
             loadResource();
         }
 
@@ -102,11 +102,13 @@ const ResourceLayout = ({ children }) => {
                                                 : 'black',
                                             backgroundColor: resource.status === 'RUNNING'
                                                 ? '#52c41a'
-                                                : resource.status === 'DOWN'
+                                                : resource.status === 'SM'
                                                     ? '#f5222d'
-                                                    : resource.status === 'INSPECT'
-                                                        ? '#a8071a'
-                                                        : '#f5222d'
+                                                    : resource.status === 'TM'
+                                                        ? '#f5222d'
+                                                        : resource.status === 'STG'
+                                                            ? '#1677ff'
+                                                            : '#fff'
                                         }}
                                         styles={{
                                             body: {
