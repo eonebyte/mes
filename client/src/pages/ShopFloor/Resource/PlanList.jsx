@@ -53,7 +53,7 @@ function PlanResource() {
             return isDarkMode ? '#333' : '#fff7e6'; // On Hold: terang jika mode terang, gelap jika mode gelap
         } else if (status === 'DR') {
             return isDarkMode ? '#555' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
-        } else if (status === 'CO') {
+        } else if (status === 'IP') {
             return isDarkMode ? '#457b9d' : '#bae0ff'; // Ready: biru muda terang jika mode terang, CO = OPEN
         } else if (status === 'Running') {
             return isDarkMode ? '#457b9d' : '#d9f7be'; // Ready: biru muda terang jika mode terang
@@ -130,7 +130,7 @@ function PlanResource() {
 
                                             </div>
                                             <div>
-                                                <span style={{ fontSize: '18px', fontWeight: '500', color: isDarkMode ? '#e6f7ff' : '#1677FF' }}>{plan.status}</span>
+                                                <span style={{ fontSize: '18px', fontWeight: '500', color: isDarkMode ? '#e6f7ff' : '#1677FF' }}>{plan.status === 'IP' ? 'Open' : plan.status === 'DR' ? 'Draft' : ''}</span>
                                             </div>
                                         </Flex>
                                     </div>
@@ -245,7 +245,7 @@ function PlanResource() {
                                                         <small><strong>start at {plan.planStartTime}</strong></small>
                                                     </div>
                                                     <div>
-                                                        <span style={{ fontSize: '18px', fontWeight: '500', color: isDarkMode ? '#e6f7ff' : '#1677FF' }}>{plan.status}</span>
+                                                        <span style={{ fontSize: '18px', fontWeight: '500', color: isDarkMode ? '#e6f7ff' : '#1677FF' }}>{plan.status === 'CO' ? 'Open' : plan.status === 'DR' ? 'Draft' : ''}</span>
                                                     </div>
                                                 </Flex>
 

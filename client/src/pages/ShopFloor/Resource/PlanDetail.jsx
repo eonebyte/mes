@@ -12,7 +12,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 // import { plans } from "../../../data/fetchResource";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import LayoutDashboard from "../../../components/layouts/LayoutDashboard";
 import DownloadIcon from '@mui/icons-material/Download';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
@@ -23,9 +23,15 @@ import ConfirmReady from "../../../components/Buttons/ConfirmReady";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
 import { fetchDetailPlan } from "../../../data/fetchs";
-
+import ConfirmMaterial from "../../../components/Buttons/ConfirmMaterial";
+import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
+import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import { refreshResources } from "../../../states/reducers/resourceSlice";
 
 function PlanDetail() {
+    const dispatch = useDispatch();
+    const user = useSelector((state) => state.auth.user);
+
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
 
     const navigate = useNavigate();
@@ -37,15 +43,27 @@ function PlanDetail() {
     const [loading, setLoading] = useState(true);
     const [singlePlan, setSinglePlan] = useState({});
     const [multiplePlan, setMultiplePlan] = useState({});
-    console.log('this single Plan :', singlePlan);
-    console.log('this multi Plan :', multiplePlan);
-    console.log('this multi Plan data :', multiplePlan.data);
+
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [boms, setBoms] = useState([]);
+    const [selectedBom, setSelectedBom] = useState(null);
+
+
 
     const fetchData = async () => {
         setLoading(true);
         try {
             let singlePlanData;
             let multiplePlanData;
+
+            if (planId) {
+                const bomRes = await fetch(`http://localhost:3080/api/plans/boms?planId=${planId}`);
+                const bomJson = await bomRes.json();
+                if (bomJson?.data) {
+                    setBoms(bomJson.data);
+                }
+            }
+
             if (planId) {
                 singlePlanData = await fetchDetailPlan(planId, null);
             } else {
@@ -67,6 +85,7 @@ function PlanDetail() {
         }
     }
 
+
     useEffect(() => {
         if (!planId && !moldId) {
             navigate("/shopfloor");
@@ -76,12 +95,25 @@ function PlanDetail() {
         fetchData();
     }, [planId, navigate]);
 
+    useEffect(() => {
+        if (singlePlan?.bomId && boms.length > 0) {
+            const matched = boms.find(b => b.pp_product_bom_id === singlePlan.bomId);
+            if (matched) {
+                setSelectedBom(matched.pp_product_bom_id);
+            }
+        }
+    }, [singlePlan, boms]);
+
+    console.log('selected Bom : ', selectedBom);
+
+
+
     function getBackgroundColor(status, isDarkMode) {
         if (status === 'On Hold') {
             return isDarkMode ? '#333' : '#fff7e6'; // On Hold: terang jika mode terang, gelap jika mode gelap
-        } else if (status === 'Released') {
+        } else if (status === 'DR') {
             return isDarkMode ? '#555' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
-        } else if (status === 'Ready') {
+        } else if (status === 'IP') {
             return isDarkMode ? '#457b9d' : '#e6f4ff'; // Ready: biru muda terang jika mode terang
         }
         return '#ffffff'; // default background color
@@ -136,7 +168,7 @@ function PlanDetail() {
                                             fontWeight: 'bold',
                                             color: getTextColor(isDarkMode),
                                         }}>
-                                            {`<${singlePlan.planNo}> ${singlePlan.status}`}
+                                            {`<${singlePlan.planNo}> ${singlePlan.status === 'DR' ? 'Draft' : singlePlan.status === 'IP' ? 'Open' : 'nan'}`}
                                         </p>
 
                                     </Flex>}
@@ -180,23 +212,48 @@ function PlanDetail() {
                                                 </Button>
                                             )}
                                             {singlePlan.status == 'DR' && (
-                                                <Button
-                                                    color="primary"
-                                                    variant="text"
-                                                    style={{
-                                                        fontWeight: 600,
-                                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                                        fontSize: "12px",
-                                                        padding: "4px 12px",
-                                                    }}
-                                                    onClick={() => ConfirmReady({ planId: singlePlan.planId, onSuccess: fetchData })}
-                                                >
-                                                    <FactCheckIcon sx={{ fontSize: 18 }} />
-                                                    <span>OPEN</span>
-                                                </Button>
+                                                <>
+                                                    <Button
+                                                        color="primary"
+                                                        variant="text"
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                                            fontSize: "12px",
+                                                            padding: "4px 12px",
+                                                        }}
+                                                        onClick={() => ConfirmReady({ planId: singlePlan.planId, onSuccess: fetchData })}
+                                                    >
+                                                        <FactCheckIcon sx={{ fontSize: 18 }} />
+                                                        <span>OPEN</span>
+                                                    </Button><Button
+                                                        color="primary"
+                                                        variant="text"
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                                            fontSize: "12px",
+                                                            padding: "4px 12px",
+                                                        }}
+                                                        onClick={() => setIsModalVisible(true)}
+                                                    >
+                                                        <TableChartIcon sx={{ fontSize: 16 }} />
+                                                        <span>MATERIAL</span>
+                                                    </Button>
+                                                    <ConfirmMaterial
+                                                        visible={isModalVisible}
+                                                        onClose={() => setIsModalVisible(false)}
+                                                        planId={planId}
+                                                        boms={boms}
+                                                        selectedBom={selectedBom}
+                                                        setSelectedBom={setSelectedBom}
+                                                        onSuccess={fetchData}
+                                                        user={user}
+                                                    />
+                                                </>
                                             )}
-                                            {/* CO = OPEN */}
-                                            {singlePlan.status == 'CO' && (
+                                            {/* IP = OPEN */}
+                                            {singlePlan.status == 'IP' && (
                                                 <><Button
                                                     color="primary"
                                                     variant="text"
@@ -206,7 +263,14 @@ function PlanDetail() {
                                                         fontSize: "12px",
                                                         padding: "4px 12px",
                                                     }}
-                                                    onClick={() => ConfirmStart({ planId: singlePlan.planId, navidate: navigate, resourceId: singlePlan.resourceId })}
+                                                    onClick={() => ConfirmSetup({
+                                                        planId: singlePlan.planId,
+                                                        resourceId: singlePlan.resourceId,
+                                                        onSuccess: () => {
+                                                            fetchData();
+                                                            dispatch(refreshResources());
+                                                        }
+                                                    })}
                                                 >
                                                     <SettingsIcon sx={{ fontSize: 18 }} />
                                                     <span>SETUP</span>
@@ -222,24 +286,30 @@ function PlanDetail() {
                                                         }}
                                                         onClick={() => ConfirmStart({ planId: singlePlan.planId, navidate: navigate, resourceId: singlePlan.resourceId })}
                                                     >
-                                                        <DoneIcon sx={{ fontSize: 18 }} />
+                                                        <PowerSettingsNewIcon sx={{ fontSize: 18 }} />
                                                         <span>START</span>
-                                                    </Button></>
+                                                    </Button>
+                                                    <Button
+                                                        color="primary"
+                                                        variant="text"
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                                            fontSize: "12px",
+                                                            padding: "4px 12px",
+                                                        }}
+                                                        onClick={() => ConfirmComplete({
+                                                            planId: singlePlan.planId,
+                                                            resourceId: singlePlan.resourceId,
+                                                            onSuccess: () => {
+                                                            }
+                                                        })}
+                                                    >
+                                                        <DoneIcon sx={{ fontSize: 18 }} />
+                                                        <span>COMPLETE</span>
+                                                    </Button>
+                                                </>
                                             )}
-                                            <Button
-                                                color="primary"
-                                                variant="text"
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontFamily: "'Roboto', Arial, sans-serif",
-                                                    fontSize: "12px",
-                                                    padding: "4px 12px",
-                                                }}
-                                                onClick={() => ConfirmStart({ planId: singlePlan.planId, navidate: navigate, resourceId: singlePlan.resourceId })}
-                                            >
-                                                <TableChartIcon sx={{ fontSize: 16 }} />
-                                                <span>MATERIAL</span>
-                                            </Button>
                                         </Col>
                                     </Row>
 

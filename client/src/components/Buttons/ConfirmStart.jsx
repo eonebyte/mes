@@ -1,15 +1,13 @@
 import { CheckOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Divider, Modal, notification, Space } from "antd";
 
-import HoldIcon from '../../assets/hold-icon.svg';
-
 const ConfirmStart = ({ planId, navidate, resourceId }) => {
     Modal.confirm({
-        title: 'Confirm Complete',
+        title: 'Confirm Start',
         content: (
             <>
                 <Divider />
-                <span style={{ fontSize: '18px' }}>Are you sure to complete the task ?</span>
+                <span style={{ fontSize: '18px' }}>Are you sure to start the task ?</span>
                 <Divider />
             </>
 
@@ -42,23 +40,6 @@ const ConfirmStart = ({ planId, navidate, resourceId }) => {
                         color="default"
                         variant="text"
                         style={{
-                            color: '#fa8c16', // Menetapkan warna border
-                            fontSize: '18px',
-                            fontWeight: '600',
-                            padding: '5px 10px'
-                        }}
-                        onClick={() => {
-                            alert('HOLD');
-                            Modal.destroyAll();
-                        }}
-                    >
-                        <img src={HoldIcon} alt="Hold Icon" width="24px" height="24px" />
-                        HOLD
-                    </Button>
-                    <Button
-                        color="default"
-                        variant="text"
-                        style={{
                             color: '#52c41a',
                             fontSize: '18px',
                             fontWeight: '600',
@@ -72,7 +53,17 @@ const ConfirmStart = ({ planId, navidate, resourceId }) => {
                                 },
                                 body: JSON.stringify({ planId, resourceId, status: 'START' }),
                             })
-                                .then(() => {
+                                .then(async res => {
+                                    const data = await res.json();
+
+                                    if (!res.ok) {
+                                        // ✨ Gabungkan errors array (kalau ada)
+                                        const errorMessages = Array.isArray(data.messages)
+                                            ? data.messages.join(', ')
+                                            : data.message || 'Unknown error';
+
+                                        throw new Error(errorMessages);
+                                    }
                                     notification.success({
                                         message: 'Status Updated',
                                         description: 'Plan status changed to START.',
@@ -81,10 +72,46 @@ const ConfirmStart = ({ planId, navidate, resourceId }) => {
                                     navidate(`/resource?resourceId=${resourceId}`);
                                 })
                                 .catch(error => {
+                                    let description = error.message;
+
+                                    let items = [];
+
+                                    if (description.includes(', ')) {
+                                        items = description.split(', ');
+                                    } else {
+                                        items = [description]; // kalau hanya 1 error, bungkus jadi array
+                                    }
+
+
+                                    // Render sebagai <ul> lengkap dengan link per item
+                                    description = (
+                                        <ul style={{ paddingLeft: 20, margin: 0 }}>
+                                            {items.map((item, index) => {
+                                                let link = null;
+
+                                                if (item.toLowerCase().includes('bom')) {
+                                                    link = <a href="" style={{ marginLeft: 8 }}>→ Klik tombol Material</a>;
+                                                } else if (item.toLowerCase().includes('pada mesin')) {
+                                                    link = <a href={`/resource/mold?resourceId=${resourceId}`} style={{ marginLeft: 8 }}>→ Periksa Mold</a>;
+                                                } else if (item.toLowerCase().includes('job order')) {
+                                                    link = <a href={`/plan/list`} style={{ marginLeft: 8 }}>→ Periksa Plan</a>;
+                                                }
+
+                                                return (
+                                                    <li key={index}>
+                                                        {item}
+                                                        {link}
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    );
+
                                     notification.error({
                                         message: 'Error',
-                                        description: 'Failed to update plan status.',
+                                        description, // gunakan variabel yang sudah diolah
                                     });
+
                                     console.error('Error:', error);
                                 });
                         }}

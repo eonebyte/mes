@@ -1,4 +1,4 @@
-import { Alert, Card, Col, Flex, Space, Spin, Tabs } from "antd";
+import { Alert, Card, Col, Flex, notification, Space, Spin, Tabs } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ResourceLayout from "./ResourceLayout";
 import { useEffect, useState } from "react";
@@ -9,7 +9,6 @@ import InputIcon from '@mui/icons-material/Input';
 import RemainingMold from "../../../components/ShopFloors/Mold/RemainingMold";
 import ConfirmTeardown from "../../../components/Buttons/ConfirmTeardown";
 import { fetchResourceById } from "../../../data/fetchs";
-
 
 const onChange = (key) => {
     console.log(key);
@@ -31,22 +30,22 @@ function MoldResource() {
 
     console.log('this resource :', resource);
 
+    const loadResource = async () => {
+        setLoading(true);
+        try {
+            const fetchedResource = await fetchResourceById(resourceId);
+            setResource(fetchedResource);  // Set data resource ke state lokal
+            // Dispatch data ke Redux store jika ingin menyimpan untuk penggunaan selanjutnya
+            // dispatch(setResources([...resources, fetchedResource])); 
+        } catch (error) {
+            console.error("Error fetching resource:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (!resourceFromStore && resourceId) { // Jika resource belum ada di Redux dan resourceId ada
-            const loadResource = async () => {
-                setLoading(true);
-                try {
-                    const fetchedResource = await fetchResourceById(resourceId);
-                    setResource(fetchedResource);  // Set data resource ke state lokal
-                    // Dispatch data ke Redux store jika ingin menyimpan untuk penggunaan selanjutnya
-                    // dispatch(setResources([...resources, fetchedResource])); 
-                } catch (error) {
-                    console.error("Error fetching resource:", error);
-                } finally {
-                    setLoading(false);
-                }
-            };
             loadResource();
         }
     }, [resourceId, navigate, dispatch]);
@@ -76,12 +75,75 @@ function MoldResource() {
                 }),
             });
 
-            if (!response.ok) {
-                throw new Error('Gagal menyimpan data!');
+            const data = await response.json();
+
+            if (!data.success) {
+                const errorMessages = Array.isArray(data.messages)
+                    ? data.messages.join(', ')
+                    : data.message || 'Unknown error';
+
+                throw new Error(errorMessages);
             }
+            notification.success({
+                message: 'Success',
+                description: 'Teardown Mold Successfully',
+            });
             console.log("Setup berhasil!");
-            navigate(`/resource/mold?resourceId=${resourceId}`);
+            loadResource();
         } catch (error) {
+            let description = error.message;
+
+            let items = [];
+
+            if (description.includes(', ')) {
+                items = description.split(', ');
+            } else {
+                items = [description]; // kalau hanya 1 error, bungkus jadi array
+            }
+
+
+            // Render sebagai <ul> lengkap dengan link per item
+            description = (
+                <ul style={{ paddingLeft: 20, margin: 0 }}>
+                    {items.map((item, index) => {
+                        let link = null;
+
+                        if (item.toLowerCase().includes('bom')) {
+                            link = (
+                                <span
+                                    style={{ marginLeft: 8, color: '#1677ff', cursor: 'pointer' }}
+                                    onClick={() => navigate('/material')}
+                                >
+                                    → Klik tombol Material
+                                </span>
+                            );
+                        } else if (item.toLowerCase().includes('job order aktif')) {
+                            link = (
+                                <span
+                                    style={{ marginLeft: 8, color: '#1677ff', cursor: 'pointer' }}
+                                    onClick={() => navigate(`/resource?resourceId=${resource?.id}`)}
+                                >
+                                    → Periksa
+                                </span>
+                            );
+                        }
+
+
+                        return (
+                            <li key={index}>
+                                {item}
+                                {link}
+                            </li>
+                        );
+                    })}
+                </ul>
+            );
+
+            notification.error({
+                message: 'Error',
+                description, // gunakan variabel yang sudah diolah
+            });
+
             console.error('Error:', error);
         } finally {
             setLoading(false); // Hide loading spinner
@@ -163,7 +225,7 @@ function MoldResource() {
                         <Flex align="center">
                             <InputIcon sx={{ fontSize: 18, marginRight: 1 }} />
                             <span>
-                                MOLD HISTORY 
+                                MOLD HISTORY
                             </span>
                         </Flex>
                     </>

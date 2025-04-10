@@ -1,4 +1,4 @@
-import oracleConnection from "../../configs/oracle.connection.js";
+import { format, parse } from 'date-fns';
 
 class PlansService {
 
@@ -39,6 +39,7 @@ class PlansService {
                 jo.documentno, 
                 aa.a_asset_id,
                 aa.value AS resource_code,
+                au.ad_user_id AS user_id,
                 au.name AS created_by,
                 jo.docstatus,
                 TO_CHAR(jo.datedoc, 'DD-MM-YYYY HH24:MI:SS') AS datedoc,
@@ -48,17 +49,22 @@ class PlansService {
                 mp.cavity,
                 jo.isactive, 
                 jo.isverified,
+                mp.m_product_id AS product_id,
                 mp.value AS product_value,
                 mp.name AS product_name,
                 jo.qtyplanned, 
-                jo.istrial, 
+                jo.istrial,
+                mp2.m_product_id AS moldid, 
                 mp2.value AS mold, 
                 mp2.name AS moldname,
-                jo.description
+                jo.description,
+                jo.bom_id,
+                mpb.name AS BOM
             FROM cust_joborder jo
             JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
             JOIN ad_user au ON jo.created_by = au.ad_user_id
             JOIN m_product mp ON jo.m_product_id = mp.m_product_id
+            LEFT JOIN pp_product_bom mpb ON jo.bom_id = mpb.pp_product_bom_id
             LEFT JOIN m_product mp2 ON jo.mold_id = mp2.m_product_id
             WHERE jo.datedoc >= DATE '2024-01-01' 
             AND jo.docstatus <> 'CL'
@@ -72,8 +78,9 @@ class PlansService {
                     no: index + 1,
                     planId: row.cust_joborder_id,
                     planNo: row.documentno,
-                    resourceId: row.a_asset_id,
+                    resourceId: parseInt(row.a_asset_id),
                     resourceCode: row.resource_code,
+                    userId: row.user_id,
                     user: row.created_by,
                     status: row.docstatus,
                     dateDoc: row.datedoc,
@@ -83,19 +90,56 @@ class PlansService {
                     cavity: row.cavity,
                     isActive: row.isactive,
                     isVerified: row.isverified,
+                    partId: parseInt(row.product_id),
                     partNo: row.product_value,
                     partName: row.product_name,
                     qty: Math.floor(row.qtyplanned),
                     isTrial: row.istrial,
+                    moldId: parseInt(row.moldid),
                     mold: row.mold,
                     moldName: row.moldname,
-                    description: row.description
+                    description: row.description,
+                    bomId: parseInt(row.bom_id),
+                    bomName: row.bom,
                 }));
             }
 
             return [];
         } catch (error) {
             throw new Error(`Failed to fetch All Job Orders: ${error}`);
+        } finally {
+            if (dbClient) {
+                dbClient.release(); // PostgreSQL pakai release() untuk pool
+            }
+        }
+    }
+
+    async findInjectionProducts(server) {
+        let dbClient;
+        try {
+            dbClient = await server.pg.connect();
+
+            // 1000017 = FG Injection
+            const query = `
+                SELECT
+                    mp.m_product_id,
+                    mp.value AS partNo,
+                    mp."name" AS partName
+                FROM
+                    m_product mp
+                WHERE
+                    mp.m_product_category_id = 1000017
+            `;
+
+            const result = await dbClient.query(query);
+
+            if (result.rows.length > 0) {
+                return result.rows;
+            }
+
+            return [];
+        } catch (error) {
+            throw new Error(`Failed to fetch Injection Products: ${error}`);
         } finally {
             if (dbClient) {
                 dbClient.release(); // PostgreSQL pakai release() untuk pool
@@ -315,11 +359,14 @@ class PlansService {
                     jo.istrial, 
                     mp2.value AS mold, 
                     mp2.name AS moldname,
-                    jo.description
+                    jo.description,
+                    jo.bom_id,
+                    mpb.name AS BOM
                 FROM cust_joborder jo
                 JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
                 JOIN ad_user au ON jo.created_by = au.ad_user_id
                 JOIN m_product mp ON jo.m_product_id = mp.m_product_id
+                LEFT JOIN pp_product_bom mpb ON jo.bom_id = mpb.pp_product_bom_id
                 LEFT JOIN m_product mp2 ON jo.mold_id = mp2.m_product_id
                 WHERE
                     jo.datedoc >= TO_DATE('2024-01-01', 'YYYY-MM-DD')
@@ -362,6 +409,8 @@ class PlansService {
                     description: row.description,
                     lineno: station?.lineno || null,
                     mcno: station?.value || null,
+                    bomId: parseInt(row.bom_id),
+                    bom: row.bom,
                 };
             }));
 
@@ -675,11 +724,11 @@ class PlansService {
 
     async updateJOStatusComplete(server, planId, confirmStatus) {
         let dbClient;
+        const errors = [];
 
         // Peta status ke docstatus
         const statusMap = {
-            NO_NEED_CALIBRATION: 'CO', //CO = complete
-            REQ_CALIBRATION: 'CA',
+            OK: 'IP', //CO = complete
         };
 
 
@@ -695,20 +744,49 @@ class PlansService {
         try {
             dbClient = await server.pg.connect();
 
-            const query = `
-            UPDATE cust_joborder 
-            SET docstatus = $1  
-            WHERE cust_joborder_id = $2
-        `;
+            // ✅ Ambil bom_id, mold_id (plan), resource_id (a_asset_id)
+            const joResult = await dbClient.query(`
+            SELECT bom_id, mold_id AS mold_plan_id, a_asset_id AS resource_id 
+            FROM cust_joborder 
+            WHERE cust_joborder_id = $1
+        `, [planId]);
 
-            const result = await dbClient.query(query, [docstatus, planId]);
+            const joRow = joResult.rows[0];
 
-            if (result.rowCount === 0) {
+            if (!joRow) {
                 return {
                     success: false,
-                    message: 'No job order found with the given ID.',
+                    message: 'Job order not found.',
                 };
             }
+
+            const bomId = joRow.bom_id;
+            const moldPlan = joRow.mold_plan_id;
+
+            if (!bomId || bomId < 1) {
+                errors.push('BOM is missing.');
+            }
+
+            // ✅ Cek mold mismatch
+            if (!moldPlan) {
+                errors.push('Mold in job order is missing.');
+            }
+
+            // ✅ Kalau ada error, langsung kembalikan semua error
+            if (errors.length > 0) {
+                return {
+                    success: false,
+                    message: 'Validation failed.',
+                    errors: errors, // semua error dikembalikan di sini
+                };
+            }
+
+            // ✅ Semua valid → update status
+            await dbClient.query(`
+                UPDATE cust_joborder 
+                SET docstatus = $1  
+                WHERE cust_joborder_id = $2
+            `, [docstatus, planId]);
 
             return {
                 success: true,
@@ -746,13 +824,58 @@ class PlansService {
         if (!status) {
             return {
                 success: false,
-                message: 'Invalid confirm status provided.',
+                messages: ['Invalid confirm status provided.'],
             };
         }
 
         try {
             dbClient = await server.pg.connect();
             await dbClient.query('BEGIN');
+
+            const errors = [];
+
+            // Ambil mold_id dari cust_joborder
+            const joResult = await dbClient.query(`
+                SELECT mold_id 
+                FROM cust_joborder 
+                WHERE cust_joborder_id = $1
+            `, [planId]);
+            const moldPlan = parseInt(joResult.rows[0]?.mold_id);
+
+            // Ambil mold_id dari a_asset
+            const assetResult = await dbClient.query(`
+                SELECT mold_id 
+                FROM a_asset 
+                WHERE a_asset_id = $1
+            `, [resourceId]);
+            const moldResource = parseInt(assetResult.rows[0]?.mold_id);
+
+            // Validasi mold
+            if (!moldPlan) {
+                errors.push('Mold pada job order belum diatur');
+            }
+            if (!moldResource) {
+                errors.push('Mold pada mesin belum diatur');
+            }
+            if (moldPlan && moldResource && moldPlan !== moldResource) {
+                errors.push('Mold job order tidak sesuai dengan mold pada mesin');
+            }
+
+            console.log('DEBUG:', {
+                moldPlan,
+                moldResource,
+                typeofMoldPlan: typeof moldPlan,
+                typeofMoldResource: typeof moldResource,
+            });
+
+
+            if (errors.length > 0) {
+                await dbClient.query('ROLLBACK');
+                return {
+                    success: false,
+                    messages: errors,
+                };
+            }
 
             const queryUpdateStatusAsset = `
                 UPDATE a_asset 
@@ -766,7 +889,7 @@ class PlansService {
                 await dbClient.query('ROLLBACK');
                 return {
                     success: false,
-                    message: 'No job order found with the given ID.',
+                    messages: ['Mesin tidak ditemukan berdasarkan ID.'],
                 };
             }
 
@@ -782,7 +905,7 @@ class PlansService {
                 await dbClient.query('ROLLBACK');
                 return {
                     success: false,
-                    message: 'No job order found with the given ID.',
+                    messages: ['Job order tidak ditemukan untuk mesin tersebut.'],
                 };
             }
 
@@ -790,20 +913,190 @@ class PlansService {
 
             return {
                 success: true,
-                message: `Job order status updated to '${status}' successfully.`,
+                messages: [`Job order status updated to '${status}' successfully.`],
             };
 
         } catch (error) {
             console.error('Error updating job order status:', error);
             return {
                 success: false,
-                message: 'Failed to update job order status.',
+                messages: ['Terjadi kesalahan saat mengubah status job order.'],
                 error,
             };
         } finally {
             if (dbClient) dbClient.release();
         }
     }
+
+
+    async findBoms(server, planId) {
+        let dbClient;
+        try {
+            dbClient = await server.pg.connect();
+
+            const query = `
+            SELECT
+                ppb.pp_product_bom_id,
+                ppb."name"
+            FROM
+                cust_joborder jo
+            JOIN
+                pp_product_bom ppb ON jo.m_product_id = ppb.m_product_id
+            WHERE
+                cust_joborder_id = $1
+        `;
+
+            const result = await dbClient.query(query, [planId]);
+
+            // Konversi id jadi integer/number
+            const parsedRows = result.rows.map(row => ({
+                pp_product_bom_id: parseInt(row.pp_product_bom_id, 10),
+                name: row.name
+            }));
+
+            return parsedRows;
+        } catch (error) {
+            console.error('Error finding BOMs:', error);
+            throw error;
+        } finally {
+            if (dbClient) dbClient.release();
+        }
+    }
+
+
+    async updatePlan(server, planId, payload) {
+        let dbClient;
+
+        try {
+            dbClient = await server.pg.connect(); // asumsi pakai fastify-postgres plugin
+
+            const {
+                resourceId,
+                moldId,
+                partId,
+                qty,
+                description,
+                dateDoc,
+                planStartTime,
+                planCompleteTime,
+                isTrial,
+                bomId,
+                userId // pastikan ini ikut dikirim dari frontend
+            } = payload;
+
+            console.log('Payload diterima:', payload); // 👈 Log semua data masuk
+
+            let formattedDateDoc = null;
+            let formattedStartDate = null;
+            let formattedEndDate = null;
+
+            // 🔍 Safe Parse + Log Error
+            if (dateDoc) {
+                try {
+                    const parsed = parse(dateDoc, 'dd-MM-yyyy HH:mm:ss', new Date());
+                    formattedDateDoc = format(parsed, 'yyyy-MM-dd') + ' 00:00:00';
+                } catch (err) {
+                    console.error('Format dateDoc invalid:', dateDoc, err.message);
+                }
+            }
+
+            if (planStartTime) {
+                try {
+                    const parsed = parse(planStartTime, 'dd-MM-yyyy HH:mm:ss', new Date());
+                    formattedStartDate = format(parsed, 'yyyy-MM-dd HH:mm:ss');
+                } catch (err) {
+                    console.error('Format planStartTime invalid:', planStartTime, err.message);
+                }
+            }
+
+            if (planCompleteTime) {
+                try {
+                    const parsed = parse(planCompleteTime, 'dd-MM-yyyy HH:mm:ss', new Date());
+                    formattedEndDate = format(parsed, 'yyyy-MM-dd HH:mm:ss');
+                } catch (err) {
+                    console.error('Format planCompleteTime invalid:', planCompleteTime, err.message);
+                }
+            }
+
+            const result = await dbClient.query(
+                `
+                UPDATE cust_joborder
+                SET
+                    description = $1,
+                    a_asset_id = $2,
+                    mold_id = $3,
+                    m_product_id = $4,
+                    qtyplanned = $5,
+                    datedoc = $6,
+                    startdate = $7,
+                    enddate = $8,
+                    istrial = $9,
+                    bom_id = $10,
+                    updated = now(),
+                    updated_by = $11
+                WHERE cust_joborder_id = $12
+                RETURNING *
+                `,
+                [
+                    description,
+                    resourceId,
+                    moldId,
+                    partId,
+                    qty,
+                    formattedDateDoc,
+                    formattedStartDate,
+                    formattedEndDate,
+                    isTrial,
+                    bomId || 0,
+                    userId,
+                    planId
+                ]
+            );
+
+            return result.rows[0]; // return row yang berhasil di-update
+        } catch (error) {
+            throw error;
+        } finally {
+            if (dbClient) dbClient.release();
+        }
+    }
+
+    async updateBomsPlan(server, planId, payload) {
+        let dbClient;
+
+        try {
+            dbClient = await server.pg.connect(); // asumsi pakai fastify-postgres plugin
+
+            const {
+                bomId,
+                userId
+            } = payload;
+
+            const result = await dbClient.query(
+                `
+                UPDATE cust_joborder
+                SET
+                    bom_id = $1,
+                    updated = now(),
+                    updated_by = $2
+                WHERE cust_joborder_id = $3
+                RETURNING *
+                `,
+                [
+                    bomId,
+                    userId,
+                    planId
+                ]
+            );
+
+            return result.rows[0]; // return row yang berhasil di-update
+        } catch (error) {
+            throw error;
+        } finally {
+            if (dbClient) dbClient.release();
+        }
+    }
+
 
 
 

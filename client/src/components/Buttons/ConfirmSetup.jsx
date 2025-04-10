@@ -82,7 +82,17 @@ const ConfirmSetup = ({ planId, resourceId, onSuccess }) => {
                                 },
                                 body: JSON.stringify({ planId, resourceId, status: selectedStatus }),
                             })
-                                .then(() => {
+                                .then(async res => {
+                                    const data = await res.json();
+
+                                    if (!res.ok) {
+                                        // ✨ Gabungkan errors array (kalau ada)
+                                        const errorMessages = Array.isArray(data.messages)
+                                            ? data.messages.join(', ')
+                                            : data.message || 'Unknown error';
+
+                                        throw new Error(errorMessages);
+                                    }
                                     notification.success({
                                         message: 'Status Updated',
                                         description: `Plan status changed to ${selectedStatus}`,
@@ -91,10 +101,44 @@ const ConfirmSetup = ({ planId, resourceId, onSuccess }) => {
                                     onSuccess?.();
                                 })
                                 .catch(error => {
+                                    let description = error.message;
+
+                                    let items = [];
+
+                                    if (description.includes(', ')) {
+                                        items = description.split(', ');
+                                    } else {
+                                        items = [description]; // kalau hanya 1 error, bungkus jadi array
+                                    }
+
+
+                                    // Render sebagai <ul> lengkap dengan link per item
+                                    description = (
+                                        <ul style={{ paddingLeft: 20, margin: 0 }}>
+                                            {items.map((item, index) => {
+                                                let link = null;
+
+                                                if (item.toLowerCase().includes('bom')) {
+                                                    link = <a href="" style={{ marginLeft: 8 }}>→ Klik tombol Material</a>;
+                                                } else if (item.toLowerCase().includes('mold pada mesin')) {
+                                                    link = <a href={`/resource/mold?resourceId=${resourceId}`} style={{ marginLeft: 8 }}>→ Periksa Mold</a>;
+                                                }
+
+                                                return (
+                                                    <li key={index}>
+                                                        {item}
+                                                        {link}
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    );
+
                                     notification.error({
                                         message: 'Error',
-                                        description: 'Failed to update plan status.',
+                                        description, // gunakan variabel yang sudah diolah
                                     });
+
                                     console.error('Error:', error);
                                 });
                         }}

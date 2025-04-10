@@ -1,13 +1,13 @@
-import { CheckOutlined, SettingFilled, StopOutlined } from "@ant-design/icons";
+import { CheckOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Divider, Modal, notification, Space } from "antd";
 
 const ConfirmReady = ({ planId, onSuccess }) => {
     Modal.confirm({
-        title: 'Plan Preparations',
+        title: 'Start Preparations',
         content: (
             <>
                 <Divider />
-                <span style={{ fontSize: '18px' }}>Req Calibration ? Ready to start !</span>
+                <span style={{ fontSize: '18px' }}>Are you sure to open this plan !</span>
                 <Divider />
             </>
         ),
@@ -23,32 +23,26 @@ const ConfirmReady = ({ planId, onSuccess }) => {
                         color="default"
                         variant="text"
                         style={{
-                            height: '55px',
                             color: '#595959',
-                            fontSize: '14px',
+                            fontSize: '18px',
                             fontWeight: '600',
-                            padding: '5px 10px',
-                            whiteSpace: 'normal', // Allow text to wrap
-                            textAlign: 'center', // Center the text inside the button
+                            padding: '5px 10px'
                         }}
                         onClick={() => {
                             Modal.destroyAll();
                         }}
                     >
-                        <StopOutlined style={{ fontSize: '14px', color: '#595959' }} />
+                        <StopOutlined style={{ color: '#595959' }} />
                         CANCEL
                     </Button>
                     <Button
                         color="default"
                         variant="text"
                         style={{
-                            height: '55px',
-                            color: 'red', // Set border color
-                            fontSize: '14px',
+                            color: '#52c41a',
+                            fontSize: '18px',
                             fontWeight: '600',
-                            padding: '5px 10px',
-                            whiteSpace: 'normal', // Allow text to wrap
-                            textAlign: 'center', // Center the text inside the button
+                            padding: '5px 10px'
                         }}
                         onClick={() => {
                             fetch('http://localhost:3080/api/plans/status/open', {
@@ -56,48 +50,74 @@ const ConfirmReady = ({ planId, onSuccess }) => {
                                 headers: {
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ planId, status: 'NO_NEED_CALIBRATION' }),
+                                body: JSON.stringify({ planId, status: 'OK' }),
                             })
-                                .then(() => {
+                                .then(async res => {
+                                    const data = await res.json();
+
+                                    if (!res.ok) {
+                                        // ✨ Gabungkan errors array (kalau ada)
+                                        const errorMessages = Array.isArray(data.errors)
+                                            ? data.errors.join(', ')
+                                            : data.message || 'Unknown error';
+
+                                        throw new Error(errorMessages);
+                                    }
+
                                     notification.success({
                                         message: 'Status Updated',
-                                        description: 'Plan status changed to NO NEED CALIBRATION.',
+                                        description: 'Plan status changed to Open.',
                                     });
                                     Modal.destroyAll();
                                     onSuccess?.();
                                 })
                                 .catch(error => {
+                                    let description = error.message;
+
+                                    let items = [];
+
+                                    if (description.includes(', ')) {
+                                        items = description.split(', ');
+                                    } else {
+                                        items = [description]; // kalau hanya 1 error, bungkus jadi array
+                                    }
+
+
+                                    // Render sebagai <ul> lengkap dengan link per item
+                                    description = (
+                                        <ul style={{ paddingLeft: 20, margin: 0 }}>
+                                            {items.map((item, index) => {
+                                                let link = null;
+
+                                                if (item.toLowerCase().includes('bom')) {
+                                                    link = <a href="" style={{ marginLeft: 8 }}>→ Klik tombol Material</a>;
+                                                } else if (item.toLowerCase().includes('job order')) {
+                                                    link = <a href="/plan/list" style={{ marginLeft: 8 }}>→ Periksa Mold</a>;
+                                                }
+
+                                                return (
+                                                    <li key={index}>
+                                                        {item}
+                                                        {link}
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    );
+
                                     notification.error({
                                         message: 'Error',
-                                        description: 'Failed to update plan status.',
+                                        description, // gunakan variabel yang sudah diolah
                                     });
+
                                     console.error('Error:', error);
                                 });
                         }}
                     >
-                        <CheckOutlined style={{ fontSize: '14px', color: 'red' }} />
-                        NO NEED CALIBRATION
+                        <CheckOutlined style={{ color: '#52c41a', }} />
+                        OK
                     </Button>
-                    <Button
-                        color="default"
-                        variant="text"
-                        style={{
-                            height: '55px',
-                            color: '#1677ff',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            padding: '5px 10px',
-                            whiteSpace: 'normal', // Allow text to wrap
-                            textAlign: 'center', // Center the text inside the button
-                        }}
-                        onClick={() => {
-                            alert('OK');
-                            Modal.destroyAll();
-                        }}
-                    >
-                        <SettingFilled style={{ fontSize: '14px', color: '#1677ff' }} />
-                        REQ. CALIBRATION
-                    </Button>
+
                 </Space>
             </div>
         ),

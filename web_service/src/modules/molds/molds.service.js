@@ -102,33 +102,50 @@ class MoldsService {
 
     async moldTeardown(server, resourceId) {
         let dbClient;
+        let errors = [];
+
         try {
             dbClient = await server.pg.connect();
 
-            const query = `
-                UPDATE 
-                    a_asset 
+            // Validasi apakah ada JO yang masih aktif
+            const cekJO = await dbClient.query(`
+                SELECT 1
+                FROM cust_joborder
+                WHERE a_asset_id = $1
+                AND iscurrent = 'Y'
+                LIMIT 1
+            `, [resourceId]);
+
+            if (cekJO.rowCount > 0) {
+                errors.push("Tidak bisa teardown mold karena masih ada Job Order aktif.");
+            }
+
+            if (errors.length === 0) {
+                const update = await dbClient.query(`
+                UPDATE a_asset
                 SET mold_id = NULL,
                     mold_name = NULL
-                WHERE 
-                    a_asset_id = $1
-            `;
+                WHERE a_asset_id = $1
+            `, [resourceId]);
 
-            const result = await dbClient.query(query, [resourceId])
-
-            if (result.rowCount === 0) {
-                throw new Error("Gagal teardown mold, resource tidak ditemukan atau tidak berubah.");
+                if (update.rowCount === 0) {
+                    errors.push("Gagal teardown mold, resource tidak ditemukan atau tidak berubah.");
+                }
             }
 
             return {
-                success: true,
-                message: "Teardown mold berhasil!",
-                data: result.rows[0],
+                success: errors.length === 0,
+                messages: errors.length > 0 ? errors : ["Teardown mold berhasil!"]
             };
 
         } catch (error) {
-            console.error("Error dalam moldSetup:", error.message);
-            throw new Error(`Gagal setup mold: ${error.message}`);
+            console.error("Error dalam moldTeardown:", error.message);
+            errors.push(`Gagal teardown mold: ${error.message}`);
+            return {
+                success: false,
+                messages: errors,
+                error,
+            };
         } finally {
             // Pastikan koneksi database dilepas hanya jika berhasil dibuat
             if (dbClient) {

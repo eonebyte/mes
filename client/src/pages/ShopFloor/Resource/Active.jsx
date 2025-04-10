@@ -2,7 +2,7 @@ import { Alert, Button, Card, Col, Empty, Flex, Row, Spin, Typography } from "an
 import { MoreOutlined } from "@ant-design/icons";
 import SettingsIcon from '@mui/icons-material/Settings';
 import DoneIcon from '@mui/icons-material/Done';
-import TableChartIcon from '@mui/icons-material/TableChart';
+// import TableChartIcon from '@mui/icons-material/TableChart';
 import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
 import GppBadIcon from '@mui/icons-material/GppBad';
 import DatasetIcon from '@mui/icons-material/Dataset';
@@ -14,11 +14,15 @@ import ResourceLayout from "./ResourceLayout";
 import { useEffect, useMemo, useState } from "react";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 import ChangeCavity from "../../../components/Buttons/ChangeCavity";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { fetchPlanActive, fetchResourceById } from "../../../data/fetchs";
 import ConfirmStartActive from "../../../components/Buttons/ConfirmStartActive";
-
+import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
+import { refreshResources } from "../../../states/reducers/resourceSlice";
+import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 function ActiveResource() {
+    const dispatch = useDispatch();
+
     const [searchParams] = useSearchParams();
     const resourceId = useMemo(() => Number(searchParams.get('resourceId')), [searchParams]);
     const { isDarkMode } = useSelector((state) => state.theme); // Dark mode state
@@ -31,6 +35,7 @@ function ActiveResource() {
     const [loading, setLoading] = useState(true);
 
     const loadResourceAndPlan = async () => {
+
         setLoading(true);
         // Fetch resource data
         const fetchedResource = await fetchResourceById(resourceId);
@@ -130,7 +135,14 @@ function ActiveResource() {
                                             fontSize: "12px",
                                             padding: "4px 12px",
                                         }}
-                                        onClick={() => ConfirmSetup({ planId: plan.planId, resourceId: plan.resourceId, onSuccess: loadResourceAndPlan })}
+                                        onClick={() => ConfirmSetup({
+                                            planId: plan.planId,
+                                            resourceId: plan.resourceId,
+                                            onSuccess: () => {
+                                                loadResourceAndPlan();
+                                                dispatch(refreshResources());
+                                            }
+                                        })}
                                     >
                                         <SettingsIcon sx={{ fontSize: 18 }} />
                                         <span>SETUP</span>
@@ -145,9 +157,16 @@ function ActiveResource() {
                                             fontSize: "12px",
                                             padding: "4px 12px",
                                         }}
-                                        onClick={() => ConfirmStartActive({ planId: plan.planId, resourceId: plan.resourceId, onSuccess: loadResourceAndPlan })}
+                                        onClick={() => ConfirmStartActive({
+                                            planId: plan.planId,
+                                            resourceId: plan.resourceId,
+                                            onSuccess: () => {
+                                                loadResourceAndPlan();
+                                                dispatch(refreshResources());
+                                            }
+                                        })}
                                     >
-                                        <DoneIcon sx={{ fontSize: 18 }} />
+                                        <PowerSettingsNewIcon sx={{ fontSize: 18 }} />
                                         <span>START</span>
                                     </Button>
                                     <Button
@@ -159,10 +178,31 @@ function ActiveResource() {
                                             fontSize: "12px",
                                             padding: "4px 12px",
                                         }}
+                                        onClick={() => ConfirmComplete({
+                                            planId: plan.planId,
+                                            resourceId: plan.resourceId,
+                                            onSuccess: () => {
+                                                loadResourceAndPlan();
+                                                dispatch(refreshResources());
+                                            }
+                                        })}
+                                    >
+                                        <DoneIcon sx={{ fontSize: 18 }} />
+                                        <span>COMPLETE</span>
+                                    </Button>
+                                    {/* <Button
+                                        color="primary"
+                                        variant="text"
+                                        style={{
+                                            fontWeight: 600,
+                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                            fontSize: "12px",
+                                            padding: "4px 12px",
+                                        }}
                                     >
                                         <TableChartIcon sx={{ fontSize: 16 }} />
                                         <span>MATERIAL</span>
-                                    </Button>
+                                    </Button> */}
                                 </Col>
                             </Row>
                             <Row gutter={[16]}>

@@ -67,12 +67,13 @@ class MoldsController {
             }
 
 
-            await request.server.moldsService.moldTeardown(request.server, resourceId);
+            const result = await request.server.moldsService.moldTeardown(request.server, resourceId);
 
-            return reply.status(200).send({
-                success: true,
-                message: 'Mold berhasil di-setup',
-            });
+            if (!result.success) {
+                // Kalau error lainnya (tapi masih dari sisi user), bisa juga pakai 422
+                return reply.code(422).send(result);
+            }
+            return reply.code(200).send(result);
         } catch (error) {
             console.error("Error di moldSetup Controller:", error.message);
 

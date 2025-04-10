@@ -153,6 +153,60 @@ class PlansController {
         }
     }
 
+    static async getBoms(request, reply) {
+        const { planId } = request.query;
+
+        try {
+            const boms = await request.server.plansService.findBoms(request.server, planId);
+            console.log('boms : ', boms);
+            reply.send({ message: 'fetch successfully', data: boms });
+        } catch (error) {
+            request.log.error(error);
+            reply.status(500).send({ message: `Failed: ${error.message || error}` });
+        }
+    }
+
+    static async getProducts(request, reply) {
+        try {
+            const products = await request.server.plansService.findInjectionProducts(request.server);
+
+            if (!products || products.length === 0) {
+                return reply.status(404).send({ message: 'No molds found' });
+            }
+
+            reply.send({ message: 'Fetch successfully', data: products });
+        } catch (error) {
+            request.log.error(error);
+            reply.status(500).send({ message: `Failed: ${error.message || error}` });
+        }
+    }
+
+    static async updatePlans(request, reply) {
+        const { planId } = request.params
+        const payload = request.body;
+        try {
+            const update_job_orders = await request.server.plansService.updatePlan(request.server, planId, payload);
+            console.log('update job order : ', update_job_orders);
+            reply.send({ success: true, message: 'fetch successfully', data: update_job_orders });
+        } catch (error) {
+            request.log.error(error);
+            reply.status(500).send({ message: `Failed: ${error.message || error}` });
+        }
+    }
+
+    static async updateBomsPlans(request, reply) {
+        const { planId } = request.params
+        const payload = request.body;
+        try {
+            const update_job_orders = await request.server.plansService.updateBomsPlan(request.server, planId, payload);
+            console.log('update job order : ', update_job_orders);
+            reply.send({ success: true, message: 'fetch successfully', data: update_job_orders });
+        } catch (error) {
+            request.log.error(error);
+            reply.status(500).send({ message: `Failed: ${error.message || error}` });
+        }
+    }
+
     static async getPlansByResource(request, reply) {
         const { resourceId } = request.query;
         try {
@@ -208,7 +262,17 @@ class PlansController {
             // Panggil service yang kamu buat
             const result = await request.server.plansService.updateJOStatusComplete(request.server, planId, status);
 
-            return reply.code(result.success ? 200 : 500).send(result);
+            if (!result.success) {
+                // Kalau error karena BOM null, berikan 400
+                if (result.message.includes('BOM is null')) {
+                    return reply.code(400).send(result);
+                }
+
+                // Kalau error lainnya (tapi masih dari sisi user), bisa juga pakai 422
+                return reply.code(422).send(result);
+            }
+
+            return reply.code(200).send(result);
         } catch (error) {
             console.error('Error in updatePlansStatus controller:', error);
             return reply.code(500).send({
@@ -233,7 +297,11 @@ class PlansController {
             // Panggil service yang kamu buat
             const result = await request.server.plansService.updateJOActiveOnMachine(request.server, planId, resourceId, status);
 
-            return reply.code(result.success ? 200 : 500).send(result);
+            if (!result.success) {
+                // Kalau error lainnya (tapi masih dari sisi user), bisa juga pakai 422
+                return reply.code(422).send(result);
+            }
+            return reply.code(200).send(result);
         } catch (error) {
             console.error('Error in updatePlansStatus controller:', error);
             return reply.code(500).send({

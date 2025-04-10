@@ -1,7 +1,9 @@
 import { CheckOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Divider, Modal, notification, Space } from "antd";
 
-const ConfirmStartActive = ({ planId, resourceId, onSuccess }) => {
+import HoldIcon from '../../assets/hold-icon.svg';
+
+const ConfirmComplete = ({ planId, resourceId, onSuccess }) => {
     Modal.confirm({
         title: 'Confirm Complete',
         content: (
@@ -35,6 +37,23 @@ const ConfirmStartActive = ({ planId, resourceId, onSuccess }) => {
                     >
                         <StopOutlined style={{ fontSize: '18px', color: 'red' }} />
                         CANCEL
+                    </Button>
+                    <Button
+                        color="default"
+                        variant="text"
+                        style={{
+                            color: '#fa8c16', // Menetapkan warna border
+                            fontSize: '18px',
+                            fontWeight: '600',
+                            padding: '5px 10px'
+                        }}
+                        onClick={() => {
+                            alert('HOLD');
+                            Modal.destroyAll();
+                        }}
+                    >
+                        <img src={HoldIcon} alt="Hold Icon" width="24px" height="24px" />
+                        HOLD
                     </Button>
                     <Button
                         color="default"
@@ -79,4 +98,4 @@ const ConfirmStartActive = ({ planId, resourceId, onSuccess }) => {
     });
 };
 
-export default ConfirmStartActive;
+export default ConfirmComplete;

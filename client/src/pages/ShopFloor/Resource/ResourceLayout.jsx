@@ -20,6 +20,10 @@ const { Sider, Content } = Layout;
 const ResourceLayout = ({ children }) => {
     const dispatch = useDispatch();
 
+    const refreshCounter = useSelector(state => state.resources.refreshCounter);
+
+
+
     const navigate = useNavigate();
     const location = useLocation();
     const locationPath = location.pathname;
@@ -45,6 +49,11 @@ const ResourceLayout = ({ children }) => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        console.log('REFRESH TRIGGERED');
+        loadResource();
+    }, [refreshCounter]);
 
     useEffect(() => {
         if (!resourceFromStore && resourceId) { // Jika resource belum ada di Redux dan resourceId ada
