@@ -254,7 +254,6 @@ class PlansService {
         }
     }
 
-
     async findActivePlan(server, resourceId) {
         let dbClient;
         try {
@@ -301,27 +300,32 @@ class PlansService {
                 return null;
             }
 
-            const jobOrders = result.rows.map((row, index) => ({
-                no: index + 1,
-                planId: row.cust_joborder_id,
-                planNo: row.documentno,
-                resourceId: row.a_asset_id,
-                createdBy: row.created_by,
-                status: row.docstatus,
-                dateDoc: row.datedoc,
-                planStartTime: row.startdate,
-                planCompleteTime: row.enddate,
-                cycletime: row.cycletime,
-                cavity: row.cavity,
-                isActive: row.isactive,
-                isVerified: row.isverified,
-                partNo: row.product_value,
-                partName: row.product_name,
-                qty: row.qtyplanned,
-                isTrial: row.istrial,
-                mold: row.mold,
-                moldName: row.moldname,
-                description: row.description
+            const jobOrders = await Promise.all(result.rows.map(async (row, index) => {
+                const station = await this.getStation(server, parseInt(row.a_asset_id));
+
+                return {
+                    no: index + 1,
+                    planId: row.cust_joborder_id,
+                    planNo: row.documentno,
+                    resourceId: row.a_asset_id,
+                    createdBy: row.created_by,
+                    status: row.docstatus,
+                    dateDoc: row.datedoc,
+                    planStartTime: row.startdate,
+                    planCompleteTime: row.enddate,
+                    cycletime: row.cycletime,
+                    cavity: row.cavity,
+                    isActive: row.isactive,
+                    isVerified: row.isverified,
+                    partNo: row.product_value,
+                    partName: row.product_name,
+                    qty: row.qtyplanned,
+                    isTrial: row.istrial,
+                    mold: row.mold,
+                    moldName: row.moldname,
+                    description: row.description,
+                    resourceStatus: station?.status || null
+                }
             }));
 
             return jobOrders;
@@ -411,6 +415,7 @@ class PlansService {
                     mcno: station?.value || null,
                     bomId: parseInt(row.bom_id),
                     bom: row.bom,
+                    resourceStatus: station?.status || null,
                 };
             }));
 
@@ -546,7 +551,8 @@ class PlansService {
             const queryGetStation = `
                 SELECT 
                     lineno,
-                    value 
+                    value,
+                    status 
                 FROM a_asset 
                 WHERE a_asset_id = $1
             `;
@@ -567,8 +573,6 @@ class PlansService {
             }
         }
     }
-
-
 
 
     async createdBy(server, username) {

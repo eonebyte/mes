@@ -6,8 +6,10 @@ import LayoutDashboard from '../../components/layouts/LayoutDashboard';
 import dayjs from 'dayjs';
 
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 const ListPlan = () => {
+    const navigate = useNavigate();
 
     const user = useSelector((state) => state.auth.user);
 
@@ -238,7 +240,14 @@ const ListPlan = () => {
             },
         },
         { title: 'Description', dataIndex: 'description', key: 'description', ...getColumnSearchProps('description') },
-        { title: 'Resource code', dataIndex: 'resourceCode', key: 'resourceCode', ...getColumnSearchProps('resourceCode') },
+        {
+            title: 'Resource code', dataIndex: 'resourceCode', key: 'resourceCode', ...getColumnSearchProps('resourceCode'),
+            render: (text, record) => (
+                <Button type="link" onClick={() => navigate(`/resource?resourceId=${record.resourceId}`)}>
+                    {text}
+                </Button>
+            )
+        },
         { title: 'Mold', dataIndex: 'moldName', key: 'moldName', ...getColumnSearchProps('moldName') },
         { title: 'Part No', dataIndex: 'partNo', key: 'partNo', ...getColumnSearchProps('partNo') },
         { title: 'Part Name', dataIndex: 'partName', key: 'partName', ...getColumnSearchProps('partName') },

@@ -20,6 +20,7 @@ import ConfirmStartActive from "../../../components/Buttons/ConfirmStartActive";
 import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
 import { refreshResources } from "../../../states/reducers/resourceSlice";
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+
 function ActiveResource() {
     const dispatch = useDispatch();
 
@@ -33,6 +34,11 @@ function ActiveResource() {
     const [outputQty, setOutputQty] = useState(0);
     const [defectQty, setDefectQty] = useState(0);
     const [loading, setLoading] = useState(true);
+
+    const [showConfirm, setShowConfirm] = useState(false);
+
+    const handleOpenConfirm = () => setShowConfirm(true);
+    const handleCloseConfirm = () => setShowConfirm(false);
 
     const loadResourceAndPlan = async () => {
 
@@ -53,6 +59,16 @@ function ActiveResource() {
 
         setLoading(false);
     };
+
+    const handleSuccess = () => {
+        setShowConfirm(false);
+        loadResourceAndPlan();
+        dispatch(refreshResources());
+    };
+
+
+
+    // console.log('this plan : ', plan);
 
     useEffect(() => {
         if (resourceId) {
@@ -135,40 +151,41 @@ function ActiveResource() {
                                             fontSize: "12px",
                                             padding: "4px 12px",
                                         }}
-                                        onClick={() => ConfirmSetup({
-                                            planId: plan.planId,
-                                            resourceId: plan.resourceId,
-                                            onSuccess: () => {
-                                                loadResourceAndPlan();
-                                                dispatch(refreshResources());
-                                            }
-                                        })}
+                                        onClick={handleOpenConfirm}
                                     >
                                         <SettingsIcon sx={{ fontSize: 18 }} />
                                         <span>SETUP</span>
                                     </Button>
-
-                                    <Button
-                                        color="primary"
-                                        variant="text"
-                                        style={{
-                                            fontWeight: 600,
-                                            fontFamily: "'Roboto', Arial, sans-serif",
-                                            fontSize: "12px",
-                                            padding: "4px 12px",
-                                        }}
-                                        onClick={() => ConfirmStartActive({
-                                            planId: plan.planId,
-                                            resourceId: plan.resourceId,
-                                            onSuccess: () => {
-                                                loadResourceAndPlan();
-                                                dispatch(refreshResources());
-                                            }
-                                        })}
-                                    >
-                                        <PowerSettingsNewIcon sx={{ fontSize: 18 }} />
-                                        <span>START</span>
-                                    </Button>
+                                    <ConfirmSetup
+                                        open={showConfirm}
+                                        onClose={handleCloseConfirm}
+                                        onSuccess={handleSuccess}
+                                        planId={plan.planId}
+                                        resourceId={plan.resourceId}
+                                    />
+                                    {plan.resourceStatus !== 'RUNNING' && (
+                                        <Button
+                                            color="primary"
+                                            variant="text"
+                                            style={{
+                                                fontWeight: 600,
+                                                fontFamily: "'Roboto', Arial, sans-serif",
+                                                fontSize: "12px",
+                                                padding: "4px 12px",
+                                            }}
+                                            onClick={() => ConfirmStartActive({
+                                                planId: plan.planId,
+                                                resourceId: plan.resourceId,
+                                                onSuccess: () => {
+                                                    loadResourceAndPlan();
+                                                    dispatch(refreshResources());
+                                                }
+                                            })}
+                                        >
+                                            <PowerSettingsNewIcon sx={{ fontSize: 18 }} />
+                                            <span>START</span>
+                                        </Button>
+                                    )}
                                     <Button
                                         color="primary"
                                         variant="text"
