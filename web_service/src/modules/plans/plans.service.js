@@ -1065,41 +1065,41 @@ class PlansService {
         }
     }
 
-    async updateBomsPlan(server, planId, payload) {
-        let dbClient;
+    // async updateBomsPlan(server, planId, payload) {
+    //     let dbClient;
 
-        try {
-            dbClient = await server.pg.connect(); // asumsi pakai fastify-postgres plugin
+    //     try {
+    //         dbClient = await server.pg.connect(); // asumsi pakai fastify-postgres plugin
 
-            const {
-                bomId,
-                userId
-            } = payload;
+    //         const {
+    //             bomId,
+    //             userId
+    //         } = payload;
 
-            const result = await dbClient.query(
-                `
-                UPDATE cust_joborder
-                SET
-                    bom_id = $1,
-                    updated = now(),
-                    updated_by = $2
-                WHERE cust_joborder_id = $3
-                RETURNING *
-                `,
-                [
-                    bomId,
-                    userId,
-                    planId
-                ]
-            );
+    //         const result = await dbClient.query(
+    //             `
+    //             UPDATE cust_joborder
+    //             SET
+    //                 bom_id = $1,
+    //                 updated = now(),
+    //                 updated_by = $2
+    //             WHERE cust_joborder_id = $3
+    //             RETURNING *
+    //             `,
+    //             [
+    //                 bomId,
+    //                 userId,
+    //                 planId
+    //             ]
+    //         );
 
-            return result.rows[0]; // return row yang berhasil di-update
-        } catch (error) {
-            throw error;
-        } finally {
-            if (dbClient) dbClient.release();
-        }
-    }
+    //         return result.rows[0]; // return row yang berhasil di-update
+    //     } catch (error) {
+    //         throw error;
+    //     } finally {
+    //         if (dbClient) dbClient.release();
+    //     }
+    // }
 
 
 

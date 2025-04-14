@@ -10,7 +10,7 @@ async function PlansModule(server, opts) {
     server.post('/api/plans/status/event', PlansController.toEvent);
     server.get('/api/plans', PlansController.getPlans);
     server.put('/api/plans/:planId', PlansController.updatePlans);
-    server.put('/api/plans/boms/:planId', PlansController.updateBomsPlans);
+    // server.put('/api/plans/boms/:planId', PlansController.updateBomsPlans);
     server.get('/api/plans/boms', PlansController.getBoms);
     server.get('/api/plans/products', PlansController.getProducts);
     server.get('/api/plans/resource/plans', PlansController.getPlansByResource);

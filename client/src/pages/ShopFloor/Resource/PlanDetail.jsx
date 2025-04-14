@@ -23,14 +23,17 @@ import ConfirmReady from "../../../components/Buttons/ConfirmReady";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
 import { fetchDetailPlan } from "../../../data/fetchs";
-import ConfirmMaterial from "../../../components/Buttons/ConfirmMaterial";
 import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import { refreshResources } from "../../../states/reducers/resourceSlice";
+import ConfirmMaterialNew from "../../../components/Buttons/ConfirmMaterialNew";
+
 
 function PlanDetail() {
     const dispatch = useDispatch();
-    const user = useSelector((state) => state.auth.user);
+    // const user = useSelector((state) => state.auth.user);
+    const [openMaterialModal, setOpenMaterialModal] = useState(false);
+
 
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
 
@@ -44,25 +47,12 @@ function PlanDetail() {
     const [singlePlan, setSinglePlan] = useState({});
     const [multiplePlan, setMultiplePlan] = useState({});
 
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const [boms, setBoms] = useState([]);
-    const [selectedBom, setSelectedBom] = useState(null);
-
-
-
+    // const [isModalVisible, setIsModalVisible] = useState(false);
     const fetchData = async () => {
         setLoading(true);
         try {
             let singlePlanData;
             let multiplePlanData;
-
-            if (planId) {
-                const bomRes = await fetch(`http://localhost:3080/api/plans/boms?planId=${planId}`);
-                const bomJson = await bomRes.json();
-                if (bomJson?.data) {
-                    setBoms(bomJson.data);
-                }
-            }
 
             if (planId) {
                 singlePlanData = await fetchDetailPlan(planId, null);
@@ -95,16 +85,11 @@ function PlanDetail() {
         fetchData();
     }, [planId, navigate]);
 
-    useEffect(() => {
-        if (singlePlan?.bomId && boms.length > 0) {
-            const matched = boms.find(b => b.pp_product_bom_id === singlePlan.bomId);
-            if (matched) {
-                setSelectedBom(matched.pp_product_bom_id);
-            }
-        }
-    }, [singlePlan, boms]);
 
-    console.log('selected Bom : ', selectedBom);
+    const handleSuccess = () => {
+        fetchData();
+        dispatch(refreshResources());
+    };
 
 
 
@@ -226,7 +211,8 @@ function PlanDetail() {
                                                     >
                                                         <FactCheckIcon sx={{ fontSize: 18 }} />
                                                         <span>OPEN</span>
-                                                    </Button><Button
+                                                    </Button>
+                                                    <Button
                                                         color="primary"
                                                         variant="text"
                                                         style={{
@@ -235,46 +221,46 @@ function PlanDetail() {
                                                             fontSize: "12px",
                                                             padding: "4px 12px",
                                                         }}
-                                                        onClick={() => setIsModalVisible(true)}
+                                                        onClick={() => setOpenMaterialModal(true)}
                                                     >
-                                                        <TableChartIcon sx={{ fontSize: 16 }} />
+                                                        <SettingsIcon sx={{ fontSize: 18 }} />
                                                         <span>MATERIAL</span>
                                                     </Button>
-                                                    <ConfirmMaterial
-                                                        visible={isModalVisible}
-                                                        onClose={() => setIsModalVisible(false)}
-                                                        planId={planId}
-                                                        boms={boms}
-                                                        selectedBom={selectedBom}
-                                                        setSelectedBom={setSelectedBom}
-                                                        onSuccess={fetchData}
-                                                        user={user}
-                                                    />
+                                                    {openMaterialModal && (
+                                                        <ConfirmMaterialNew
+                                                            planId={singlePlan.planId}
+                                                            resourceId={singlePlan.resourceId}
+                                                            open={openMaterialModal}
+                                                            onClose={() => setOpenMaterialModal(false)}
+                                                            onSuccess={handleSuccess}
+                                                        />
+                                                    )}
                                                 </>
                                             )}
                                             {/* IP = OPEN */}
                                             {singlePlan.status == 'IP' && (
-                                                <><Button
-                                                    color="primary"
-                                                    variant="text"
-                                                    style={{
-                                                        fontWeight: 600,
-                                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                                        fontSize: "12px",
-                                                        padding: "4px 12px",
-                                                    }}
-                                                    onClick={() => ConfirmSetup({
-                                                        planId: singlePlan.planId,
-                                                        resourceId: singlePlan.resourceId,
-                                                        onSuccess: () => {
-                                                            fetchData();
-                                                            dispatch(refreshResources());
-                                                        }
-                                                    })}
-                                                >
-                                                    <SettingsIcon sx={{ fontSize: 18 }} />
-                                                    <span>SETUP</span>
-                                                </Button>
+                                                <>
+                                                    <Button
+                                                        color="primary"
+                                                        variant="text"
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                                            fontSize: "12px",
+                                                            padding: "4px 12px",
+                                                        }}
+                                                        onClick={() => ConfirmSetup({
+                                                            planId: singlePlan.planId,
+                                                            resourceId: singlePlan.resourceId,
+                                                            onSuccess: () => {
+                                                                fetchData();
+                                                                dispatch(refreshResources());
+                                                            }
+                                                        })}
+                                                    >
+                                                        <SettingsIcon sx={{ fontSize: 18 }} />
+                                                        <span>SETUP</span>
+                                                    </Button>
                                                     <Button
                                                         color="primary"
                                                         variant="text"

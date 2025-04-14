@@ -194,18 +194,18 @@ class PlansController {
         }
     }
 
-    static async updateBomsPlans(request, reply) {
-        const { planId } = request.params
-        const payload = request.body;
-        try {
-            const update_job_orders = await request.server.plansService.updateBomsPlan(request.server, planId, payload);
-            console.log('update job order : ', update_job_orders);
-            reply.send({ success: true, message: 'fetch successfully', data: update_job_orders });
-        } catch (error) {
-            request.log.error(error);
-            reply.status(500).send({ message: `Failed: ${error.message || error}` });
-        }
-    }
+    // static async updateBomsPlans(request, reply) {
+    //     const { planId } = request.params
+    //     const payload = request.body;
+    //     try {
+    //         const update_job_orders = await request.server.plansService.updateBomsPlan(request.server, planId, payload);
+    //         console.log('update job order : ', update_job_orders);
+    //         reply.send({ success: true, message: 'fetch successfully', data: update_job_orders });
+    //     } catch (error) {
+    //         request.log.error(error);
+    //         reply.status(500).send({ message: `Failed: ${error.message || error}` });
+    //     }
+    // }
 
     static async getPlansByResource(request, reply) {
         const { resourceId } = request.query;
