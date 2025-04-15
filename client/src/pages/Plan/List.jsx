@@ -352,7 +352,7 @@ const ListPlan = () => {
                         <Descriptions.Item label="Cycletime">{selectedData.cycletime}</Descriptions.Item>
                         <Descriptions.Item label="Cavity">{selectedData.cavity}</Descriptions.Item>
                         <Descriptions.Item label="Trial">{selectedData.isTrial === false ? 'N' : 'Y'}</Descriptions.Item>
-                        <Descriptions.Item label="BOM">{selectedData.bom}</Descriptions.Item>
+                        <Descriptions.Item label="BOM">{selectedData.bomName}</Descriptions.Item>
                     </Descriptions>
                 )}
             </Modal>
@@ -620,18 +620,12 @@ const ListPlan = () => {
                     </Row>
                     <Form.Item label="BOM">
                         <Select
+                            disabled
                             showSearch
                             placeholder="Select BOM"
                             value={formData.bomName}
                             optionFilterProp="label"
-                            onChange={(bomId) => {
-                                const selected = bomOptions.find(bom => bom.pp_product_bom_id === bomId);
-                                setFormData({
-                                    ...formData,
-                                    bomName: selected.name,
-                                    bomId: parseInt(selected.pp_product_bom_id),
-                                });
-                            }}
+
                             // onChange={(value) => setFormData({ ...formData, bomId: value })}
                             options={bomOptions.map(bom => ({
                                 value: bom.pp_product_bom_id,

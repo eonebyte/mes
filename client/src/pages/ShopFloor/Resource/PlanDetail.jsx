@@ -228,8 +228,7 @@ function PlanDetail() {
                                                     </Button>
                                                     {openMaterialModal && (
                                                         <ConfirmMaterialNew
-                                                            planId={singlePlan.planId}
-                                                            resourceId={singlePlan.resourceId}
+                                                            bomComponent={singlePlan.bomComponent}
                                                             open={openMaterialModal}
                                                             onClose={() => setOpenMaterialModal(false)}
                                                             onSuccess={handleSuccess}

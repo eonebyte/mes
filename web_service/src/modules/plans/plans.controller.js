@@ -34,9 +34,19 @@ class PlansController {
                     const formattedStartDate = format(parse(row.col4, 'dd/MM/yyyy HH:mm:ss', new Date()), 'yyyy-MM-dd HH:mm:ss');
                     const formattedEndDate = format(parse(row.col5, 'dd/MM/yyyy HH:mm:ss', new Date()), 'yyyy-MM-dd HH:mm:ss');
 
+                    const queryGetBomId = `
+                        SELECT pp_product_bom_id 
+                        FROM pp_product_bom 
+                        WHERE m_product_id = $1 AND bomtype = 'A'
+                        LIMIT 1
+                    `;
+
+                    const { rows: bomRows } = await dbClient.query(queryGetBomId, [product_id]);
+                    const bomId = bomRows.length > 0 ? bomRows[0].pp_product_bom_id : null;
+
                     return {
-                        AD_CLIENT_ID: 1000000,
-                        AD_ORG_ID: 1000000,
+                        AD_CLIENT_ID: 1000003,
+                        AD_ORG_ID: 1000003,
                         A_ASSET_ID: asset_id,
                         CREATED: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                         RCODE: String(row.col1).trim(),
@@ -61,7 +71,8 @@ class PlansController {
                         ISTRIAL: row.col8,
                         ISAUTODROP: 'N',
                         JOTYPE: 'I',
-                        MOLD_ID: mold_id
+                        MOLD_ID: mold_id,
+                        BOM_ID: bomId,
                     };
                 } catch (error) {
                     request.log.error(`Error mapping row ${index + 1}: ${error.message}`);
@@ -77,14 +88,14 @@ class PlansController {
                         cust_joborder_id, datedoc, description, docstatus, documentno,
                         startdate, enddate, isactive, isverified, m_product_id, print_joborder, 
                         updated, updated_by, qtyplanned, joaction, print_joborderlabel, 
-                        a_asset_run_id, istrial, isautodrop, jotype, mold_id
+                        a_asset_run_id, istrial, isautodrop, jotype, mold_id, bom_id
                     ) VALUES (
                         $1, $2, $3, $4::TIMESTAMP, $5, 
                         $6, $7::TIMESTAMP, $8, $9, $10,
                         $11::TIMESTAMP, $12::TIMESTAMP, 
                         $13, $14, $15, $16, 
                         $17::TIMESTAMP, $18, $19, $20, $21, 
-                        $22, $23, $24, $25, $26
+                        $22, $23, $24, $25, $26, $27
                     )
                 `;
 
@@ -115,10 +126,26 @@ class PlansController {
                     data.ISTRIAL,
                     data.ISAUTODROP,
                     data.JOTYPE,
-                    data.MOLD_ID
+                    data.MOLD_ID,
+                    data.BOM_ID
                 ];
 
                 await dbClient.query(insertQuery, binds);
+
+                const productionData = {
+                    ad_client_id: data.AD_CLIENT_ID,
+                    ad_org_id: data.AD_ORG_ID,
+                    user_id: data.CREATEDBY,
+                    name: `Production for JO ${data.DOCUMENTNO} at resource ${data.RCODE}`,
+                    movementdate: data.DATEDOC,
+                    description: data.DESCRIPTION || null,
+                    m_product_id: data.M_PRODUCT_ID,
+                    qtyplanned: data.QTYPLANNED,
+                    cust_joborder_id: data.CUST_JOBORDER_ID,
+                    bom_id: data.BOM_ID
+                };
+
+                await request.server.productionsService.create(request.server, productionData);
             }
 
             await dbClient.query('COMMIT');

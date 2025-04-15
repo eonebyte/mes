@@ -338,6 +338,48 @@ class PlansService {
         }
     }
 
+    async getBOMComponent(server, bomId) {
+        const dbClient = await server.pg.connect();
+        try {
+            const query = `
+            SELECT
+                p.m_product_id,
+                p.value AS part_no,
+                p.name AS part_name,
+                b.qtybatch,
+                b.qtybom,
+                b.isactive,
+                u.uomsymbol,
+                mpc.value AS category
+            FROM pp_product_bomline b
+            JOIN c_uom u ON b.c_uom_id = u.c_uom_id
+            JOIN m_product p ON b.m_product_id = p.m_product_id
+            JOIN m_product_category mpc ON p.m_product_category_id = mpc.m_product_category_id
+            WHERE 
+                b.pp_product_bom_id = $1
+                AND p.m_product_category_id IN (1000010, 1000011, 1000012, 1000013)
+            ORDER BY b.line
+        `;
+            const result = await dbClient.query(query, [bomId]);
+            return result.rows.map((row, index) => ({
+                no: index + 1,
+                partId: parseInt(row.m_product_id),
+                partNo: row.part_no,
+                partName: row.part_name,
+                qtyBatch: parseFloat(row.qtybatch),
+                qtyBOM: parseFloat(row.qtybom),
+                isActive: row.isactive,
+                uomsymbol: row.uomsymbol,
+                category: row.category
+            }));
+        } catch (error) {
+            throw new Error(`Failed to fetch BOM Component: ${error}`);
+        } finally {
+            dbClient.release();
+        }
+    }
+
+
     async findDetailPlan(server, planId) {
         let dbClient;
         try {
@@ -389,6 +431,8 @@ class PlansService {
             // Ambil data station untuk setiap resourceId
             const jobOrders = await Promise.all(result.rows.map(async (row, index) => {
                 const station = await this.getStation(server, parseInt(row.a_asset_id));
+                const bomComponent = row.bom_id ? await this.getBOMComponent(server, parseInt(row.bom_id)) : [];
+
 
                 return {
                     no: index + 1,
@@ -416,6 +460,7 @@ class PlansService {
                     bomId: parseInt(row.bom_id),
                     bom: row.bom,
                     resourceStatus: station?.status || null,
+                    bomComponent
                 };
             }));
 
@@ -984,7 +1029,6 @@ class PlansService {
                 planStartTime,
                 planCompleteTime,
                 isTrial,
-                bomId,
                 userId // pastikan ini ikut dikirim dari frontend
             } = payload;
 
@@ -1022,6 +1066,15 @@ class PlansService {
                 }
             }
 
+            const queryGetBomId = `
+                SELECT pp_product_bom_id 
+                FROM pp_product_bom 
+                WHERE m_product_id = $1 AND bomtype = 'A'
+                LIMIT 1
+            `;
+
+            const { rows: bomRows } = await dbClient.query(queryGetBomId, [partId]);
+            const bomId = bomRows.length > 0 ? bomRows[0].pp_product_bom_id : null;
             const result = await dbClient.query(
                 `
                 UPDATE cust_joborder
@@ -1051,7 +1104,7 @@ class PlansService {
                     formattedStartDate,
                     formattedEndDate,
                     isTrial,
-                    bomId || 0,
+                    bomId,
                     userId,
                     planId
                 ]
