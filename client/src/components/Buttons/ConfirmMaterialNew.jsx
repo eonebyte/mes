@@ -1,234 +1,182 @@
-import { Button, Col, Divider, Input, InputNumber, Modal, notification, Row, Select, Space, Typography } from "antd";
+import { Button, Col, Divider, InputNumber, Modal, notification, Row, Space } from "antd";
 import { useState } from "react";
+import { StopOutlined } from "@ant-design/icons";
 import PropTypes from 'prop-types';
-import { CheckOutlined, StopOutlined } from "@ant-design/icons";
 
-const { Text } = Typography;
-const { TextArea } = Input;
+const ConfirmMaterialNew = ({ bomComponent, open, onClose, onSuccess }) => {
+    const [qtyMap, setQtyMap] = useState({});
+    const [qtyMapRMP, setQtyMapRMP] = useState({});
 
-const ConfirmMaterialNew = ({ planId, resourceId, boms, onSuccess, open, onClose }) => {
-    const [materials, setMaterials] = useState([
-        { material: null, qty: 0 }
-    ]);
-
-    const [childParts, setChildParts] = useState([
-        { material: null, qty: 0 }
-    ]);
-
-    const [loading, setLoading] = useState(false);
-
-    const handleAddRowChildParts = () => {
-        setChildParts([...childParts, { material: null, qty: 0 }]);
+    const handleQtyChange = (key, value) => {
+        setQtyMap(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleDeleteRowChildParts = (index) => {
-        const newChildParts = childParts.filter((_, i) => i !== index);
-        setChildParts(newChildParts);
+    const handleQtyChangeRMP = (key, value) => {
+        setQtyMapRMP(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleChangeChildParts = (index, value) => {
-        const newChildParts = [...childParts];
-        newChildParts[index].material = value;
-        setChildParts(newChildParts);
+    const filterByCategory = (category) => {
+        return bomComponent.filter(item => item.category === category);
     };
 
-    const handleQtyChangeChildParts = (index, value) => {
-        const newChildParts = [...childParts];
-        newChildParts[index].qty = value;
-        setChildParts(newChildParts);
-    };
+    const rmItems = filterByCategory("Raw Material");
+    const rmpItems = filterByCategory("Raw Material Penunjang");
 
-    const handleAddRow = () => {
-        setMaterials([...materials, { material: null, qty: 0 }]);
-    };
+    const handleSubmit = async () => {
+        const result = [
+            ...rmItems.map((item, index) => ({
+                ...item,
+                qty: Number(qtyMap[index] || 0)
+            })),
+            ...rmpItems.map((item, index) => ({
+                ...item,
+                qty: Number(qtyMapRMP[index] || 0)
+            }))
+        ];
 
-    const handleDeleteRow = (index) => {
-        const newMaterials = materials.filter((_, i) => i !== index);
-        setMaterials(newMaterials);
-    };
+        try {
+            const response = await fetch('/api/material-input', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(result)
+            });
 
-    const handleMaterialChange = (index, value) => {
-        const newMaterials = [...materials];
-        newMaterials[index].material = value;
-        setMaterials(newMaterials);
-    };
+            const data = await response.json();
 
-    const handleQtyChange = (index, value) => {
-        const newMaterials = [...materials];
-        newMaterials[index].qty = value;
-        setMaterials(newMaterials);
-    };
+            if (response.ok) {
+                notification.success({
+                    message: 'Submitted',
+                    description: data.message || 'Material qty saved successfully!',
+                });
+                onSuccess?.(result); // kalau perlu refresh data
+                onClose();
+            } else {
+                notification.error({
+                    message: 'Error',
+                    description: data.message || 'Failed to submit material data',
+                });
+            }
 
-    const handleSubmitMaterial = () => {
-        setLoading(true)
-        console.log("Submitted materials:", materials);
+        } catch (error) {
+            console.error('Submit error:', error);
+            notification.error({
+                message: 'Network Error',
+                description: 'Could not reach server',
+            });
+        }
     };
 
 
     return (
         <Modal
-            title="Material Information"
+            title="Material Input"
             open={open}
             onCancel={onClose}
-            width={800}
             footer={null}
+            width={'80%'}
         >
-            {/* RM */}
-            <Divider />
-            <div>
-                <Row gutter={16} style={{ marginBottom: 12 }}>
-                    <Col span={10}>
-                        <Text style={{ display: 'block', marginBottom: 4 }}>Raw Material</Text>
-                    </Col>
-                    <Col span={3}>
-                        <Text style={{ display: 'block', marginBottom: 4 }}>UoM</Text>
-                    </Col>
-                    <Col span={7}>
-                        <Text style={{ display: 'block', marginBottom: 4 }}>Qty</Text>
-                    </Col>
-                </Row>
-                {materials.map((item, index) => (
-                    <Row gutter={16} style={{ marginBottom: 12 }} key={index}>
-                        <Col span={10}>
-                            <Select
-                                showSearch
-                                style={{ width: '100%' }}
-                                placeholder="Select a material"
-                                value={item.material}
-                                onChange={(value) => handleMaterialChange(index, value)}
-                                options={[
-                                    { value: 'SETUP_MOLD', label: 'Setup Mold' },
-                                    { value: 'TEARDOWN_MOLD', label: 'Teardown Mold' },
-                                    { value: 'SETTINGS', label: 'Settings' },
-                                ]}
-                            />
-                        </Col>
-                        <Col span={3} style={{ textAlign: 'center' }}>
-                            <Input value={'Kg'} disabled />
-                        </Col>
-                        <Col span={7}>
-                            <InputNumber
-                                min={0}
-                                max={999}
-                                value={item.qty}
-                                onChange={(value) => handleQtyChange(index, value)}
-                                style={{ width: '100%' }}
-                            />
-                        </Col>
-                        <Col span={4} style={{ display: 'flex', alignItems: 'end' }}>
-                            {index === materials.length - 1 ? (
-                                <Button color="primary" variant="filled" onClick={handleAddRow}>
-                                    Add
-                                </Button>
-                            ) : (
-                                <Button color="danger" variant="filled" onClick={() => handleDeleteRow(index)}>
-                                    Delete
-                                </Button>
-                            )}
-                        </Col>
-                    </Row>
-                ))}
-            </div>
+            <Row gutter={16}>
+                {/* KIRI: RM */}
+                <Col span={12}>
+                    <div style={{
+                        display: 'flex',
+                        padding: '8px 16px',
+                        fontWeight: 'bold',
+                        background: '#f5f5f5',
+                        borderBottom: '1px solid #ddd'
+                    }}>
+                        <div style={{ flex: 14 }}>Material</div>
+                        <div style={{ flex: 6, textAlign: 'center' }}>Qty</div>
+                        <div style={{ flex: 4, textAlign: 'center' }}>UOM</div>
+                    </div>
+                    {rmItems.map((item, index) => (
+                        <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '8px 16px',
+                            borderBottom: '1px dashed #eee'
+                        }}>
+                            <div style={{ flex: 14 }}>{item.partNo} - {item.partName}</div>
+                            <div style={{ flex: 6, textAlign: 'right' }}>
+                                <InputNumber
+                                    min={0}
+                                    step={0.1}
+                                    value={qtyMap[index] || 0}
+                                    onChange={(value) => handleQtyChange(index, value)}
+                                    style={{ width: '80%' }}
+                                />
+                            </div>
+                            <div style={{ flex: 4, textAlign: 'center' }}>{item.uomsymbol}</div>
+                        </div>
+                    ))}
+                </Col>
 
-            {/* RMP */}
-            <Divider />
-            <div>
-                <Row gutter={16} style={{ marginBottom: 12 }}>
-                    <Col span={10}>
-                        <Text style={{ display: 'block', marginBottom: 4 }}>Child Part</Text>
-                    </Col>
-                    <Col span={3}>
-                        <Text style={{ display: 'block', marginBottom: 4 }}>UoM</Text>
-                    </Col>
-                    <Col span={7}>
-                        <Text style={{ display: 'block', marginBottom: 4 }}>Qty</Text>
-                    </Col>
-                </Row>
-                {childParts.map((item, index) => (
-                    <Row gutter={16} style={{ marginBottom: 12 }} key={index}>
-                        <Col span={10}>
-                            <Select
-                                showSearch
-                                style={{ width: '100%' }}
-                                placeholder="Select a material"
-                                value={item.material}
-                                onChange={(value) => handleChangeChildParts(index, value)}
-                                options={[
-                                    { value: 'SETUP_MOLD', label: 'Setup Mold' },
-                                    { value: 'TEARDOWN_MOLD', label: 'Teardown Mold' },
-                                    { value: 'SETTINGS', label: 'Settings' },
-                                ]}
-                            />
-                        </Col>
-                        <Col span={3} style={{ textAlign: 'center' }}>
-                            <Input value={'Kg'} disabled />
-                        </Col>
-                        <Col span={7}>
-                            <InputNumber
-                                min={0}
-                                max={999}
-                                value={item.qty}
-                                onChange={(value) => handleQtyChangeChildParts(index, value)}
-                                style={{ width: '100%' }}
-                            />
-                        </Col>
-                        <Col span={4} style={{ display: 'flex', alignItems: 'end' }}>
-                            {index === childParts.length - 1 ? (
-                                <Button color="primary" variant="filled" onClick={handleAddRowChildParts}>
-                                    Add
-                                </Button>
-                            ) : (
-                                <Button color="danger" variant="filled" onClick={() => handleDeleteRowChildParts(index)}>
-                                    Delete
-                                </Button>
-                            )}
-                        </Col>
-                    </Row>
-                ))}
-            </div>
-            <Divider style={{ margin: 0 }} />
-            <Button onClick={() => {
-                handleSubmitMaterial();
-            }}
-                color="primary"
-                variant="solid"
-                style={{ marginBottom: 15, marginTop: 5 }}>Submit</Button>
-            <Text style={{ display: 'block', marginBottom: 4 }}>Material Consumption Log </Text>
-            <TextArea rows={4} value={'this table'} />
-            <Divider />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                {/* KANAN: RMP */}
+                <Col span={12}>
+                    <div style={{
+                        display: 'flex',
+                        padding: '8px 16px',
+                        fontWeight: 'bold',
+                        background: '#f5f5f5',
+                        borderBottom: '1px solid #ddd'
+                    }}>
+                        <div style={{ flex: 14 }}>Child Part</div>
+                        <div style={{ flex: 6, textAlign: 'center' }}>Qty</div>
+                        <div style={{ flex: 4, textAlign: 'center' }}>UOM</div>
+                    </div>
+                    {rmpItems.map((item, index) => (
+                        <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '8px 16px',
+                            borderBottom: '1px dashed #eee'
+                        }}>
+                            <div style={{ flex: 14 }}>{item.partNo} - {item.partName}</div>
+                            <div style={{ flex: 6, textAlign: 'right' }}>
+                                <InputNumber
+                                    min={0}
+                                    step={0.1}
+                                    value={qtyMapRMP[index] || 0}
+                                    onChange={(value) => handleQtyChangeRMP(index, value)}
+                                    style={{ width: '80%' }}
+                                />
+                            </div>
+                            <div style={{ flex: 4, textAlign: 'center' }}>{item.uomsymbol}</div>
+                        </div>
+                    ))}
+                </Col>
+            </Row>
+
+            <Divider style={{ marginTop: 12, marginBottom: 8 }} />
+
+            {/* Footer Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Space>
                     <Button
-                        style={{
-                            color: '#666666',
-                            fontSize: '18px',
-                            fontWeight: '600',
-                            padding: '5px 10px'
-                        }}
+                        style={{ color: '#666666', fontWeight: 'bold' }}
                         onClick={onClose}
-                        disabled={loading}
+                        icon={<StopOutlined />}
                     >
-                        <StopOutlined style={{ fontSize: '18px', color: '#666666' }} />
                         CLOSE
                     </Button>
                 </Space>
+                <Button type="primary" onClick={handleSubmit}>Submit</Button>
             </div>
-        </Modal >
+        </Modal>
     );
 };
 
 ConfirmMaterialNew.propTypes = {
-    planId: PropTypes.number.isRequired,
-    resourceId: PropTypes.string.isRequired,
-    boms: PropTypes.arrayOf(PropTypes.shape({
-        pp_product_bom_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-        name: PropTypes.string,
-        bomName: PropTypes.string,
-        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-    })).isRequired,
-    onSuccess: PropTypes.func,
     open: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
+    onSuccess: PropTypes.func,
+    bomComponent: PropTypes.arrayOf(PropTypes.shape({
+        partNo: PropTypes.string.isRequired,
+        partName: PropTypes.string.isRequired,
+        uomsymbol: PropTypes.string.isRequired
+    })).isRequired
 };
 
 export default ConfirmMaterialNew;
