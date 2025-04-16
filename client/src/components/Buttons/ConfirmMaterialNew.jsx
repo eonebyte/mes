@@ -3,7 +3,7 @@ import { useState } from "react";
 import { StopOutlined } from "@ant-design/icons";
 import PropTypes from 'prop-types';
 
-const ConfirmMaterialNew = ({ bomComponent, open, onClose, onSuccess }) => {
+const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess }) => {
     const [qtyMap, setQtyMap] = useState({});
     const [qtyMapRMP, setQtyMapRMP] = useState({});
 
@@ -22,17 +22,15 @@ const ConfirmMaterialNew = ({ bomComponent, open, onClose, onSuccess }) => {
     const rmItems = filterByCategory("Raw Material");
     const rmpItems = filterByCategory("Raw Material Penunjang");
 
+    const allItems = [...rmItems, ...rmpItems];
+
+
     const handleSubmit = async () => {
-        const result = [
-            ...rmItems.map((item, index) => ({
-                ...item,
-                qty: Number(qtyMap[index] || 0)
-            })),
-            ...rmpItems.map((item, index) => ({
-                ...item,
-                qty: Number(qtyMapRMP[index] || 0)
-            }))
-        ];
+        const result = allItems.map(item => ({
+            ...item,
+            planId,
+            qty: Math.max(0, Number(qtyMap[item.partId] || 0)) // Ensure qty is non-negative
+        }));
 
         try {
             const response = await fetch('/api/material-input', {
@@ -43,21 +41,27 @@ const ConfirmMaterialNew = ({ bomComponent, open, onClose, onSuccess }) => {
                 body: JSON.stringify(result)
             });
 
-            const data = await response.json();
-
-            if (response.ok) {
-                notification.success({
-                    message: 'Submitted',
-                    description: data.message || 'Material qty saved successfully!',
-                });
-                onSuccess?.(result); // kalau perlu refresh data
-                onClose();
-            } else {
+            if (!response.ok) {
+                // Handle HTTP errors
+                const errorData = await response.json();
                 notification.error({
                     message: 'Error',
-                    description: data.message || 'Failed to submit material data',
+                    description: errorData.message || 'Failed to submit material data',
                 });
+                return;
             }
+
+            const data = await response.json();
+
+            // Success notification
+            notification.success({
+                message: 'Submitted',
+                description: data.message || 'Material qty saved successfully!',
+            });
+
+            // Trigger success callback and close modal
+            onSuccess?.(result);
+            onClose();
 
         } catch (error) {
             console.error('Submit error:', error);
@@ -169,6 +173,7 @@ const ConfirmMaterialNew = ({ bomComponent, open, onClose, onSuccess }) => {
 };
 
 ConfirmMaterialNew.propTypes = {
+    planId: PropTypes.number.isRequired,
     open: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
     onSuccess: PropTypes.func,

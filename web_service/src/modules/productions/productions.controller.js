@@ -1,21 +1,18 @@
 const ProductionsController = {
-    async createProduction(request, reply) {
+    async materialInput(request, reply) {
         try {
             const data = request.body;
 
-            const result = await request.server.productionsService.create(request.server, data);
+            if (!Array.isArray(data) || data.length === 0) {
+                return reply.code(400).send({ message: 'Invalid material data' });
+            }
 
-            return reply.code(201).send({
-                success: true,
-                message: 'Production created successfully',
-                data: result,
-            });
-        } catch (err) {
-            request.log.error(err);
-            return reply.code(500).send({
-                success: false,
-                message: 'Failed to create production',
-            });
+            const result = await materialService.saveMaterials(request.server, data);
+
+            reply.code(200).send({ message: 'Materials saved', result });
+        } catch (error) {
+            console.error('Material Input Error:', error);
+            reply.code(500).send({ message: 'Internal Server Error' });
         }
     },
 };

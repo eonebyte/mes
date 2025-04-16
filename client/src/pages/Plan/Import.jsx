@@ -221,6 +221,8 @@ export default function ImportPlan() {
                         }}
                     >
                         <Dragger
+                            multiple={false}
+                            maxCount={1}
                             fileList={fileList}
                             onChange={handleFileChange}
                             beforeUpload={() => false}

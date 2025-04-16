@@ -132,6 +132,8 @@ class PlansController {
 
                 await dbClient.query(insertQuery, binds);
 
+                const bomComponent = data.BOM_ID ? await request.server.plansService.getBOMComponent(request.server, parseInt(data.BOM_ID)) : [];
+
                 const productionData = {
                     ad_client_id: data.AD_CLIENT_ID,
                     ad_org_id: data.AD_ORG_ID,
@@ -142,7 +144,8 @@ class PlansController {
                     m_product_id: data.M_PRODUCT_ID,
                     qtyplanned: data.QTYPLANNED,
                     cust_joborder_id: data.CUST_JOBORDER_ID,
-                    bom_id: data.BOM_ID
+                    bom_id: data.BOM_ID,
+                    lines: bomComponent
                 };
 
                 await request.server.productionsService.create(request.server, productionData);
