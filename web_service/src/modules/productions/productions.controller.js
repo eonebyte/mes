@@ -7,7 +7,7 @@ const ProductionsController = {
                 return reply.code(400).send({ message: 'Invalid material data' });
             }
 
-            const result = await materialService.saveMaterials(request.server, data);
+            const result = await request.server.productionsService.saveMaterials(request.server, data);
 
             reply.code(200).send({ message: 'Materials saved', result });
         } catch (error) {

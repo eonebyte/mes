@@ -3,9 +3,10 @@ import { useState } from "react";
 import { StopOutlined } from "@ant-design/icons";
 import PropTypes from 'prop-types';
 
-const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess }) => {
+const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess, userId }) => {
     const [qtyMap, setQtyMap] = useState({});
     const [qtyMapRMP, setQtyMapRMP] = useState({});
+    const [qtyMapPacking, setQtyMapPacking] = useState({});
 
     const handleQtyChange = (key, value) => {
         setQtyMap(prev => ({ ...prev, [key]: value }));
@@ -15,25 +16,47 @@ const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess }) 
         setQtyMapRMP(prev => ({ ...prev, [key]: value }));
     };
 
+    const handleQtyChangePacking = (key, value) => {
+        setQtyMapPacking(prev => ({ ...prev, [key]: value }));
+    };
+
     const filterByCategory = (category) => {
         return bomComponent.filter(item => item.category === category);
     };
 
     const rmItems = filterByCategory("Raw Material");
     const rmpItems = filterByCategory("Raw Material Penunjang");
+    const packingItems = filterByCategory("Packing");
 
-    const allItems = [...rmItems, ...rmpItems];
+    const allItems = [
+        ...rmItems.map(item => ({
+            ...item,
+            qtyUsed: qtyMap[item.partId] !== undefined ? qtyMap[item.partId] : item.qtyUsed // Gunakan nilai asli jika tidak diubah
+        })),
+        ...rmpItems.map(item => ({
+            ...item,
+            qtyUsed: qtyMapRMP[item.partId] !== undefined ? qtyMapRMP[item.partId] : item.qtyUsed // Gunakan nilai asli jika tidak diubah
+        })),
+        ...packingItems.map(item => ({
+            ...item,
+            qtyUsed: qtyMapPacking[item.partId] !== undefined ? qtyMapPacking[item.partId] : item.qtyUsed // Gunakan nilai asli jika tidak diubah
+        }))
+    ];
 
 
     const handleSubmit = async () => {
         const result = allItems.map(item => ({
             ...item,
             planId,
-            qty: Math.max(0, Number(qtyMap[item.partId] || 0)) // Ensure qty is non-negative
+            userId,
+            qtyUsed: Math.max(0, Number(item.qtyUsed)) // Ensure qty is non-negative
         }));
 
+        console.log('Result to send:', result); // Debug log
+
+
         try {
-            const response = await fetch('/api/material-input', {
+            const response = await fetch('http://localhost:3080/api/productions/material-input', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -41,9 +64,12 @@ const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess }) 
                 body: JSON.stringify(result)
             });
 
+
+
             if (!response.ok) {
                 // Handle HTTP errors
                 const errorData = await response.json();
+
                 notification.error({
                     message: 'Error',
                     description: errorData.message || 'Failed to submit material data',
@@ -52,6 +78,9 @@ const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess }) 
             }
 
             const data = await response.json();
+
+            console.log('thiss data : ', data);
+
 
             // Success notification
             notification.success({
@@ -88,7 +117,7 @@ const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess }) 
                         display: 'flex',
                         padding: '8px 16px',
                         fontWeight: 'bold',
-                        background: '#f5f5f5',
+                        background: '#91caff',
                         borderBottom: '1px solid #ddd'
                     }}>
                         <div style={{ flex: 14 }}>Material</div>
@@ -107,8 +136,8 @@ const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess }) 
                                 <InputNumber
                                     min={0}
                                     step={0.1}
-                                    value={qtyMap[index] || 0}
-                                    onChange={(value) => handleQtyChange(index, value)}
+                                    value={qtyMap[item.partId] !== undefined ? qtyMap[item.partId] : item.qtyUsed}
+                                    onChange={(value) => handleQtyChange(item.partId, value)}
                                     style={{ width: '80%' }}
                                 />
                             </div>
@@ -123,7 +152,7 @@ const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess }) 
                         display: 'flex',
                         padding: '8px 16px',
                         fontWeight: 'bold',
-                        background: '#f5f5f5',
+                        background: '#b7eb8f',
                         borderBottom: '1px solid #ddd'
                     }}>
                         <div style={{ flex: 14 }}>Child Part</div>
@@ -142,8 +171,44 @@ const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess }) 
                                 <InputNumber
                                     min={0}
                                     step={0.1}
-                                    value={qtyMapRMP[index] || 0}
-                                    onChange={(value) => handleQtyChangeRMP(index, value)}
+                                    value={qtyMapRMP[item.partId] !== undefined ? qtyMapRMP[item.partId] : item.qtyUsed}
+                                    onChange={(value) => handleQtyChangeRMP(item.partId, value)}
+                                    style={{ width: '80%' }}
+                                />
+                            </div>
+                            <div style={{ flex: 4, textAlign: 'center' }}>{item.uomsymbol}</div>
+                        </div>
+                    ))}
+                </Col>
+            </Row>
+
+            <Row gutter={16}>
+                <Col span={24}>
+                    <div style={{
+                        display: 'flex',
+                        padding: '8px 16px',
+                        fontWeight: 'bold',
+                        background: '#ffe58f',
+                        borderBottom: '1px solid #ddd'
+                    }}>
+                        <div style={{ flex: 14 }}>Packing</div>
+                        <div style={{ flex: 6, textAlign: 'center' }}>Qty</div>
+                        <div style={{ flex: 4, textAlign: 'center' }}>UOM</div>
+                    </div>
+                    {packingItems.map((item, index) => (
+                        <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '8px 16px',
+                            borderBottom: '1px dashed #eee'
+                        }}>
+                            <div style={{ flex: 14 }}>{item.partNo} - {item.partName}</div>
+                            <div style={{ flex: 6, textAlign: 'right' }}>
+                                <InputNumber
+                                    min={0}
+                                    step={0.1}
+                                    value={qtyMapPacking[item.partId] !== undefined ? qtyMapPacking[item.partId] : item.qtyUsed}
+                                    onChange={(value) => handleQtyChangePacking(item.partId, value)}
                                     style={{ width: '80%' }}
                                 />
                             </div>
@@ -181,7 +246,8 @@ ConfirmMaterialNew.propTypes = {
         partNo: PropTypes.string.isRequired,
         partName: PropTypes.string.isRequired,
         uomsymbol: PropTypes.string.isRequired
-    })).isRequired
+    })).isRequired,
+    userId: PropTypes.number.isRequired,
 };
 
 export default ConfirmMaterialNew;

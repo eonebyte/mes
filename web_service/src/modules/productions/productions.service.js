@@ -148,7 +148,7 @@ class ProductionsService {
                         lineUU,                    // $4
                         data.user_id,              // $5
                         productionId,              // $6
-                        (index + 1) * 10,                // $7 (line number)
+                        (index + 2) * 10,                // $7 (line number)
                         1000354, // $8 raw material
                         line.partId,         // $9
                         0,          // $10
@@ -179,67 +179,36 @@ class ProductionsService {
     }
 
     async saveMaterials(server, materials) {
-        const dbClient = await server.db.connect();
+        const dbClient = await server.pg.connect();
         try {
             await dbClient.query('BEGIN');
 
-            const inserted = [];
-
             for (const material of materials) {
-                const { partId, planId, qty } = material;
+                const { partId, planId, qtyUsed, userId } = material;
 
-                if (!partId || !planId || qty === undefined) {
+                console.log('Material: ', material);
+                
+
+                if (!partId || !planId || qtyUsed === undefined) {
                     throw new Error('Missing required fields: partId, planId, or qty.');
                 }
 
-                const lineUU = uuidv4();
-
-                const res = await dbClient.query(`
-                    INSERT INTO m_productionline (
-                        m_productionline_id,
-                        ad_client_id,
-                        ad_org_id,
-                        m_productionline_uu,
-                        isactive,
-                        created,
-                        createdby,
-                        updated,
-                        updatedby,
-                        m_production_id,
-                        line,
-                        m_locator_id,
-                        m_product_id,
-                        movementqty,
-                        isendproduct
+                // Update productionline where isendproduct = 'N'
+                await dbClient.query(`
+                    UPDATE m_productionline
+                    SET qtyused = $1, updated = NOW(), updatedby = $4
+                    WHERE m_production_id = (
+                        SELECT m_production_id
+                        FROM m_production
+                        WHERE cust_joborder_id = $2
                     )
-                    VALUES (
-                        (SELECT COALESCE(MAX(m_productionline_id), 0) + 1 FROM m_productionline),
-                        1000000, -- Replace with actual client_id
-                        1000000, -- Replace with actual org_id
-                        $1, 
-                        'Y', 
-                        NOW(),
-                        100,      -- Replace with actual user_id
-                        NOW(), 
-                        100, 
-                        $2, $3, $4, $5, $6, 
-                        'N'
-                    )
-                    RETURNING *;
-                `, [
-                    lineUU,
-                    material.m_production_id, // Ambil m_production_id sesuai data yang diterima
-                    10, // line number, bisa disesuaikan
-                    material.m_locator_id || 1000019, // default locator jika kosong
-                    partId, // Gunakan partId dari bomComponent
-                    qty // Gunakan qtyBOM sebagai qty
-                ]);
-
-                inserted.push(res.rows[0]);
+                    AND m_product_id = $3
+                    AND isendproduct = 'N';
+                `, [qtyUsed, planId, partId, userId]);
             }
 
             await dbClient.query('COMMIT');
-            return inserted;
+            return { success: true, message: 'Materials updated successfully.' };
 
         } catch (err) {
             await dbClient.query('ROLLBACK');

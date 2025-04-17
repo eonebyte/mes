@@ -34,6 +34,8 @@ function PlanDetail() {
     // const user = useSelector((state) => state.auth.user);
     const [openMaterialModal, setOpenMaterialModal] = useState(false);
 
+    const user = useSelector((state) => state.auth.user);
+
 
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
 
@@ -233,6 +235,7 @@ function PlanDetail() {
                                                             open={openMaterialModal}
                                                             onClose={() => setOpenMaterialModal(false)}
                                                             onSuccess={handleSuccess}
+                                                            userId={parseInt(user.id)}
                                                         />
                                                     )}
                                                 </>

@@ -338,40 +338,79 @@ class PlansService {
         }
     }
 
-    async getBOMComponent(server, bomId) {
+    async getQtyUsed(server, partId, bomId) {
         const dbClient = await server.pg.connect();
         try {
             const query = `
             SELECT
-                p.m_product_id,
-                p.value AS part_no,
-                p.name AS part_name,
-                b.qtybatch,
-                b.qtybom,
-                b.isactive,
-                u.uomsymbol,
-                mpc.value AS category
-            FROM pp_product_bomline b
-            JOIN c_uom u ON b.c_uom_id = u.c_uom_id
-            JOIN m_product p ON b.m_product_id = p.m_product_id
-            JOIN m_product_category mpc ON p.m_product_category_id = mpc.m_product_category_id
-            WHERE 
-                b.pp_product_bom_id = $1
-                AND p.m_product_category_id IN (1000010, 1000011, 1000012, 1000013)
-            ORDER BY b.line
+                pl.qtyused
+            FROM
+                m_productionline pl
+            JOIN
+                m_production p ON pl.m_production_id = p.m_production_id
+            WHERE
+                pl.m_product_id = $1
+                AND p.pp_product_bom_id = $2
+                AND pl.isendproduct = 'N'
         `;
+            const result = await dbClient.query(query, [partId, bomId]);
+
+            if (result.rows.length > 0) {
+                return parseFloat(result.rows[0].qtyused) || 0; // Pastikan nilai default adalah 0
+            }
+
+            return 0; // Jika tidak ada data, kembalikan 0
+        } catch (error) {
+            throw new Error(`Failed to fetch qtyUsed for partId ${partId} and bomId ${bomId}: ${error.message}`);
+        } finally {
+            dbClient.release();
+        }
+    }
+
+    async getBOMComponent(server, bomId) {
+        const dbClient = await server.pg.connect();
+        try {
+            const query = `
+                SELECT
+                    p.m_product_id,
+                    p.value AS part_no,
+                    p.name AS part_name,
+                    b.qtybatch,
+                    b.qtybom,
+                    b.isactive,
+                    u.uomsymbol,
+                    mpc.value AS category
+                FROM pp_product_bomline b
+                JOIN c_uom u ON b.c_uom_id = u.c_uom_id
+                JOIN m_product p ON b.m_product_id = p.m_product_id
+                JOIN m_product_category mpc ON p.m_product_category_id = mpc.m_product_category_id
+                WHERE 
+                    b.pp_product_bom_id = $1
+                    AND p.m_product_category_id IN (1000010, 1000011, 1000012, 1000013, 1000030, 1000031) -- 10. RM, 11. RMC, 12. RMP, 13. RMPC, 30. C Packing, 31. Print label
+                ORDER BY b.line
+            `;
             const result = await dbClient.query(query, [bomId]);
-            return result.rows.map((row, index) => ({
-                no: index + 1,
-                partId: parseInt(row.m_product_id),
-                partNo: row.part_no,
-                partName: row.part_name,
-                qtyBatch: parseFloat(row.qtybatch),
-                qtyBOM: parseFloat(row.qtybom),
-                isActive: row.isactive,
-                uomsymbol: row.uomsymbol,
-                category: row.category
-            }));
+
+            // Tambahkan qtyUsed untuk setiap item
+            const bomComponents = await Promise.all(
+                result.rows.map(async (row, index) => {
+                    const qtyUsed = await this.getQtyUsed(server, row.m_product_id, bomId); // Panggil getQtyUsed
+                    return {
+                        no: index + 1,
+                        partId: parseInt(row.m_product_id),
+                        partNo: row.part_no,
+                        partName: row.part_name,
+                        qtyBatch: parseFloat(row.qtybatch),
+                        qtyBOM: parseFloat(row.qtybom),
+                        isActive: row.isactive,
+                        uomsymbol: row.uomsymbol,
+                        category: row.category === 'Consumables Packing' || row.category === 'Consumables Print & Label' ? 'Packing' : row.category,
+                        qtyUsed // Tambahkan qtyUsed ke hasil
+                    };
+                })
+            );
+
+            return bomComponents;
         } catch (error) {
             throw new Error(`Failed to fetch BOM Component: ${error}`);
         } finally {
