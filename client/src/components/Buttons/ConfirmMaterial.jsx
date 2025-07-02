@@ -2,6 +2,9 @@ import { CheckOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Divider, Modal, notification, Select, Space } from "antd";
 import PropTypes from 'prop-types';
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3080';
+const prefix = '/api/v1';
+
 const ConfirmMaterial = ({ visible, onClose, planId, boms, selectedBom, setSelectedBom, onSuccess, user }) => {
 
     const handleConfirm = async () => {
@@ -13,7 +16,7 @@ const ConfirmMaterial = ({ visible, onClose, planId, boms, selectedBom, setSelec
             return;
         }
 
-        await fetch(`http://localhost:3080/api/plans/boms/${planId}`, {
+        await fetch(`${backendUrl}${prefix}/plan/boms?planId=${planId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

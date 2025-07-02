@@ -5,7 +5,7 @@ import themeReducer from './reducers/themeSlice';
 import authReducer from './reducers/authSlice';
 import resourceReducer from './reducers/resourceSlice';
 import planReducer from './reducers/planSlice';
-
+import isGgridReducer from './reducers/isGridSlice';
 export const store = configureStore({
     reducer: {
         auth: authReducer,
@@ -14,5 +14,7 @@ export const store = configureStore({
         plans: planReducer,
         interval: intervalReducer,
         theme: themeReducer,
+        layout: isGgridReducer
+
     },
 }, window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__())

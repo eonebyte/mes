@@ -16,11 +16,63 @@ import { fetchResourceById } from "../../../data/fetchs";
 import { setResourceStore } from "../../../states/reducers/resourceSlice";
 const { Sider, Content } = Layout;
 
+// const downtimeCategories = [
+//     { category: "RUNNING", code: "RR", color: "#52c41a", label: "RUNNING", textColor: "#000000" },           // abu, teks putih
+//     { category: "IDLE", code: "R", color: "#8c8c8c", label: "IDLE", textColor: "#ffffff" },           // abu, teks putih
+//     { category: "OFF", code: "R0", color: "#000", label: "OFF", textColor: "#fff" },        // putih, teks hitam
+//     { category: "DANDORI & PREPARE", code: "R1", color: "#1677ff", label: "DANDORI & PREPARE", textColor: "#000000" }, // kuning, teks hitam
+//     { category: "BACKUP MESIN LAIN", code: "R2", color: "#cf1322", label: "BACKUP MESIN LAIN", textColor: "#ffffff" }, // abu terang
+//     { category: "TROUBLE MESIN", code: "R3", color: "#f5222d", label: "TROUBLE MESIN", textColor: "#fff" }, // merah, teks putih
+//     { category: "TROUBLE MOLD", code: "R4", color: "#f5222d", label: "TROUBLE MOLD", textColor: "#fff" },
+//     { category: "MATERIAL", code: "R5", color: "#fa8c16", label: "MATERIAL", textColor: "#000000" },
+//     { category: "NO LOADING", code: "R6", color: "#f5222d", label: "NO LOADING", textColor: "#ffffff" },
+//     { category: "PACKING", code: "R7", color: "#91caff", label: "PACKING", textColor: "#000000" }, // biru, teks putih
+//     { category: "TROUBLE SHOOTING", code: "R8", color: "#ffbb96", label: "TROUBLE SHOOTING", textColor: "#000000" },
+//     { category: "ISTIRAHAT", code: "R9", color: "#eb2f96", label: "ISTIRAHAT", textColor: "#fff" },
+//     { category: "WAITING", code: "WAIT", color: "#faad14", label: "WAITING", textColor: "#000000" },
+// ];
+
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3080';
+const prefix = '/api/v1';
+
+// const getResourceDisplayInfo = (downs, status) => {
+//     const match = downtimeCategories.find(item => item.code === status);
+//     return match ? { color: match.color, label: match.label, textColor: match.textColor } : { color: "#fff", label: "" };
+// };
+
+
 
 const ResourceLayout = ({ children }) => {
     const dispatch = useDispatch();
 
     const refreshCounter = useSelector(state => state.resources.refreshCounter);
+
+    const [downtimeCategories, setDowntimeCategories] = useState([]);
+
+    const getResourceDisplayInfo = (status) => {
+        const match = downtimeCategories.find(item => item.code === status);
+        return match ? { color: match.color, label: match.category, textColor: match.textColor } : { color: "#fff", category: "" };
+    };
+
+    const fetchDownCategories = async () => {
+        try {
+            const res = await fetch(`${backendUrl}${prefix}/down/categories`);
+
+            const response = await res.json();
+
+            console.log("Response from server:", response);
+
+            if (Array.isArray(response.data)) {
+                setDowntimeCategories(response.data);
+                console.log("Set buttons with data:", response.data);
+            } else {
+                console.warn("Unexpected data format:", response);
+            }
+
+        } catch (error) {
+            console.error("Failed to fetch down categories data:", error);
+        }
+    };
 
 
 
@@ -35,6 +87,8 @@ const ResourceLayout = ({ children }) => {
 
     const [resource, setResource] = useState(resourceFromStore);  // Use resource from Redux initially
     const [loading, setLoading] = useState(!resourceFromStore);
+
+
 
     const loadResource = async () => {
         setLoading(true);
@@ -53,11 +107,13 @@ const ResourceLayout = ({ children }) => {
     useEffect(() => {
         console.log('REFRESH TRIGGERED');
         loadResource();
+        fetchDownCategories();
     }, [refreshCounter]);
 
     useEffect(() => {
         if (!resourceFromStore && resourceId) { // Jika resource belum ada di Redux dan resourceId ada
             loadResource();
+            fetchDownCategories();
         }
 
     }, [resourceId, navigate, dispatch]);
@@ -68,6 +124,8 @@ const ResourceLayout = ({ children }) => {
             navigate("/shopfloor");  // Redirect jika data resource null
         }
     }, [resource, loading, navigate]);
+
+
 
     return (
         <>
@@ -101,23 +159,14 @@ const ResourceLayout = ({ children }) => {
                                         <Skeleton active paragraph={{ rows: 5 }} />
                                     </Card>
                                     :
+
                                     <Card
                                         style={{
                                             width: '100%',
                                             border: 0,
                                             borderRadius: 3,
-                                            color: resource.status === 'INSPECT'
-                                                ? 'white'
-                                                : 'black',
-                                            backgroundColor: resource.status === 'RUNNING'
-                                                ? '#52c41a'
-                                                : resource.status === 'SM'
-                                                    ? '#f5222d'
-                                                    : resource.status === 'TM'
-                                                        ? '#f5222d'
-                                                        : resource.status === 'STG'
-                                                            ? '#1677ff'
-                                                            : '#fff'
+                                            color: 'black',
+                                            backgroundColor: resource ? getResourceDisplayInfo(resource.status).color : '#fff'
                                         }}
                                         styles={{
                                             body: {
@@ -125,10 +174,25 @@ const ResourceLayout = ({ children }) => {
                                             }
                                         }}
                                     >
-                                        <p style={{ marginBottom: 0, fontWeight: 'bold', margin: 0 }}>{resource.line} | {resource.code}</p>
-                                        <p style={{ marginBottom: 0, margin: 0 }}>{resource.name}</p>
+                                        <p style={{
+                                            marginBottom: 0,
+                                            fontWeight: 'bold',
+                                            margin: 0,
+                                            color: resource ? getResourceDisplayInfo(resource.status).textColor : '#000',
+                                        }}>{resource.line} | {resource.code}</p>
+                                        <p style={{
+                                            marginBottom: 0,
+                                            margin: 0,
+                                            color: resource ? getResourceDisplayInfo(resource.status).textColor : '#000',
+                                        }}>{resource.name}</p>
                                         <img src={resource.image} alt={resource.name} style={{ maxWidth: '100%' }} />
-                                        <p style={{ fontWeight: 'bold', margin: 0 }}>{resource.status}</p>
+                                        <p style={{
+                                            fontWeight: 'bold',
+                                            margin: 0,
+                                            color: resource ? getResourceDisplayInfo(resource.status).textColor : '#000',
+                                        }}>
+                                            {resource ? getResourceDisplayInfo(resource.status).label : ''}
+                                        </p>
                                     </Card>
                                 }
 

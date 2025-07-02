@@ -1,13 +1,16 @@
 import { Alert, Col, Spin } from "antd";
-import { resources } from "../../../data/fetchResource";
 import { useSearchParams } from "react-router-dom";
 import ResourceLayout from "./ResourceLayout";
 import { useEffect, useState } from "react";
 import DownWithCategory from "../../../components/ShopFloors/Down/DownWithCategory";
-import DownWithoutCategory from "../../../components/ShopFloors/Down/DownWithoutCategory";
+// import DownWithoutCategory from "../../../components/ShopFloors/Down/DownWithoutCategory";
 import DownHistory from "../../../components/ShopFloors/Down/DownHistory";
+import { fetchResourceById } from "../../../data/fetchs";
+import { useDispatch } from "react-redux";
+import { refreshResources } from "../../../states/reducers/resourceSlice";
 
 function DownResource() {
+    const dispatch = useDispatch();
 
 
     const [searchParams] = useSearchParams();
@@ -16,16 +19,28 @@ function DownResource() {
     const [loading, setLoading] = useState(true);
     const [resource, setResource] = useState(null);
 
-    console.log(resource);
+    const loadResource = async () => {
+
+        setLoading(true);
+        // Fetch resource data
+        const fetchedResource = await fetchResourceById(resourceId);
+        setResource(fetchedResource);
+        // Fetch plan data
+
+        setLoading(false);
+    };
+
+    const handleSuccess = () => {
+        loadResource();
+        dispatch(refreshResources());
+    }
+
 
 
     useEffect(() => {
-        setTimeout(() => {
-            const resourceData = resources.find((res) => res.id === Number(resourceId));
-            setResource(resourceData);
-            setLoading(false);
-        }, 500);
-
+        if (resourceId) {
+            loadResource();
+        }
     }, [resourceId]);
 
     return (
@@ -49,9 +64,15 @@ function DownResource() {
                 :
                 <>
                     {/* BODY CONTENT */}
-                    <DownWithCategory />
+                    {loading ? (
+                        <Spin tip="Loading Resource..." size="large" />
+                    ) : resource ? (
+                        <DownWithCategory onSuccess={handleSuccess} resource={resource} />
+                    ) : (
+                        <p>Data tidak ditemukan</p>
+                    )}
                     {/* ==== */}
-                    <DownWithoutCategory />
+                    {/* <DownWithoutCategory /> */}
                     {/* === */}
                     <DownHistory />
                     {/* END BODY CONTENT */}

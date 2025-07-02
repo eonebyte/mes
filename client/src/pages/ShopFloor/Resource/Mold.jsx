@@ -14,6 +14,9 @@ const onChange = (key) => {
     console.log(key);
 };
 
+const backendUrl = 'http://localhost:3080';
+const prefix = '/api/v1';
+
 function MoldResource() {
     const dispatch = useDispatch();
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
@@ -56,6 +59,9 @@ function MoldResource() {
         }
     }, [resource, loading, navigate]);
 
+    console.log('this : ', resource);
+
+
     const handleTeardown = async () => {
         if (!resource.mold_id || !resource.id) {
             console.error("Resource atau Mold belum dipilih!");
@@ -65,7 +71,7 @@ function MoldResource() {
         setLoading(true); // Show loading spinner
 
         try {
-            const response = await fetch('http://localhost:3080/api/molds/resource/teardown', {
+            const response = await fetch(`${backendUrl}${prefix}/mold/teardown`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -262,7 +268,7 @@ function MoldResource() {
                             <div
                                 onClick={() => {
                                     if (!resource.mold_id) {
-                                        navigate(`/resource/mold/setup?resourceId=${resource.id}`);
+                                        navigate(`/resource/mold/setup?resourceId=${resource[0]?.id}`);
                                     }
                                 }}
                                 style={{

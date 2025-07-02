@@ -1,0 +1,199 @@
+/* style for visavail.js */
+
+.visavail {
+    position: relative !important;
+}
+
+.visavail-tooltip div.tooltip-top {
+    position: absolute !important;
+    text-align: left !important;
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    font-size: 11px !important;
+    padding-left: 0 !important;
+    width: auto !important;
+    border: 0 !important;
+    pointer-events: none !important;
+    line-height: 12px !important;
+    padding-top: 0 !important;
+    display: block !important;
+}
+
+.visavail-tooltip div.tooltip-overlay {
+    position: absolute !important;
+    text-align: left !important;
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    font-size: 11px !important;
+    width: 120px !important;
+    border: 0 !important;
+    pointer-events: none !important;
+    line-height: 16px !important;
+    background: #f2f2f2 !important;
+    padding: 10px !important;
+    border-radius: 4px !important;
+}
+
+.visavail-ytitle-tooltip div.y-tooltip {
+    position: absolute !important;
+    text-align: left !important;
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    font-size: 12px !important;
+    width: 190px !important;
+    border: 0 !important;
+    pointer-events: none !important;
+    background: #5c5c5c !important;
+    padding: 10px !important;
+    color: #ffffff !important;
+}
+
+div.y-tooltip.right::after {
+    content: "" !important;
+    position: absolute !important;
+    top: 50% !important;
+    right: 100% !important;
+    margin-top: -7px !important;
+    border-width: 7px !important;
+    border-style: solid !important;
+    border-color: transparent #5c5c5c transparent transparent !important;
+}
+
+div.y-tooltip.top::after {
+    content: "" !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0% !important;
+    margin-top: 0px !important;
+    border-width: 7px !important;
+    border-style: solid !important;
+    border-color: #5c5c5c transparent transparent transparent !important;
+}
+
+div.y-tooltip.bottom::after {
+    content: "" !important;
+    position: absolute !important;
+    top: 0% !important;
+    left: 0% !important;
+    margin-top: -14px !important;
+    border-width: 7px !important;
+    border-style: solid !important;
+    border-color: transparent transparent #5c5c5c transparent !important;
+}
+
+.visavail-tooltip .tooltip_has_data {
+    color: #449d44 !important;
+}
+
+.visavail-tooltip .tooltip_has_no_data {
+    color: #c9302c !important;
+}
+
+.visavail .rect_has_data {
+    fill: #5cb85c !important;
+}
+
+.visavail .rect_has_data:hover {
+    fill: #449d44 !important;
+}
+
+.visavail .rect_has_no_data {
+    fill: #d9534d !important;
+}
+
+.visavail .rect_has_no_data:hover {
+    fill: #c9302c !important;
+}
+
+.visavail .x_tick_emph {
+    font-weight: bold !important;
+}
+
+.visavail .ytitle {
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    font-size: 12px !important;
+    overflow: hidden !important;
+}
+
+.visavail .ytitle_icon_image {
+    display: none !important;
+}
+
+.visavail .ytitle_icon_background {
+    display: none !important;
+}
+
+.visavail .ytitle.link {
+    cursor: pointer !important;
+    fill: #07C !important;
+}
+
+.visavail .ypercentage {
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    font-size: 12px !important;
+    overflow: hidden !important;
+}
+
+.visavail .xAxis path,
+.visavail .xAxis line {
+    display: none !important;
+}
+
+.visavail .xAxis text {
+    font-size: 12px !important;
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    fill: #777 !important;
+}
+
+.visavail .vert_grid {
+    fill: none !important;
+    stroke: #dddddd !important;
+    stroke-width: 1px !important;
+}
+
+.visavail .vert_grid_emph {
+    fill: none !important;
+    stroke: #dddddd !important;
+    stroke-width: 2px !important;
+}
+
+.visavail .horz_grid {
+    fill: none !important;
+    stroke: #dddddd !important;
+    stroke-width: 1px !important;
+}
+
+.visavail .heading {
+    font-size: 16px !important;
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    font-weight: bold !important;
+}
+
+.visavail .subheading {
+    font-size: 12px !important;
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    fill: #777 !important;
+}
+
+.visavail .legend {
+    font-size: 12px !important;
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    fill: #777 !important;
+}
+
+.visavail .subchart-xAxis path,
+.visavail .subchart-xAxis line {
+    color: #777 !important;
+}
+
+.visavail .subchart-xAxis text {
+    font-family: "Muli", "Helvetica", Arial, sans-serif !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    fill: #777 !important;
+}

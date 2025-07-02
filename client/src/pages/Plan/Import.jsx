@@ -8,6 +8,9 @@ import { useSelector } from "react-redux";
 
 const { Dragger } = Upload;
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3080';
+const prefix = '/api/v1';
+
 export default function ImportPlan() {
     const user = useSelector((state) => state.auth.user);
     // const navigate = useNavigate();
@@ -156,7 +159,7 @@ export default function ImportPlan() {
             });
 
             // Kirim data ke backend
-            const response = await fetch('http://localhost:3080/api/import-plan', {
+            const response = await fetch(`${backendUrl}${prefix}/plan/import`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

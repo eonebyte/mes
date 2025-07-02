@@ -7,7 +7,10 @@ import { MoonOutlined, SunOutlined, DashboardOutlined, SettingOutlined, DownOutl
 import MachineProdIcon from "../Icons/MachineProdIcon";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from '../../states/reducers/authSlice';
-
+import ViewTimelineIcon from '@mui/icons-material/ViewTimeline';
+import DashboardCustomizeOutlinedIcon from '@mui/icons-material/DashboardCustomizeOutlined';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import { toggleLayout } from "../../states/reducers/isGridSlice";
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -76,6 +79,18 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
             label: 'SHOPFLOOR',
             key: '/shopfloor',
             icon: <ControlOutlined />,
+            children: [
+                {
+                    label: 'Dashboard',
+                    key: '/shopfloor/dashboard',
+                    icon: <DashboardCustomizeOutlinedIcon sx={{ fontSize: '24px' }} />
+                },
+                {
+                    label: 'Timeline',
+                    key: '/shopfloor/timeline',
+                    icon: <ViewTimelineIcon sx={{ fontSize: '24px' }} />
+                },
+            ],
         },
         {
             label: 'PLAN',
@@ -136,7 +151,7 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
 
     const itemSubHeader = [
         {
-            label: user.name,
+            label: 'Profile',
             key: '1',
             icon: <UserOutlined />,
         },
@@ -205,6 +220,12 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
 
                 <Flex style={{}} align="center" justify="flex-end">
                     <Space style={{ marginRight: "15px" }}>
+                        {locationPath.pathname === '/shopfloor/dashboard' && (
+                            <Button size="small" onClick={() => dispatch(toggleLayout())}>
+                                <GridOnIcon style={{ fontSize: '18px' }} />
+                            </Button>
+                        )}
+                       
                         <Button size="small" onClick={handleModeClick}>
                             {isDarkMode ? <SunOutlined /> : <MoonOutlined />}
                         </Button>
@@ -224,7 +245,7 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
                             placement="bottomRight"
                         >
                             <Space>
-                                <Text>{user.name}</Text>
+                                <Text>{user.user_name}</Text>
                                 <Avatar src={<img src={url} alt="avatar" />} />
                             </Space>
                         </Dropdown>

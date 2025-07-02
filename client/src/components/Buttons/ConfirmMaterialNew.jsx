@@ -1,226 +1,227 @@
-import { Button, Col, Divider, InputNumber, Modal, notification, Row, Space } from "antd";
-import { useState } from "react";
-import { StopOutlined } from "@ant-design/icons";
-import PropTypes from 'prop-types';
+import { Button, Col, Divider, Input, Modal, Row, Space, Table, Typography } from "antd";
+import { StopOutlined, SearchOutlined } from "@ant-design/icons";
+import { useMemo, useRef, useState } from "react";
+import PropTypes from "prop-types";
+const { Title } = Typography;
 
-const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess, userId }) => {
-    const [qtyMap, setQtyMap] = useState({});
-    const [qtyMapRMP, setQtyMapRMP] = useState({});
-    const [qtyMapPacking, setQtyMapPacking] = useState({});
+const ConfirmMaterialNew = ({ movementLines, open, onClose }) => {
+    const [searchText, setSearchText] = useState('');
+    const [searchedColumn, setSearchedColumn] = useState('');
+    const searchInput = useRef(null);
 
-    const handleQtyChange = (key, value) => {
-        setQtyMap(prev => ({ ...prev, [key]: value }));
+    const getColumnSearchProps = (dataIndex) => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+            <div style={{ padding: 8 }}>
+                <Input
+                    ref={searchInput}
+                    placeholder={`Search ${dataIndex}`}
+                    value={selectedKeys[0]}
+                    onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <Space>
+                    <Button type="primary" onClick={() => handleSearch(selectedKeys, confirm, dataIndex)} icon={<SearchOutlined />} size="small" style={{ width: 90 }}>
+                        Search
+                    </Button>
+                    <Button onClick={() => handleReset(clearFilters)} size="small" style={{ width: 90 }}>
+                        Reset
+                    </Button>
+                </Space>
+            </div>
+        ),
+        onFilter: (value, record) =>
+            record[dataIndex]?.toString().toLowerCase().includes(value.toLowerCase()),
+        render: (text) =>
+            searchedColumn === dataIndex ? (
+                <span style={{ backgroundColor: '#ffc069' }}>{text}</span>
+            ) : (text),
+    });
+
+    const handleSearch = (selectedKeys, confirm, dataIndex) => {
+        confirm();
+        setSearchText(selectedKeys[0]);
+        setSearchedColumn(dataIndex);
     };
 
-    const handleQtyChangeRMP = (key, value) => {
-        setQtyMapRMP(prev => ({ ...prev, [key]: value }));
+    const handleReset = (clearFilters) => {
+        clearFilters();
+        setSearchText('');
     };
 
-    const handleQtyChangePacking = (key, value) => {
-        setQtyMapPacking(prev => ({ ...prev, [key]: value }));
-    };
+    const lineColumns = useMemo(() => [
+        {
+            title: 'Line',
+            dataIndex: 'line',
+            key: 'line',
+            ...getColumnSearchProps('line'),
+        },
+        {
+            title: 'Part No',
+            dataIndex: 'partno',
+            key: 'partno',
+            ...getColumnSearchProps('partno'),
+        },
+        {
+            title: 'Part Name',
+            dataIndex: 'partname',
+            key: 'partname',
+            ...getColumnSearchProps('partname'),
+        },
+        {
+            title: 'From Locator',
+            dataIndex: 'fromlocator',
+            key: 'fromlocator',
+            ...getColumnSearchProps('fromlocator'),
+        },
+        {
+            title: 'To Locator',
+            dataIndex: 'tolocator',
+            key: 'tolocator',
+            ...getColumnSearchProps('tolocator'),
+        },
+        {
+            title: 'Qty',
+            dataIndex: 'movementqty',
+            key: 'movementqty',
+        },
+        {
+            title: 'UOM',
+            dataIndex: 'uom',
+            key: 'uom',
+        },
+    ], [searchText, searchedColumn]);
 
-    const filterByCategory = (category) => {
-        return bomComponent.filter(item => item.category === category);
-    };
-
-    const rmItems = filterByCategory("Raw Material");
-    const rmpItems = filterByCategory("Raw Material Penunjang");
-    const packingItems = filterByCategory("Packing");
-
-    const allItems = [
-        ...rmItems.map(item => ({
-            ...item,
-            qtyUsed: qtyMap[item.partId] !== undefined ? qtyMap[item.partId] : item.qtyUsed // Gunakan nilai asli jika tidak diubah
-        })),
-        ...rmpItems.map(item => ({
-            ...item,
-            qtyUsed: qtyMapRMP[item.partId] !== undefined ? qtyMapRMP[item.partId] : item.qtyUsed // Gunakan nilai asli jika tidak diubah
-        })),
-        ...packingItems.map(item => ({
-            ...item,
-            qtyUsed: qtyMapPacking[item.partId] !== undefined ? qtyMapPacking[item.partId] : item.qtyUsed // Gunakan nilai asli jika tidak diubah
-        }))
+    const columns = [
+        {
+            title: 'No',
+            key: 'no',
+            render: (_text, _record, index) => index + 1,
+            width: 60,
+        },
+        {
+            title: 'Date',
+            dataIndex: 'movementdate',
+            key: 'movementdate',
+        },
+        {
+            title: 'Created By',
+            dataIndex: 'user',
+            key: 'user',
+        },
+        {
+            title: 'Document No',
+            dataIndex: 'documentno',
+            key: 'documentno',
+        },
     ];
 
-
-    const handleSubmit = async () => {
-        const result = allItems.map(item => ({
-            ...item,
-            planId,
-            userId,
-            qtyUsed: Math.max(0, Number(item.qtyUsed)) // Ensure qty is non-negative
-        }));
-
-        console.log('Result to send:', result); // Debug log
-
-
-        try {
-            const response = await fetch('http://localhost:3080/api/productions/material-input', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(result)
-            });
-
-
-
-            if (!response.ok) {
-                // Handle HTTP errors
-                const errorData = await response.json();
-
-                notification.error({
-                    message: 'Error',
-                    description: errorData.message || 'Failed to submit material data',
-                });
-                return;
-            }
-
-            const data = await response.json();
-
-            console.log('thiss data : ', data);
-
-
-            // Success notification
-            notification.success({
-                message: 'Submitted',
-                description: data.message || 'Material qty saved successfully!',
-            });
-
-            // Trigger success callback and close modal
-            onSuccess?.(result);
-            onClose();
-
-        } catch (error) {
-            console.error('Submit error:', error);
-            notification.error({
-                message: 'Network Error',
-                description: 'Could not reach server',
-            });
-        }
-    };
-
+    const dataWithKey = movementLines.map((item, index) => ({
+        key: index,
+        ...item,
+    }));
 
     return (
         <Modal
-            title="Material Input"
             open={open}
             onCancel={onClose}
             footer={null}
-            width={'80%'}
+            width={'90%'}
         >
-            <Row gutter={16}>
-                {/* KIRI: RM */}
-                <Col span={12}>
-                    <div style={{
-                        display: 'flex',
-                        padding: '8px 16px',
-                        fontWeight: 'bold',
-                        background: '#91caff',
-                        borderBottom: '1px solid #ddd'
-                    }}>
-                        <div style={{ flex: 14 }}>Material</div>
-                        <div style={{ flex: 6, textAlign: 'center' }}>Qty</div>
-                        <div style={{ flex: 4, textAlign: 'center' }}>UOM</div>
-                    </div>
-                    {rmItems.map((item, index) => (
-                        <div key={index} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '8px 16px',
-                            borderBottom: '1px dashed #eee'
-                        }}>
-                            <div style={{ flex: 14 }}>{item.partNo} - {item.partName}</div>
-                            <div style={{ flex: 6, textAlign: 'right' }}>
-                                <InputNumber
-                                    min={0}
-                                    step={0.1}
-                                    value={qtyMap[item.partId] !== undefined ? qtyMap[item.partId] : item.qtyUsed}
-                                    onChange={(value) => handleQtyChange(item.partId, value)}
-                                    style={{ width: '80%' }}
-                                />
-                            </div>
-                            <div style={{ flex: 4, textAlign: 'center' }}>{item.uomsymbol}</div>
-                        </div>
-                    ))}
-                </Col>
+            <Title level={4} style={{ marginTop: 0 }}>Summary Material</Title>
+            <Table
+                columns={[
+                    {
+                        title: 'No',
+                        key: 'no',
+                        render: (_text, _record, index) => index + 1,
+                        width: 60,
+                    },
+                    {
+                        title: 'Part No',
+                        dataIndex: 'partno',
+                        key: 'partno',
+                        ...getColumnSearchProps('partno'),
+                    },
+                    {
+                        title: 'Part Name',
+                        dataIndex: 'partname',
+                        key: 'partname',
+                        ...getColumnSearchProps('partname'),
+                    },
+                    {
+                        title: 'UOM',
+                        dataIndex: 'uom',
+                        key: 'uom',
+                    },
+                    {
+                        title: 'Total Qty',
+                        dataIndex: 'totalqty',
+                        key: 'totalqty',
+                        render: (value) => <b>{value}</b>,
+                    },
+                ]}
+                dataSource={useMemo(() => {
+                    const productMap = {};
 
-                {/* KANAN: RMP */}
-                <Col span={12}>
-                    <div style={{
-                        display: 'flex',
-                        padding: '8px 16px',
-                        fontWeight: 'bold',
-                        background: '#b7eb8f',
-                        borderBottom: '1px solid #ddd'
-                    }}>
-                        <div style={{ flex: 14 }}>Child Part</div>
-                        <div style={{ flex: 6, textAlign: 'center' }}>Qty</div>
-                        <div style={{ flex: 4, textAlign: 'center' }}>UOM</div>
-                    </div>
-                    {rmpItems.map((item, index) => (
-                        <div key={index} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '8px 16px',
-                            borderBottom: '1px dashed #eee'
-                        }}>
-                            <div style={{ flex: 14 }}>{item.partNo} - {item.partName}</div>
-                            <div style={{ flex: 6, textAlign: 'right' }}>
-                                <InputNumber
-                                    min={0}
-                                    step={0.1}
-                                    value={qtyMapRMP[item.partId] !== undefined ? qtyMapRMP[item.partId] : item.qtyUsed}
-                                    onChange={(value) => handleQtyChangeRMP(item.partId, value)}
-                                    style={{ width: '80%' }}
-                                />
-                            </div>
-                            <div style={{ flex: 4, textAlign: 'center' }}>{item.uomsymbol}</div>
-                        </div>
-                    ))}
-                </Col>
-            </Row>
+                    movementLines.forEach((doc) => {
+                        doc.lines.forEach((line) => {
+                            const key = `${line.partno}_${line.uom}`;
+                            if (!productMap[key]) {
+                                productMap[key] = {
+                                    partno: line.partno,
+                                    partname: line.partname,
+                                    uom: line.uom,
+                                    totalqty: 0,
+                                };
+                            }
+                            productMap[key].totalqty += line.movementqty;
+                        });
+                    });
 
+                    return Object.values(productMap);
+                }, [movementLines])}
+                rowKey={(record) => `${record.partno}-${record.uom}`}
+                pagination={false}
+                bordered
+                rowClassName={(_, index) => (index % 2 === 0 ? 'row-light' : 'row-dark')}
+            />
+
+
+            <Divider style={{ marginTop: 12, marginBottom: 8 }} />
+            <Title level={4} style={{ marginTop: 0 }}>Material Log</Title>
             <Row gutter={16}>
                 <Col span={24}>
-                    <div style={{
-                        display: 'flex',
-                        padding: '8px 16px',
-                        fontWeight: 'bold',
-                        background: '#ffe58f',
-                        borderBottom: '1px solid #ddd'
-                    }}>
-                        <div style={{ flex: 14 }}>Packing</div>
-                        <div style={{ flex: 6, textAlign: 'center' }}>Qty</div>
-                        <div style={{ flex: 4, textAlign: 'center' }}>UOM</div>
-                    </div>
-                    {packingItems.map((item, index) => (
-                        <div key={index} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '8px 16px',
-                            borderBottom: '1px dashed #eee'
-                        }}>
-                            <div style={{ flex: 14 }}>{item.partNo} - {item.partName}</div>
-                            <div style={{ flex: 6, textAlign: 'right' }}>
-                                <InputNumber
-                                    min={0}
-                                    step={0.1}
-                                    value={qtyMapPacking[item.partId] !== undefined ? qtyMapPacking[item.partId] : item.qtyUsed}
-                                    onChange={(value) => handleQtyChangePacking(item.partId, value)}
-                                    style={{ width: '80%' }}
+                    <Table
+                        columns={columns}
+                        dataSource={movementLines}
+                        rowKey="documentno"
+                        pagination={false}
+                        expandable={{
+                            expandedRowRender: (record) => (
+                                <Table
+                                    columns={lineColumns}
+                                    dataSource={record.lines}
+                                    rowKey={dataWithKey}
+                                    pagination={false}
+                                    size="small"
+                                    bordered
+                                    style={{ backgroundColor: '#fafafa' }}
+                                    rowClassName={() => 'line-row'}
                                 />
-                            </div>
-                            <div style={{ flex: 4, textAlign: 'center' }}>{item.uomsymbol}</div>
-                        </div>
-                    ))}
+                            ),
+                            rowExpandable: (record) => record.lines && record.lines.length > 0,
+                        }}
+                        rowClassName={(_, index) =>
+                            index % 2 === 0 ? 'row-light' : 'row-dark'
+                        }
+                    />
+
                 </Col>
             </Row>
 
             <Divider style={{ marginTop: 12, marginBottom: 8 }} />
 
-            {/* Footer Buttons */}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Space>
                     <Button
@@ -231,23 +232,27 @@ const ConfirmMaterialNew = ({ bomComponent, planId, open, onClose, onSuccess, us
                         CLOSE
                     </Button>
                 </Space>
-                <Button type="primary" onClick={handleSubmit}>Submit</Button>
             </div>
         </Modal>
     );
 };
 
 ConfirmMaterialNew.propTypes = {
-    planId: PropTypes.number.isRequired,
     open: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
-    onSuccess: PropTypes.func,
-    bomComponent: PropTypes.arrayOf(PropTypes.shape({
-        partNo: PropTypes.string.isRequired,
-        partName: PropTypes.string.isRequired,
-        uomsymbol: PropTypes.string.isRequired
+    movementLines: PropTypes.arrayOf(PropTypes.shape({
+        movementdate: PropTypes.string.isRequired,
+        user: PropTypes.string.isRequired,
+        documentno: PropTypes.string.isRequired,
+        lines: PropTypes.arrayOf(PropTypes.shape({
+            line: PropTypes.string.isRequired,
+            partno: PropTypes.string.isRequired,
+            partname: PropTypes.string.isRequired,
+            fromlocator: PropTypes.string.isRequired,
+            tolocator: PropTypes.string.isRequired,
+            movementqty: PropTypes.number.isRequired,
+        })).isRequired,
     })).isRequired,
-    userId: PropTypes.number.isRequired,
 };
 
 export default ConfirmMaterialNew;

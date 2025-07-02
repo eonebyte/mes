@@ -2,39 +2,44 @@ import { Alert, Button, Card, Col, Empty, Flex, Row, Spin } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import SettingsIcon from '@mui/icons-material/Settings';
 import DoneIcon from '@mui/icons-material/Done';
-import TableChartIcon from '@mui/icons-material/TableChart';
-import GroupWorkIcon from '@mui/icons-material/GroupWork';
-import GppBadIcon from '@mui/icons-material/GppBad';
-import DatasetIcon from '@mui/icons-material/Dataset';
-import ScienceIcon from '@mui/icons-material/Science';
-import PolicyIcon from '@mui/icons-material/Policy';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 // import { plans } from "../../../data/fetchResource";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import LayoutDashboard from "../../../components/layouts/LayoutDashboard";
-import DownloadIcon from '@mui/icons-material/Download';
+// import DownloadIcon from '@mui/icons-material/Download';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 
 import ConfirmStart from "../../../components/Buttons/ConfirmStart";
-import ConfirmReleased from "../../../components/Buttons/ConfirmReleased";
+// import ConfirmReleased from "../../../components/Buttons/ConfirmReleased";
 import ConfirmReady from "../../../components/Buttons/ConfirmReady";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
-import { fetchDetailPlan } from "../../../data/fetchs";
-import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
+import { fetchDetailPlan, fetchMovementLines } from "../../../data/fetchs";
+// import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import { refreshResources } from "../../../states/reducers/resourceSlice";
 import ConfirmMaterialNew from "../../../components/Buttons/ConfirmMaterialNew";
-
-
+import WarehouseIcon from '@mui/icons-material/Warehouse';
+import ConfirmCompleteJO from "../../../components/Buttons/ConfirmCompleteJO";
+import React from "react";
+import ConfirmReadyMultiplePlan from "../../../components/Buttons/ConfirmReadyMultiPlan";
+import ConfirmStartMultiPlan from "../../../components/Buttons/ConfirmStartMultiPlan";
+// import ChangeCavity from "../../../components/Buttons/ChangeCavity";
 function PlanDetail() {
     const dispatch = useDispatch();
     // const user = useSelector((state) => state.auth.user);
     const [openMaterialModal, setOpenMaterialModal] = useState(false);
+    // const [openCavityModal, setOpenCavityModal] = useState(false);
+    // const [openCompleteModal, setOpenCompleteModal] = useState(false);
 
-    const user = useSelector((state) => state.auth.user);
+    const [showConfirm, setShowConfirm] = useState(false);
+
+    const handleOpenConfirm = () => setShowConfirm(true);
+    const handleCloseConfirm = () => setShowConfirm(false);
+
+
+    // const user = useSelector((state) => state.auth.user);
 
 
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
@@ -47,6 +52,7 @@ function PlanDetail() {
 
     const [loading, setLoading] = useState(true);
     const [singlePlan, setSinglePlan] = useState({});
+    const [singlePlanMovementLines, setSinglePlanMovementLines] = useState({});
     const [multiplePlan, setMultiplePlan] = useState({});
 
     // const [isModalVisible, setIsModalVisible] = useState(false);
@@ -58,14 +64,18 @@ function PlanDetail() {
 
             if (planId) {
                 singlePlanData = await fetchDetailPlan(planId, null);
+                const movementLines = await fetchMovementLines(planId);
+                setSinglePlanMovementLines(movementLines);
             } else {
                 multiplePlanData = await fetchDetailPlan(null, moldId);
             }
 
             if (singlePlanData) {
                 setSinglePlan(singlePlanData);
+
             } else if (multiplePlanData) {
                 setMultiplePlan(multiplePlanData)
+
             } else {
                 setSinglePlan({});  // Handle unexpected data (non-array) by setting an empty array
                 setMultiplePlan({});  // Handle unexpected data (non-array) by setting an empty array
@@ -87,21 +97,30 @@ function PlanDetail() {
         fetchData();
     }, [planId, navigate]);
 
-
-    const handleSuccess = () => {
+    const handleSuccessOnActive = (resourceId) => {
+        setShowConfirm(false);
         fetchData();
         dispatch(refreshResources());
+        navigate(`/resource/plan?resourceId=${resourceId}`);
     };
 
 
+    // const handleSuccess = () => {
+    //     fetchData();
+    //     dispatch(refreshResources());
+    // };
 
     function getBackgroundColor(status, isDarkMode) {
         if (status === 'On Hold') {
             return isDarkMode ? '#333' : '#fff7e6'; // On Hold: terang jika mode terang, gelap jika mode gelap
         } else if (status === 'DR') {
-            return isDarkMode ? '#555' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
+            return isDarkMode ? '#262626' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
         } else if (status === 'IP') {
-            return isDarkMode ? '#457b9d' : '#e6f4ff'; // Ready: biru muda terang jika mode terang
+            return isDarkMode ? '#0958d9' : '#bae0ff';
+        } else if (status === 'HO') {
+            return isDarkMode ? '#d4b106' : '#ffffb8';
+        } else if (status === 'CO') {
+            return isDarkMode ? '#d46b08' : '#ffe7ba';
         }
         return '#ffffff'; // default background color
     }
@@ -110,7 +129,7 @@ function PlanDetail() {
         return isDarkMode ? '#ffffff' : '#1677FF'; // Teks putih jika mode gelap, hitam jika terang
     }
 
-    console.log('plan detail: ', singlePlan);
+    
 
     return (
         <LayoutDashboard>
@@ -155,7 +174,13 @@ function PlanDetail() {
                                             fontWeight: 'bold',
                                             color: getTextColor(isDarkMode),
                                         }}>
-                                            {`<${singlePlan.planNo}> ${singlePlan.status === 'DR' ? 'Draft' : singlePlan.status === 'IP' ? 'Open' : 'nan'}`}
+                                            {
+                                                `<${singlePlan.planNo}> ${singlePlan.status === 'DR' ? 'Draft' :
+                                                    singlePlan.status === 'IP' ? 'Open' :
+                                                        singlePlan.status === 'HO' ? 'On Hold' :
+                                                            singlePlan.status === 'CO' ? 'Completed' :
+                                                                'nan'}`
+                                            }
                                         </p>
 
                                     </Flex>}
@@ -182,21 +207,23 @@ function PlanDetail() {
                                 >
                                     <Row gutter={[16]} style={{ borderBottom: '1px solid #9999', marginBottom: 5 }}>
                                         <Col lg={24} style={{ padding: 0 }}>
-                                            {singlePlan.status == 'On Hold' && (
-                                                <Button
-                                                    color="primary"
-                                                    variant="text"
-                                                    style={{
-                                                        fontWeight: 600,
-                                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                                        fontSize: "12px",
-                                                        padding: "4px 12px",
-                                                    }}
-                                                    onClick={ConfirmReleased}
-                                                >
-                                                    <DownloadIcon sx={{ fontSize: 18 }} />
-                                                    <span>RELEASE</span>
-                                                </Button>
+                                            {singlePlan.status == 'HO' && (
+                                                <>
+                                                    <Button
+                                                        color="primary"
+                                                        variant="text"
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                                            fontSize: "12px",
+                                                            padding: "4px 12px",
+                                                        }}
+                                                        onClick={() => ConfirmReady({ planId: singlePlan.planId, onSuccess: fetchData })}
+                                                    >
+                                                        <FactCheckIcon sx={{ fontSize: 18 }} />
+                                                        <span>OPEN</span>
+                                                    </Button>
+                                                </>
                                             )}
                                             {singlePlan.status == 'DR' && (
                                                 <>
@@ -214,30 +241,6 @@ function PlanDetail() {
                                                         <FactCheckIcon sx={{ fontSize: 18 }} />
                                                         <span>OPEN</span>
                                                     </Button>
-                                                    <Button
-                                                        color="primary"
-                                                        variant="text"
-                                                        style={{
-                                                            fontWeight: 600,
-                                                            fontFamily: "'Roboto', Arial, sans-serif",
-                                                            fontSize: "12px",
-                                                            padding: "4px 12px",
-                                                        }}
-                                                        onClick={() => setOpenMaterialModal(true)}
-                                                    >
-                                                        <SettingsIcon sx={{ fontSize: 18 }} />
-                                                        <span>MATERIAL</span>
-                                                    </Button>
-                                                    {openMaterialModal && (
-                                                        <ConfirmMaterialNew
-                                                            bomComponent={singlePlan.bomComponent}
-                                                            planId={singlePlan.planId}
-                                                            open={openMaterialModal}
-                                                            onClose={() => setOpenMaterialModal(false)}
-                                                            onSuccess={handleSuccess}
-                                                            userId={parseInt(user.id)}
-                                                        />
-                                                    )}
                                                 </>
                                             )}
                                             {/* IP = OPEN */}
@@ -252,18 +255,17 @@ function PlanDetail() {
                                                             fontSize: "12px",
                                                             padding: "4px 12px",
                                                         }}
-                                                        onClick={() => ConfirmSetup({
-                                                            planId: singlePlan.planId,
-                                                            resourceId: singlePlan.resourceId,
-                                                            onSuccess: () => {
-                                                                fetchData();
-                                                                dispatch(refreshResources());
-                                                            }
-                                                        })}
+                                                        onClick={handleOpenConfirm}
                                                     >
                                                         <SettingsIcon sx={{ fontSize: 18 }} />
                                                         <span>SETUP</span>
                                                     </Button>
+                                                    <ConfirmSetup
+                                                        open={showConfirm}
+                                                        onClose={handleCloseConfirm}
+                                                        onSuccess={() => handleSuccessOnActive(singlePlan.resourceId)}
+                                                        resourceId={singlePlan.resourceId}
+                                                    />
                                                     <Button
                                                         color="primary"
                                                         variant="text"
@@ -273,12 +275,16 @@ function PlanDetail() {
                                                             fontSize: "12px",
                                                             padding: "4px 12px",
                                                         }}
-                                                        onClick={() => ConfirmStart({ planId: singlePlan.planId, navidate: navigate, resourceId: singlePlan.resourceId })}
+                                                        onClick={() => ConfirmStart({
+                                                            planId: singlePlan.planId,
+                                                            navidate: navigate,
+                                                            resourceId: singlePlan.resourceId
+                                                        })}
                                                     >
                                                         <PowerSettingsNewIcon sx={{ fontSize: 18 }} />
                                                         <span>START</span>
                                                     </Button>
-                                                    <Button
+                                                    {/* <Button
                                                         color="primary"
                                                         variant="text"
                                                         style={{
@@ -287,17 +293,57 @@ function PlanDetail() {
                                                             fontSize: "12px",
                                                             padding: "4px 12px",
                                                         }}
-                                                        onClick={() => ConfirmComplete({
-                                                            planId: singlePlan.planId,
-                                                            resourceId: singlePlan.resourceId,
-                                                            onSuccess: () => {
-                                                            }
-                                                        })}
+                                                        onClick={() => setOpenCompleteModal(true)}
                                                     >
                                                         <DoneIcon sx={{ fontSize: 18 }} />
                                                         <span>COMPLETE</span>
                                                     </Button>
+                                                    <ConfirmComplete
+                                                        planId={singlePlan.planId}
+                                                        resourceId={singlePlan.resourceId}
+                                                        open={openCompleteModal}
+                                                        onClose={() => setOpenCompleteModal(false)}
+                                                        onSuccess={handleSuccess}
+                                                        userId={parseInt(user.id)}
+                                                    /> */}
                                                 </>
+                                            )}
+                                            {singlePlan.status == 'HO' && (
+                                                <Button
+                                                    color="primary"
+                                                    variant="text"
+                                                    style={{
+                                                        fontWeight: 600,
+                                                        fontFamily: "'Roboto', Arial, sans-serif",
+                                                        fontSize: "12px",
+                                                        padding: "4px 12px",
+                                                    }}
+                                                    onClick={() => ConfirmCompleteJO({ planId: singlePlan.planId, onSuccess: fetchData })}
+                                                >
+                                                    <DoneIcon sx={{ fontSize: 18 }} />
+                                                    <span>COMPLETE JO</span>
+                                                </Button>
+                                            )}
+                                            <Button
+                                                color="primary"
+                                                variant="text"
+                                                style={{
+                                                    fontWeight: 600,
+                                                    fontFamily: "'Roboto', Arial, sans-serif",
+                                                    fontSize: "12px",
+                                                    padding: "4px 12px",
+                                                }}
+                                                onClick={() => setOpenMaterialModal(true)}
+                                            >
+                                                <WarehouseIcon sx={{ fontSize: 18 }} />
+                                                <span>MATERIAL</span>
+                                            </Button>
+                                            {openMaterialModal && (
+                                                <ConfirmMaterialNew
+                                                    movementLines={singlePlanMovementLines}
+                                                    open={openMaterialModal}
+                                                    onClose={() => setOpenMaterialModal(false)}
+                                                />
                                             )}
                                         </Col>
                                     </Row>
@@ -307,48 +353,56 @@ function PlanDetail() {
                                         <Col lg={4} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                                             <div>Part No/Part Name</div>
                                             <div style={{ marginBottom: 10 }}><strong>{singlePlan.partNo}/{singlePlan.partName}</strong></div>
-                                            <div>Revision</div>
-                                            <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                            <div>Project</div>
-                                            <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                            <div>Part Desc</div>
+                                            <div style={{ marginBottom: 10 }}><strong>{singlePlan.partDesc ? singlePlan.partDesc : '-'}</strong></div>
+                                            {/* <div>Revision</div> */}
+                                            {/* <div style={{ marginBottom: 10 }}><strong>-</strong></div> */}
+
                                         </Col>
-                                        <Col lg={4}>
+                                        {/* <Col lg={4}>
                                             <div>Seq Desc</div>
                                             <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                             <div>Part Model</div>
                                             <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                             <div>Part Drawing #</div>
                                             <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                        </Col>
+                                        </Col> */}
 
                                         <Col lg={4}>
-                                            <div>Order No.</div>
-                                            <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                             <div>Cust Order</div>
                                             <div style={{ marginBottom: 10 }}><strong>{singlePlan.planNo}</strong></div>
-                                            <div>Batch</div>
+                                            <div>Order No.</div>
                                             <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                            {/* <div>Batch</div> */}
+                                            {/* <div style={{ marginBottom: 10 }}><strong>-</strong></div> */}
                                         </Col>
 
                                         <Col lg={4}>
                                             <div>Plan Qty</div>
                                             <div style={{ marginBottom: 10 }}><strong>{singlePlan.qty}</strong></div>
                                             <div>ToGo Qty</div>
-                                            <div style={{ marginBottom: 10 }}><strong>100 example</strong></div>
-                                            <div>Output Per Cycle (Std / Act)</div>
-                                            <div style={{ marginBottom: 10 }}><strong>100 example</strong></div>
+                                            <div style={{ marginBottom: 10 }}><strong>{singlePlan.togoqty ? singlePlan.togoqty : singlePlan.qty}</strong></div>
+
                                         </Col>
                                         <Col lg={8}>
 
                                             <Flex align="flex-start" justify="space-between">
                                                 <div>
-                                                    <div>Part Desc</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                                    {/* <div>Project</div> */}
+                                                    {/* <div style={{ marginBottom: 10 }}><strong>-</strong></div> */}
                                                     <div>Cycles</div>
                                                     <div style={{ marginBottom: 10 }}><strong>{singlePlan.cycletime}</strong></div>
+                                                    <div>Cavity</div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{singlePlan.cavity}</strong></div>
+                                                </div>
+                                                <div>
+                                                    <div>Output Per Cycle (Std / Act)</div>
+                                                    <div style={{ marginBottom: 10 }}>
+                                                        <strong>{(singlePlan?.outputqty && singlePlan.outputqty !== 0) ? singlePlan.outputqty : 0}</strong>
+                                                    </div>
                                                 </div>
                                                 {singlePlan ? (
-                                                    <RemainingPlanDetail planQty={singlePlan.qty} toGoQty={100} outputQty={100} CT={singlePlan.cycletime} />
+                                                    <RemainingPlanDetail planQty={singlePlan.qty} toGoQty={singlePlan.togoqty ? singlePlan.togoqty : singlePlan.qty} outputQty={singlePlan.outputqty ? singlePlan.outputqty : 0} CT={singlePlan.cycletime} />
                                                 ) : (
                                                     <p>No plan found</p>
                                                 )}
@@ -359,7 +413,7 @@ function PlanDetail() {
                                     {/* Row 2 */}
                                     <Row>
                                         <Col lg={24} style={{ padding: 0 }}>
-                                            <Button
+                                            {/* <Button
                                                 color="primary"
                                                 variant="text"
                                                 style={{
@@ -368,10 +422,21 @@ function PlanDetail() {
                                                     fontSize: "12px",
                                                     padding: "4px 12px",
                                                 }}
+                                                onClick={() => setOpenCavityModal(true)}
                                             >
                                                 <GroupWorkIcon sx={{ fontSize: 18 }} />
                                                 <span>CAVITY</span>
                                             </Button>
+                                            {openCavityModal && (
+                                                <ChangeCavity
+                                                    moldId={singlePlan.moldId}
+                                                    open={openCavityModal}
+                                                    onClose={() => setOpenCavityModal(false)}
+                                                    onSuccess={handleSuccess}
+                                                    userId={parseInt(user.id)}
+                                                    currentCavity={singlePlan.cavity}
+                                                />
+                                            )}
 
                                             <Button
                                                 color="primary"
@@ -437,7 +502,7 @@ function PlanDetail() {
                                             >
                                                 <CloudUploadIcon sx={{ fontSize: 16 }} />
                                                 <span>PARAMETER</span>
-                                            </Button>
+                                            </Button> */}
 
                                             {/* STATION */}
                                             <h1 style={{ marginTop: 0 }}>Station</h1>
@@ -545,10 +610,11 @@ function PlanDetail() {
                                         }
                                     }}
                                 >
+
                                     {/* Row 0 */}
                                     <Row gutter={[16]} style={{ borderBottom: '1px solid #9999', marginBottom: 5 }}>
                                         <Col lg={24} style={{ padding: 0 }}>
-                                            {multiplePlan.jo_status == 'On Hold' && (
+                                            {multiplePlan.jo_status == 'HO' && (
                                                 <Button
                                                     color="primary"
                                                     variant="text"
@@ -558,10 +624,10 @@ function PlanDetail() {
                                                         fontSize: "12px",
                                                         padding: "4px 12px",
                                                     }}
-                                                    onClick={ConfirmReleased}
+                                                    onClick={() => ConfirmReadyMultiplePlan({ data: multiplePlan.data, onSuccess: fetchData })}
                                                 >
-                                                    <DownloadIcon sx={{ fontSize: 18 }} />
-                                                    <span>RELEASE</span>
+                                                    <FactCheckIcon sx={{ fontSize: 18 }} />
+                                                    <span>OPEN</span>
                                                 </Button>
                                             )}
                                             {multiplePlan.jo_status == 'DR' && (
@@ -574,27 +640,14 @@ function PlanDetail() {
                                                         fontSize: "12px",
                                                         padding: "4px 12px",
                                                     }}
-                                                    onClick={ConfirmReady}
+                                                    onClick={() => ConfirmReadyMultiplePlan({ data: multiplePlan.data, onSuccess: fetchData })}
                                                 >
                                                     <FactCheckIcon sx={{ fontSize: 18 }} />
                                                     <span>OPEN</span>
                                                 </Button>
                                             )}
-                                            {multiplePlan.jo_status == 'OP' && (
-                                                <><Button
-                                                    color="primary"
-                                                    variant="text"
-                                                    style={{
-                                                        fontWeight: 600,
-                                                        fontFamily: "'Roboto', Arial, sans-serif",
-                                                        fontSize: "12px",
-                                                        padding: "4px 12px",
-                                                    }}
-                                                    onClick={ConfirmSetup}
-                                                >
-                                                    <SettingsIcon sx={{ fontSize: 18 }} />
-                                                    <span>SETUP</span>
-                                                </Button>
+                                            {multiplePlan.jo_status == 'IP' && (
+                                                <>
                                                     <Button
                                                         color="primary"
                                                         variant="text"
@@ -604,11 +657,52 @@ function PlanDetail() {
                                                             fontSize: "12px",
                                                             padding: "4px 12px",
                                                         }}
-                                                        onClick={ConfirmStart}
+                                                        onClick={handleOpenConfirm}
                                                     >
-                                                        <DoneIcon sx={{ fontSize: 18 }} />
-                                                        <span>COMPLETE</span>
-                                                    </Button></>
+                                                        <SettingsIcon sx={{ fontSize: 18 }} />
+                                                        <span>SETUP</span>
+                                                    </Button>
+                                                    <ConfirmSetup
+                                                        open={showConfirm}
+                                                        onClose={handleCloseConfirm}
+                                                        onSuccess={() => handleSuccessOnActive(multiplePlan.resourceId)}
+                                                        resourceId={multiplePlan.resourceId}
+                                                    />
+                                                    <Button
+                                                        color="primary"
+                                                        variant="text"
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontFamily: "'Roboto', Arial, sans-serif",
+                                                            fontSize: "12px",
+                                                            padding: "4px 12px",
+                                                        }}
+                                                        onClick={() => ConfirmStartMultiPlan({
+                                                            data: multiplePlan.data,
+                                                            navidate: navigate,
+                                                            resourceId: multiplePlan.resourceId
+                                                        })}
+                                                    >
+                                                        <PowerSettingsNewIcon sx={{ fontSize: 18 }} />
+                                                        <span>START</span>
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {multiplePlan.jo_status == 'HO' && (
+                                                <Button
+                                                    color="primary"
+                                                    variant="text"
+                                                    style={{
+                                                        fontWeight: 600,
+                                                        fontFamily: "'Roboto', Arial, sans-serif",
+                                                        fontSize: "12px",
+                                                        padding: "4px 12px",
+                                                    }}
+                                                    onClick={() => ConfirmCompleteJO({ planId: multiplePlan.planId, onSuccess: fetchData })}
+                                                >
+                                                    <DoneIcon sx={{ fontSize: 18 }} />
+                                                    <span>COMPLETE JO</span>
+                                                </Button>
                                             )}
                                             <Button
                                                 color="primary"
@@ -619,17 +713,27 @@ function PlanDetail() {
                                                     fontSize: "12px",
                                                     padding: "4px 12px",
                                                 }}
-                                                onClick={ConfirmStart}
+                                                onClick={() => setOpenMaterialModal(true)}
                                             >
-                                                <TableChartIcon sx={{ fontSize: 16 }} />
+                                                <WarehouseIcon sx={{ fontSize: 18 }} />
                                                 <span>MATERIAL</span>
                                             </Button>
+                                            {openMaterialModal && (
+                                                <ConfirmMaterialNew
+                                                    movementLines={[]}
+                                                    open={openMaterialModal}
+                                                    onClose={() => setOpenMaterialModal(false)}
+                                                />
+                                            )}
                                         </Col>
                                     </Row>
+                                    {/* === */}
+
 
                                     {/* Row 1 */}
                                     {multiplePlan.data.map((plan, index) => (
-                                        <>
+                                        <React.Fragment key={plan.planId || index}>
+
                                             <Row
                                                 gutter={[16]}
                                                 style={{
@@ -667,55 +771,53 @@ function PlanDetail() {
                                                 <Col key={`${plan.planId}-${index}`} lg={4} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
                                                     <div>Part No/Part Name</div>
                                                     <div style={{ marginBottom: 10 }}><strong>{plan.partNo}/{plan.partName}</strong></div>
-                                                    <div>Revision</div>
+                                                    <div>Part Desc</div>
                                                     <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                                    <div>Project</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                                </Col><Col lg={4}>
-                                                    <div>Seq Desc</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                                    <div>Part Model</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                                    <div>Part Drawing #</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                                </Col><Col lg={4}>
-                                                    <div>Order No.</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                                </Col>
+                                                <Col lg={4}>
                                                     <div>Cust Order</div>
                                                     <div style={{ marginBottom: 10 }}><strong>{plan.planNo}</strong></div>
+                                                    <div>Order No.</div>
+                                                    <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                                </Col>
+                                                {/* <Col lg={4}>
                                                     <div>Batch</div>
                                                     <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                                </Col><Col lg={4}>
+                                                </Col> */}
+                                                <Col lg={4}>
                                                     <div>Plan Qty</div>
                                                     <div style={{ marginBottom: 10 }}><strong>{plan.qty}</strong></div>
                                                     <div>ToGo Qty</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>100 example</strong></div>
-                                                    <div>Output Per Cycle (Std / Act)</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>100 example</strong></div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{plan.togoqty ? plan.togoqty : plan.qty}</strong></div>
                                                 </Col><Col lg={8}>
 
                                                     <Flex align="flex-start" justify="space-between">
                                                         <div>
-                                                            <div>Part Desc</div>
-                                                            <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                                             <div>Cycles</div>
                                                             <div style={{ marginBottom: 10 }}><strong>{plan.cycletime}</strong></div>
+                                                            <div>Cavity</div>
+                                                            <div style={{ marginBottom: 10 }}><strong>{plan.cavity ? plan.cavity : '-'}</strong></div>
+                                                        </div>
+                                                        <div>
+                                                            <div>Output Per Cycle (Std / Act)</div>
+                                                            <div style={{ marginBottom: 10 }}><strong>{plan.output ? plan.output : 0}</strong></div>
                                                         </div>
                                                         {plan ? (
-                                                            <RemainingPlanDetail planQty={plan.qty} toGoQty={100} outputQty={100} CT={plan.cycletime} />
+                                                            <RemainingPlanDetail planQty={plan.qty} toGoQty={plan.togoqty ? plan.togoqty : plan.qty} outputQty={plan.output ? plan.output : 0} CT={plan.cycletime} />
                                                         ) : (
                                                             <p>No plan found</p>
                                                         )}
                                                     </Flex>
                                                 </Col>
-                                            </Row></>
+                                            </Row>
+                                            </React.Fragment>
                                     ))}
 
 
                                     {/* Row 2 */}
                                     < Row >
                                         <Col lg={24} style={{ padding: 0 }}>
-                                            <Button
+                                            {/* <Button
                                                 color="primary"
                                                 variant="text"
                                                 style={{
@@ -793,7 +895,7 @@ function PlanDetail() {
                                             >
                                                 <CloudUploadIcon sx={{ fontSize: 16 }} />
                                                 <span>PARAMETER</span>
-                                            </Button>
+                                            </Button> */}
 
                                             {/* STATION */}
                                             <h1 style={{ marginTop: 0 }}>Station</h1>

@@ -3,20 +3,22 @@ import { Button, Divider, Modal, notification, Select, Space } from "antd";
 import { useState } from "react";
 import PropTypes from 'prop-types';
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3080';
+const prefix = '/api/v1';
 
-const ConfirmSetup = ({ planId, resourceId, onSuccess, open, onClose }) => {
+const ConfirmSetup = ({ resourceId, onSuccess, open, onClose }) => {
     const [selectedStatus, setSelectedStatus] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const handleOk = () => {
         setLoading(true);
 
-        fetch('http://localhost:3080/api/plans/status/event', {
+        fetch(`${backendUrl}${prefix}/plan/resource/setup`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ planId, resourceId, status: selectedStatus }),
+            body: JSON.stringify({ resourceId, status: selectedStatus }),
         })
             .then(async res => {
                 const data = await res.json();
@@ -136,7 +138,6 @@ const ConfirmSetup = ({ planId, resourceId, onSuccess, open, onClose }) => {
 };
 
 ConfirmSetup.propTypes = {
-    planId: PropTypes.string.isRequired,
     resourceId: PropTypes.string.isRequired,
     onSuccess: PropTypes.func,
     open: PropTypes.bool.isRequired,

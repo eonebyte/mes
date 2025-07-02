@@ -68,3 +68,39 @@ h1 {
   /* Hilangkan garis bawah */
 }
 
+.row-light {
+  background-color: #f6faff;
+  /* Light blueish */
+}
+
+.row-dark {
+  background-color: #ffffff;
+}
+
+.line-row:hover {
+  background-color: #e6f7ff !important;
+  /* Highlight on hover */
+}
+
+.ant-table-thead>tr>th {
+  background-color: #91d5ff !important;
+  color: #000;
+  font-weight: bold;
+  text-align: center;
+}
+
+.ant-table-cell {
+  vertical-align: middle;
+}
+
+.visavail-bar.status-DANDORY {
+  fill: #ff9800 !important;
+}
+
+.visavail-bar.status-SETUP {
+  fill: #3f51b5 !important;
+}
+
+.visavail-bar.status-IDLE {
+  fill: #f44336 !important;
+}

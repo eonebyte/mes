@@ -1,8 +1,9 @@
 import OverAll from "./pages/OverAll";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import IROEEStatus from "./pages/IROEEStatus";
 import './Chart.css'
 import './index.css'
+import './libs/visavail/visavail.css'
 import MachineDowntime from "./pages/MachineDowntime";
 import SimulasiIoT from "./pages/SimulasiIoT";
 import Dashboard from "./pages/ShopFloor/Dashboard";
@@ -22,24 +23,22 @@ import { Spin } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { checkAuthStatus } from "./states/reducers/authSlice";
 import { useEffect } from "react";
-import PropTypes from 'prop-types';
+import TimelineDown from "./pages/ShopFloor/TimelineDown";
+import Forbidden from "./components/Forbidden";
+// import ProtectedRoute from "./components/ProtectedRoute";
+// <Route path="/resource" element={
+//   <ProtectedRoute allowedRoles={['Leader_Produksi']}>
+//     <Active />
+//   </ProtectedRoute>
+// }>
+// </Route>
 
-
-function PrivateRoute({ children }) {
-  const { auth } = useSelector((state) => state.auth);
-  if (!auth) {
-    return <Navigate to="/login" />;
-  }
-  return children;
-}
-
-PrivateRoute.propTypes = {
-  children: PropTypes.node.isRequired, 
-};
 
 function App() {
 
   const dispatch = useDispatch();
+
+
   const { auth, isLoading } = useSelector((state) => state.auth);
 
   useEffect(() => {
@@ -54,7 +53,6 @@ function App() {
     return <Login />;
   }
 
-
   return (
     <>
       <Routes>
@@ -63,8 +61,13 @@ function App() {
         {/* Auth */}
         <Route path="/login" element={<Login />}></Route>
 
+        {/* Forbidden */}
+        <Route path="/403" element={<Forbidden />}></Route>
+
+
         {/* Shopfloor */}
-        <Route path="/shopfloor" element={<PrivateRoute><Dashboard /></PrivateRoute>}></Route>
+        <Route path="/shopfloor/dashboard" element={<Dashboard />}></Route>
+        <Route path="/shopfloor/timeline" element={<TimelineDown />}></Route>
         <Route path="/resource" element={<Active />}></Route>
         <Route path="/resource/plan" element={<PlanList />}></Route>
         <Route path="/resource/plan/detail" element={<PlanDetail />}></Route>

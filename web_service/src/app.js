@@ -7,7 +7,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cors from '@fastify/cors';
-import Main from './main.js';
+import autoload from '@fastify/autoload'
+import socketIoService from './plugins/socketIO.js';
+import { join } from 'desm'
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,7 +27,7 @@ async function build(opts = {}) {
     const REDIS_PORT = process.env.REDIS_PORT;
     const REDIS_PASS = process.env.REDIS_PASS;
 
-
+    
 
     await app.register(cors, {
         origin: true,
@@ -34,9 +38,11 @@ async function build(opts = {}) {
         sessionName: 'session',
         // cookieName: 'my-session-cookie',
         key: fs.readFileSync(path.join(__dirname, 'api')),
-        expiry: 24 * 60 * 60, // Default 1 day
+        // expiry: 24 * 60 * 60, // Default 1 day
+        expiry: 60 * 60, // 1 Jam
         cookie: {
-            path: '/'
+            path: '/',
+            httpOnly: true
             // options for setCookie, see https://github.com/app/app-cookie
         }
     })
@@ -65,7 +71,33 @@ async function build(opts = {}) {
 
     // modules
     await app.register(formbody);
-    await app.register(Main);
+    await app.register(socketIoService);
+
+    app.register(autoload, {
+        dir: join(import.meta.url, 'modules'),
+        encapsulate: false,
+        maxDepth: 1,
+        options: {
+            prefix: '/api/v1'
+        }
+    })
+    app.setErrorHandler(async (err, request, reply) => {
+        if (err.validation) {
+            reply.code(403)
+            return err.message
+        }
+        request.log.error({ err })
+        reply.code(err.statusCode || 500)
+
+        return "I'm sorry, there was an error processing your request."
+    })
+
+    app.setNotFoundHandler(async (request, reply) => {
+        reply.code(404)
+        return "I'm sorry, I couldn't find what you were looking for."
+    })
+
+
 
     return app;
 }

@@ -8,6 +8,9 @@ import dayjs from 'dayjs';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3080';
+const prefix = '/api/v1';
+
 const ListPlan = () => {
     const navigate = useNavigate();
 
@@ -40,7 +43,7 @@ const ListPlan = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await fetch('http://localhost:3080/api/plans');
+                const response = await fetch(`${backendUrl}${prefix}/plan/plans`);
                 const result = await response.json();
                 if (result && result.data) {
                     setData(result.data); // Set data ke state
@@ -58,10 +61,10 @@ const ListPlan = () => {
     useEffect(() => {
         if (editModalVisible && formData.planId) {
             Promise.all([
-                fetch(`http://localhost:3080/api/plans/boms?planId=${formData.planId}`).then(res => res.json()),
-                fetch(`http://localhost:3080/api/resources`).then(res => res.json()),
-                fetch(`http://localhost:3080/api/molds`).then(res => res.json()),
-                fetch(`http://localhost:3080/api/plans/products`).then(res => res.json())
+                fetch(`${backendUrl}${prefix}/plan/boms?planId=${formData.planId}`).then(res => res.json()),
+                fetch(`${backendUrl}${prefix}/resource/resources`).then(res => res.json()),
+                fetch(`${backendUrl}${prefix}/mold/molds`).then(res => res.json()),
+                fetch(`${backendUrl}${prefix}/plan/products`).then(res => res.json())
             ])
                 .then(([bomData, resourceData, moldData, productData]) => {
                     setBomOptions(bomData.data || []);
@@ -365,14 +368,14 @@ const ListPlan = () => {
                 onCancel={() => setEditModalVisible(false)}
                 onOk={async () => {
                     try {
-                        const response = await fetch(`http://localhost:3080/api/plans/${formData.planId}`, {
+                        const response = await fetch(`${backendUrl}${prefix}/plan/update/${formData.planId}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ ...formData, userId: user.id }),
                         });
                         const result = await response.json();
                         if (result.success) {
-                            const refreshed = await fetch('http://localhost:3080/api/plans');
+                            const refreshed = await fetch(`${backendUrl}${prefix}/plan/plans`);
                             const refreshedData = await refreshed.json();
                             setData(refreshedData.data);
                             setEditModalVisible(false);

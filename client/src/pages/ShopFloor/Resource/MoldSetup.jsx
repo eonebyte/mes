@@ -8,6 +8,9 @@ import { useSelector } from 'react-redux';
 import UploadIcon from '@mui/icons-material/Upload';
 import { fetchMolds, fetchResourceById } from '../../../data/fetchs';
 
+const backendUrl = 'http://localhost:3080';
+const prefix = '/api/v1';
+
 const StepMoldSetup = () => {
     const navigate = useNavigate();
     const isDarkMode = useSelector((state) => state.theme.isDarkMode);
@@ -17,6 +20,10 @@ const StepMoldSetup = () => {
     const [molds, setMolds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [resource, setResource] = useState(null);
+
+    console.log('this : ', resource);
+    
+
 
 
     const [searchParams] = useSearchParams();
@@ -80,7 +87,7 @@ const StepMoldSetup = () => {
         setLoading(true); // Show loading spinner
 
         try {
-            const response = await fetch('http://localhost:3080/api/molds/resource/setup', {
+            const response = await fetch(`${backendUrl}${prefix}/mold/setup`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

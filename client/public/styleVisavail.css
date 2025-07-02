@@ -1,0 +1,116 @@
+/* RUNNING */
+.rect_RUN {
+    fill: #52c41a;
+}
+
+.tooltip_RUN {
+    color: #52c41a;
+}
+
+/* IDLE */
+.rect_IDL {
+    fill: #8c8c8c;
+}
+
+.tooltip_IDL {
+    color: #8c8c8c;
+}
+
+/* OFF */
+.rect_STP {
+    fill: #000;
+}
+
+.tooltip_STP {
+    color: #000;
+}
+
+/* DANDORI & PREPARE */
+.rect_DND {
+    fill: #1677ff;
+    /* Orange */
+}
+
+.tooltip_DND {
+    color: #1677ff;
+}
+
+/* BACKUP MESIN LAIN */
+.rect_BCK {
+    fill: #fadb14;
+    /* Deep Sky Blue */
+}
+
+.tooltip_BCK {
+    color: #fadb14;
+}
+
+/* TROUBLE MESIN */
+.rect_BRK {
+    fill: #eb2f96;
+    /* Red */
+}
+
+.tooltip_BRK {
+    color: #eb2f96;
+}
+
+/* TROUBLE MOLD */
+.rect_MAT {
+    fill: #ffa39e;
+    /* Dark Red */
+}
+
+.tooltip_MAT {
+    color: #ffa39e;
+}
+
+/* MATERIAL */
+.rect_MNT {
+    fill: #9254de;
+    /* Gold */
+}
+
+.tooltip_MNT {
+    color: #9254de;
+}
+
+/* NO LOADING */
+.rect_PCK {
+    fill: #13c2c2;
+    /* Dark Gray */
+}
+
+.tooltip_PCK {
+    color: #13c2c2;
+}
+
+/* PACKING */
+.rect_RUN {
+    fill: #52c41a;
+    /* Green */
+}
+
+.tooltip_RUN {
+    color: #52c41a;
+}
+
+/* TROUBLE SHOOTING */
+.rect_TRB {
+    fill: #f5222d;
+    /* Firebrick */
+}
+
+.tooltip_TRB {
+    color: #f5222d;
+}
+
+/* ISTIRAHAT */
+.rect_WTG {
+    fill: #faad14;
+    /* Indigo */
+}
+
+.tooltip_WTG {
+    color: #faad14;
+}

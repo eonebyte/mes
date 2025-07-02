@@ -17,7 +17,7 @@ export default function RemainingPlanDetail({ planQty, toGoQty, outputQty, CT })
 
     if (path === '/resource' ||
         path == '/resource/plan' ||
-        path == '/resource/plan/detail' 
+        path == '/resource/plan/detail'
 
     ) {
         colorChart = COLORS[0]
@@ -33,7 +33,7 @@ export default function RemainingPlanDetail({ planQty, toGoQty, outputQty, CT })
 
     //Rumus Progress Production = (outputQty / planQty) x 100
     const percentage = planQty > 0 ? (outputQty / planQty * 100).toFixed(1) : 0.0;
-    
+
     const endAngle = planQty > 0 ? (360 * (outputQty / planQty)) : 0;
 
     return (

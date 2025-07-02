@@ -1,6 +1,9 @@
 import { CheckOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Divider, Modal, notification, Space } from "antd";
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3080';
+const prefix = '/api/v1';
+
 const ConfirmReady = ({ planId, onSuccess }) => {
     Modal.confirm({
         title: 'Start Preparations',
@@ -45,7 +48,7 @@ const ConfirmReady = ({ planId, onSuccess }) => {
                             padding: '5px 10px'
                         }}
                         onClick={() => {
-                            fetch('http://localhost:3080/api/plans/status/open', {
+                            fetch(`${backendUrl}${prefix}/plan/open`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',

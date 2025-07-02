@@ -27,6 +27,9 @@ function PlanResource() {
             try {
                 const data = await fetchPlanByResource(resourceId); // Pastikan mengambil `data`
                 if (data && Array.isArray(data.singleTaskPlans) && Array.isArray(data.multipleTaskPlans)) {
+                    console.log("data singleTaskPlans:", data.singleTaskPlans);
+                    console.log("data multipleTaskPlans:", data.multipleTaskPlans);
+
                     setSinglePlans(data.singleTaskPlans);
                     setMultiplePlans(data.multipleTaskPlans);
                 } else {
@@ -44,19 +47,21 @@ function PlanResource() {
         fetchData();
     }, [resourceId]);
 
-    console.log('this single Plans :', singlePlans);
-    console.log('this multiple Plans :', multiplePlans);
+    // console.log('this single Plans :', singlePlans);
+    // console.log('this multiple Plans :', multiplePlans);
 
 
     function getBackgroundColor(status, isDarkMode) {
         if (status === 'SP' || status === 'PP') {
             return isDarkMode ? '#333' : '#fff7e6'; // On Hold: terang jika mode terang, gelap jika mode gelap
         } else if (status === 'DR') {
-            return isDarkMode ? '#555' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
+            return isDarkMode ? '#262626' : '#f0f0f0'; // Released: lebih gelap jika mode gelap
         } else if (status === 'IP') {
-            return isDarkMode ? '#457b9d' : '#bae0ff'; // Ready: biru muda terang jika mode terang, CO = OPEN
-        } else if (status === 'Running') {
-            return isDarkMode ? '#457b9d' : '#d9f7be'; // Ready: biru muda terang jika mode terang
+            return isDarkMode ? '#0958d9' : '#bae0ff';
+        } else if (status === 'HO') {
+            return isDarkMode ? '#d4b106' : '#ffffb8';
+        } else if (status === 'CO') {
+            return isDarkMode ? '#d46b08' : '#ffe7ba';
         }
         return '#ffffff'; // default background color
     }
@@ -130,7 +135,15 @@ function PlanResource() {
 
                                             </div>
                                             <div>
-                                                <span style={{ fontSize: '18px', fontWeight: '500', color: isDarkMode ? '#e6f7ff' : '#1677FF' }}>{plan.status === 'IP' ? 'Open' : plan.status === 'DR' ? 'Draft' : ''}</span>
+                                                <span style={{ fontSize: '18px', fontWeight: '500', color: isDarkMode ? '#e6f7ff' : '#1677FF' }}>
+                                                    {
+                                                        plan.status === 'IP' ? 'Open' :
+                                                            plan.status === 'DR' ? 'Draft' :
+                                                                plan.status === 'HO' ? 'On Hold' :
+                                                                    plan.status === 'CO' ? 'Completed' :
+                                                                        'NaN'
+                                                    }
+                                                </span>
                                             </div>
                                         </Flex>
                                     </div>
@@ -159,34 +172,35 @@ function PlanResource() {
                                 {/* Product 1 */}
                                 <Row gutter={[16]}>
                                     <Col lg={7} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                                        <div>Order No.</div>
-                                        <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                         <div>Part No/Part Name</div>
                                         <div style={{ marginBottom: 10 }}><strong>{plan.partNo}/{plan.partName}</strong></div>
-                                        <div>Part Drawing #</div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing ? plan.part_drawing : '-'}</strong></div>
+                                        <div>Part Desc</div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.description ? plan.description : '-'}</strong></div>
+
+                                        {/* <div>Part Drawing #</div> */}
+                                        {/* <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing ? plan.part_drawing : '-'}</strong></div> */}
                                     </Col>
                                     <Col lg={4}>
                                         <div>Plan Qty</div>
                                         <div style={{ marginBottom: 10 }}><strong>{plan.qty}</strong></div>
                                         <div>ToGo Qty</div>
-                                        <div style={{ marginBottom: 10 }}><strong>100 example</strong></div>
-                                        <div>Part Model </div>
-                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_model ? plan.part_model : '-'}</strong></div>
+                                        <div style={{ marginBottom: 10 }}><strong>{plan.togoqty ? plan.togoqty : plan.qty}</strong></div>
+                                        {/* <div>Part Model </div> */}
+                                        {/* <div style={{ marginBottom: 10 }}><strong>{plan.part_model ? plan.part_model : '-'}</strong></div> */}
                                     </Col>
                                     <Col lg={13}>
 
                                         <Flex align="flex-start" justify="space-between">
                                             <div>
-                                                <div>Part Desc</div>
-                                                <div style={{ marginBottom: 10 }}><strong>{plan.part_desc ? plan.part_desc : '-'}</strong></div>
-                                                <div>Spec</div>
-                                                <div style={{ marginBottom: 10 }}><strong>{plan.spec ? plan.spec : '-'}</strong></div>
+                                                <div>Order No.</div>
+                                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                                {/* <div>Spec</div> */}
+                                                {/* <div style={{ marginBottom: 10 }}><strong>{plan.spec ? plan.spec : '-'}</strong></div> */}
                                                 <div>Mold #</div>
                                                 <div style={{ marginBottom: 10 }}><strong>{plan.mold ? plan.mold : '-'}</strong></div>
                                             </div>
                                             {singlePlans ? (
-                                                <RemainingPlanDetail planQty={plan.qty} toGoQty={100} outputQty={100} CT={plan.cycletime} />
+                                                <RemainingPlanDetail planQty={plan.qty} toGoQty={plan.togoqty ? plan.togoqty : plan.qty} outputQty={plan.outputqty} CT={plan.cycletime} />
                                             ) : (
                                                 <p>No resource found</p>
                                             )
@@ -245,38 +259,46 @@ function PlanResource() {
                                                         <small><strong>start at {plan.planStartTime}</strong></small>
                                                     </div>
                                                     <div>
-                                                        <span style={{ fontSize: '18px', fontWeight: '500', color: isDarkMode ? '#e6f7ff' : '#1677FF' }}>{plan.status === 'CO' ? 'Open' : plan.status === 'DR' ? 'Draft' : ''}</span>
+                                                        <span style={{ fontSize: '18px', fontWeight: '500', color: isDarkMode ? '#e6f7ff' : '#1677FF' }}>
+                                                            {
+                                                                plan.status === 'IP' ? 'Open' :
+                                                                    plan.status === 'DR' ? 'Draft' :
+                                                                        plan.status === 'HO' ? 'On Hold' :
+                                                                            plan.status === 'CO' ? 'Completed' :
+                                                                                'NaN'
+                                                            }
+                                                        </span>
                                                     </div>
                                                 </Flex>
 
                                                 <Row gutter={[16]} style={{ marginTop: 10 }}>
                                                     <Col lg={7} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                                        <div>Order No.</div>
-                                                        <div style={{ marginBottom: 10 }}><strong>-</strong></div>
                                                         <div>Part No/Part Name</div>
                                                         <div style={{ marginBottom: 10 }}><strong>{plan.partNo}/{plan.partName}</strong></div>
-                                                        <div>Part Drawing #</div>
-                                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing ? plan.part_drawing : '-'}</strong></div>
+                                                        <div>Part Desc</div>
+                                                        <div style={{ marginBottom: 10 }}><strong>{plan.partDesc ? plan.partDesc : '-'}</strong></div>
+                                                        {/* <div>Part Drawing #</div> */}
+                                                        {/* <div style={{ marginBottom: 10 }}><strong>{plan.part_drawing ? plan.part_drawing : '-'}</strong></div> */}
                                                     </Col>
                                                     <Col lg={4}>
                                                         <div>Plan Qty</div>
                                                         <div style={{ marginBottom: 10 }}><strong>{plan.qty}</strong></div>
                                                         <div>ToGo Qty</div>
-                                                        <div style={{ marginBottom: 10 }}><strong>100 example</strong></div>
-                                                        <div>Part Model</div>
-                                                        <div style={{ marginBottom: 10 }}><strong>{plan.part_model ? plan.part_model : '-'}</strong></div>
+                                                        <div style={{ marginBottom: 10 }}><strong>{plan.togoqty ? plan.togoqty : plan.qty}</strong></div>
+                                                        {/* <div>Part Model</div> */}
+                                                        {/* <div style={{ marginBottom: 10 }}><strong>{plan.part_model ? plan.part_model : '-'}</strong></div> */}
                                                     </Col>
                                                     <Col lg={13}>
                                                         <Flex align="flex-start" justify="space-between">
                                                             <div>
-                                                                <div>Part Desc</div>
-                                                                <div style={{ marginBottom: 10 }}><strong>{plan.part_desc ? plan.part_desc : '-'}</strong></div>
-                                                                <div>Spec</div>
-                                                                <div style={{ marginBottom: 10 }}><strong>{plan.spec ? plan.spec : '-'}</strong></div>
+                                                                <div>Order No.</div>
+                                                                <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                                                {/* <div>Spec</div> */}
+                                                                {/* <div style={{ marginBottom: 10 }}><strong>{plan.spec ? plan.spec : '-'}</strong></div> */}
                                                                 <div>Mold #</div>
                                                                 <div style={{ marginBottom: 10 }}><strong>{plan.mold ? plan.mold : '-'}</strong></div>
                                                             </div>
-                                                            <RemainingPlanDetail planQty={plan.qty} toGoQty={100} outputQty={100} CT={plan.cycletime} />
+                                                            <RemainingPlanDetail planQty={plan.qty} toGoQty={plan.togoqty ? plan.togoqty : plan.qty} outputQty={plan.outputqty ? plan.outputqty : 0} CT={plan.cycletime} />
                                                         </Flex>
                                                     </Col>
                                                 </Row>
