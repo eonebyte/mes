@@ -12,9 +12,11 @@ export default async (server, opts) => {
             }
 
             // Panggil service yang kamu buat
-            const result = await server.plan.startPlan(request, server, parseInt(planId), parseInt(resourceId));
+            const result = await server.plan.startPlan(server, parseInt(planId), parseInt(resourceId));
 
             if (!result.success) {
+                console.log(result);
+                
                 // Kalau error lainnya (tapi masih dari sisi user), bisa juga pakai 422
                 return reply.code(422).send(result);
             }

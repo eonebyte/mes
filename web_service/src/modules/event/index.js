@@ -103,27 +103,23 @@ class Event {
         return rows[0].new_id;
     }
 
-    async createResourceEvent(server, a_asset_id, reasons = '-') {
+    async createResourceEvent(server, a_asset_id, cycletime, reasons = '-') {
         let dbClient;
         try {
             dbClient = await server.pg.connect();
             const redisClient = server.redis; // Ambil Redis dari Fastify instance
-
-            // 1. Start Trx
             await dbClient.query('BEGIN');
 
             const lastInjectTime = await this.getLastInject(redisClient, dbClient, a_asset_id);
             const lastEvent = await this.getLastEvent(redisClient, dbClient, a_asset_id);
 
-            let statusMachine = 'RUNNING';
-            let codeEvent = 'RUN';
-            let timeDiff = 0;
+            let statusEvent = 'RUNNING',
+                codeEvent = 'RUN',
+                timeDiff = 0;
 
             if (lastInjectTime) {
                 const now = DateTime.now().setZone('Asia/Jakarta');
                 const last = DateTime.fromJSDate(new Date(lastInjectTime));
-                console.log('this now :', now);
-                console.log('this last :', last);
 
                 if (now.isValid && last.isValid) {
                     timeDiff = now.diff(last, 'seconds').seconds;
@@ -132,31 +128,27 @@ class Event {
                     console.error('Error parsing date:', { now, last });
                 }
 
-
                 //LOGIC 1 : Buat DOWNTIME tutup RUNNING
                 if (timeDiff > 300) {
                     const nowDowntime = DateTime.now().setZone('Asia/Jakarta');
                     console.log('nowDowntime :', nowDowntime);
-                    statusMachine = 'DOWN';
+                    statusEvent = 'DOWN';
                     codeEvent = 'DW';
 
                     //Buat event DOWNTIME dan tutup event RUNNING
                     if (!lastEvent) {
                         const newEventId = await this.getNextId(dbClient, 1001042); // sequence asset event
                         // Jika tidak ada event sebelumnya, insert DOWNTIME sebagai event pertama
-                        const insertFirstEventQuery = `
+                        const insertFirstEvent = `
                                     INSERT INTO a_asset_event (
-                                        a_asset_event_id, a_asset_id, starttime, 
-                                        status, reason, code
-                                        )
-                                    VALUES ($1, $2, $3, 'DOWN', $4, 'DW') RETURNING a_asset_event_id, starttime
-                                `;
-                        const { rows: insertFirstEventDowntimeRows } = await dbClient.query(insertFirstEventQuery, [newEventId, a_asset_id, nowDowntime.toJSDate(), reasons]);
+                                        a_asset_event_id, a_asset_id, starttime, status, reason, code
+                                        ) VALUES ($1, $2, $3, 'DOWN', $4, 'DW') RETURNING a_asset_event_id, starttime`;
+
+                        const { rows: insertFirstEventDowntimeRows } = await dbClient.query(insertFirstEvent, [newEventId, a_asset_id, nowDowntime.toJSDate(), reasons]);
 
                         if (insertFirstEventDowntimeRows.length > 0) {
                             const newFirstEventDowntimeId = insertFirstEventDowntimeRows[0].a_asset_event_id;
                             const newFirstEventDowntimeStartTime = insertFirstEventDowntimeRows[0].starttime;
-                            console.log('this newEventID LOGIC 1:', newFirstEventDowntimeId);
 
                             const redisValue = JSON.stringify({
                                 a_asset_event_id: newFirstEventDowntimeId,
@@ -168,19 +160,12 @@ class Event {
                             await redisClient.setex(`lastevent:${a_asset_id}`, 300, redisValue);
                         }
 
-                        console.log("🔹 Inserted first downtime event for asset:", a_asset_id);
-                    } else if (statusMachine === 'DOWN' && lastEvent.status === 'RUNNING') {
-
+                    } else if (statusEvent === 'DOWN' && lastEvent.status === 'RUNNING') {
                         //Tutup event status RUNNING
                         const closeEventRunningQuery = `
                                     UPDATE a_asset_event 
-                                    SET endtime = $1,
-                                        duration = EXTRACT(EPOCH FROM ($1::timestamp - starttime))
-                                    WHERE 
-                                        status = 'RUNNING' 
-                                        AND a_asset_event_id = $2 
-                                        AND a_asset_id = $3 RETURNING endtime
-                                `;
+                                    SET endtime = $1, duration = EXTRACT(EPOCH FROM ($1::timestamp - starttime))
+                                    WHERE status = 'RUNNING' AND a_asset_event_id = $2 AND a_asset_id = $3 RETURNING endtime`;
 
                         const { rows: closeEventRunning } = await dbClient.query(closeEventRunningQuery, [nowDowntime.toJSDate(), lastEvent.a_asset_event_id, a_asset_id]);
 
@@ -191,16 +176,13 @@ class Event {
 
                             const insertEventDowntimeQuery = `
                                         INSERT INTO a_asset_event (
-                                            a_asset_event_id, a_asset_id, starttime, 
-                                            status, reason, code
-                                        )
-                                        VALUES ($1, $2, $3, $4, $5, $6) RETURNING a_asset_event_id
-                                    `;
-                            const { rows: insertEventDowntimeRows } = await dbClient.query(insertEventDowntimeQuery, [newEventId, a_asset_id, lastEvenRunningTime, statusMachine, reasons, codeEvent]);
+                                            a_asset_event_id, a_asset_id, starttime, status, reason, code
+                                        ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING a_asset_event_id`;
+
+                            const { rows: insertEventDowntimeRows } = await dbClient.query(insertEventDowntimeQuery, [newEventId, a_asset_id, lastEvenRunningTime, statusEvent, reasons, codeEvent]);
 
                             if (insertEventDowntimeRows.length > 0) {
                                 const newEventId = insertEventDowntimeRows[0].a_asset_event_id;
-                                console.log('this newEventID LOGIC 1:', newEventId);
 
                                 const redisValue = JSON.stringify({
                                     id: newEventId,
@@ -211,9 +193,8 @@ class Event {
                                 });
                                 await redisClient.setex(`lastevent:${a_asset_id}`, 300, redisValue);
                             }
+
                         }
-
-
                     }
                 }
 
@@ -225,17 +206,14 @@ class Event {
                     // Jika tidak ada event sebelumnya, insert RUNNING sebagai event pertama
                     const insertFirstRunningEventQuery = `
                                     INSERT INTO a_asset_event (
-                                        a_asset_event_id, a_asset_id, starttime, 
-                                        status, reason, code
-                                    )
-                                    VALUES ($1, $2, $3, 'RUNNING', $4, 'RUN') RETURNING a_asset_event_id, starttime
-                                `;
+                                        a_asset_event_id, a_asset_id, starttime, status, reason, code
+                                    ) VALUES ($1, $2, $3, 'RUNNING', $4, 'RUN') RETURNING a_asset_event_id, starttime`;
+
                     const { rows: insertFirstRunningEventRows } = await dbClient.query(insertFirstRunningEventQuery, [newEventId, a_asset_id, nowRunning.toJSDate(), reasons]);
 
                     if (insertFirstRunningEventRows.length > 0) {
                         const newRunningEventId = insertFirstRunningEventRows[0].a_asset_event_id;
                         const newRunningEventStartTime = insertFirstRunningEventRows[0].starttime;
-                        console.log('this newEventID LOGIC 2:', newRunningEventId);
 
                         const redisValue = JSON.stringify({
                             a_asset_event_id: newRunningEventId,
@@ -247,19 +225,14 @@ class Event {
                         await redisClient.setex(`lastevent:${a_asset_id}`, 300, redisValue);
                     }
 
-                    console.log("🔹 Inserted first running event for asset:", a_asset_id);
-                } else if (statusMachine === 'RUNNING' && lastEvent.status !== 'RUNNING') {
+                } else if (statusEvent === 'RUNNING' && lastEvent.status !== 'RUNNING') {
                     const nowRunning = DateTime.now().setZone('Asia/Jakarta');
                     //Tutup event status DOWNTIME
                     const closeEventDowntimeQuery = `
                                 UPDATE a_asset_event 
-                                SET 
-                                    endtime = $1,
-                                    duration = EXTRACT(EPOCH FROM ($1::timestamp - starttime))
-                                WHERE status <> 'RUNNING' 
-                                    AND a_asset_event_id = $2 
-                                    AND a_asset_id = $3 RETURNING endtime
-                            `;
+                                SET endtime = $1, duration = EXTRACT(EPOCH FROM ($1::timestamp - starttime))
+                                WHERE status <> 'RUNNING' AND a_asset_event_id = $2 AND a_asset_id = $3 RETURNING endtime`;
+
                     const { rows: closeEventDowntime } = await dbClient.query(closeEventDowntimeQuery, [nowRunning.toJSDate(), lastEvent.a_asset_event_id, a_asset_id]);
                     if (closeEventDowntime.length > 0) {
                         const lastEvenDowntimeTime = closeEventDowntime[0].endtime;
@@ -268,17 +241,13 @@ class Event {
 
                         const insertRunningQuery = `
                                     INSERT INTO a_asset_event (
-                                        a_asset_event_id, a_asset_id, 
-                                        starttime, status, reason, code
-                                    )
-                                    VALUES ($1, $2, $3, $4, $5, $6) RETURNING a_asset_event_id
-                                    `;
-                        const { rows: insertEventRunning } = await dbClient.query(insertRunningQuery, [newEventId, a_asset_id, nowRunning.toJSDate(), statusMachine, reasons, codeEvent]);
+                                        a_asset_event_id, a_asset_id, starttime, status, reason, code
+                                    ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING a_asset_event_id`;
+
+                        const { rows: insertEventRunning } = await dbClient.query(insertRunningQuery, [newEventId, a_asset_id, nowRunning.toJSDate(), statusEvent, reasons, codeEvent]);
 
                         if (insertEventRunning.length > 0) {
                             const newEventId = insertEventRunning[0].a_asset_event_id;
-                            console.log('this newEventID LOGIC 2:', newEventId);
-
                             const redisValue = JSON.stringify({
                                 a_asset_event_id: newEventId,
                                 starttime: DateTime.fromJSDate(new Date(lastEvenDowntimeTime))
@@ -288,36 +257,55 @@ class Event {
                             });
                             await redisClient.setex(`lastevent:${a_asset_id}`, 300, redisValue);
                         }
+
                     }
                 }
             }
 
             //Record to a_asset_log
             const now = DateTime.now().setZone('Asia/Jakarta');
-            const newLogId = await this.getNextId(dbClient, 1001041); //log id
-            const logQuery = `INSERT INTO a_asset_log (
-                    ad_client_id, ad_org_id,
-                    a_asset_log_id, a_asset_id, datetrx,
-                    created, createdby, updated, updatedby,
-                    cycletime, logtype
-                    ) VALUES 
-                    ($1, $2, 
-                    $3, $4, $5, $6,
-                    $7, $8, $9, $10,
-                    $11)`;
-            await dbClient.query(logQuery, [
-                1000003, 1000003,
-                newLogId, a_asset_id, now.toJSDate(),
-                now.toJSDate(), 100, now.toJSDate(), 100,
-                60, 'I'
-            ]);
+            const heater = 1;
+            const pump = 1;
+
+            const assetOnEvent = `
+                SELECT jo.cust_joborder_id, jo.m_product_id 
+                FROM cust_joborder jo
+                WHERE a_asset_id = $1 AND iscurrent = 'Y'`;
+
+            const { rows: assetOnEventRows } = await dbClient.query(assetOnEvent, [a_asset_id]);
+
+            const logInsertQuery = `
+                    INSERT INTO a_asset_log (
+                    ad_client_id, ad_org_id, a_asset_log_id, a_asset_id, datetrx,
+                    created, createdby, updated, updatedby, cycletime, logtype,
+                    heater, pump, cust_joborder_id, m_product_id
+                    ) VALUES ($1, $2, $3, $4, $5, 
+                    $6,$7, $8, $9, $10, $11,
+                    $12, $13, $14, $15)`;
+
+            for (const asset of assetOnEventRows) {
+                const newLogId = await this.getNextId(dbClient, 1001041); //log id
+
+                await dbClient.query(logInsertQuery, [
+                    1000003, 1000003,
+                    newLogId, a_asset_id, now.toJSDate(),
+                    now.toJSDate(), 100, now.toJSDate(), 100,
+                    cycletime, 'CT',
+                    heater, pump,
+                    asset.cust_joborder_id, asset.m_product_id
+                ]);
+            }
 
             //Update LastInject 
-            const updateLastInjectTimeQuery = `UPDATE a_asset SET lastinject = $1, status = $2 WHERE a_asset_id = $3 RETURNING lastinject`;
-            const { rows: updateLastInjectTimeRows } = await dbClient.query(updateLastInjectTimeQuery, [now.toJSDate(), statusMachine, a_asset_id]);
+            const updateLastInjectTimeQuery = `
+                    UPDATE a_asset 
+                    SET lastinject = $1, status = $2 
+                    WHERE a_asset_id = $3 RETURNING lastinject`;
+
+            const { rows: updateLastInjectTimeRows } = await dbClient.query(updateLastInjectTimeQuery, [now.toJSDate(), codeEvent, a_asset_id]);
+
             if (updateLastInjectTimeRows.length > 0 && updateLastInjectTimeRows[0].lastinject) {
                 const updateLastInjectTime = updateLastInjectTimeRows[0].lastinject;
-                console.log('Updated Last Running Time:', updateLastInjectTime);
                 await redisClient.setex(`lastinjecttime:${a_asset_id}`, 300, updateLastInjectTime);
             } else {
                 console.error(`❌ Error: Tidak bisa update lastrunningtime untuk asset ${a_asset_id}`);
@@ -325,7 +313,10 @@ class Event {
 
             await dbClient.query('COMMIT');
 
-            return { success: true, message: `Log inserted with status: ${statusMachine}`, timeDiff };
+            server.io.emit('refreshFetchData', { status: true, message: "Inject from sensor" });
+
+
+            return { success: true, message: `Log inserted with status: ${statusEvent}`, timeDiff };
         } catch (error) {
             if (dbClient) {
                 await dbClient.query('ROLLBACK');
@@ -491,9 +482,9 @@ class Event {
                 return { success: false, message: `Asset ${a_asset_id} tidak ditemukan` };
             }
 
-            const statusMachine = rows[0].status;
+            const statusEvent = rows[0].status;
 
-            if (statusMachine !== 'Downtime') {
+            if (statusEvent !== 'Downtime') {
                 return { success: false, message: `Asset ${a_asset_id} tidak sedang dalam status Downtime` };
             }
 

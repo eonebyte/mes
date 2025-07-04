@@ -430,7 +430,6 @@ class Plan {
 
                 const productionHistories = row.cust_joborder_id ? await this.getProductions(server, parseInt(row.cust_joborder_id)) : [];
 
-
                 return {
                     no: index + 1,
                     planId: row.cust_joborder_id,
@@ -465,7 +464,14 @@ class Plan {
                 }
             }));
 
-            return { resourceId: resourceId, job_orders: jobOrders };
+            return {
+                resourceId,
+                lineno: jobOrders[0]?.lineno || null,
+                moldName: jobOrders[0]?.moldName || null,
+                mcno: jobOrders[0]?.mcno || null,
+                job_orders: jobOrders
+            };
+
         } catch (error) {
             throw new Error(`Failed to fetch active job orders: ${error}`);
         } finally {
@@ -945,7 +951,7 @@ class Plan {
         }
     }
 
-    async updateJOStatusProgress(server, planId, confirmStatus) {
+    async openJO(server, planId, confirmStatus) {
         let dbClient;
         const errors = [];
 
@@ -1298,195 +1304,61 @@ class Plan {
 
         return result.rows[0] || null;
     }
-    
 
-    async startPlan(request, server, planId, resourceId) {
-        // const user = request.session.get('user');
 
-        // const agent = new https.Agent({ rejectUnauthorized: false });
+    async startPlan(server, planId, resourceId) {
+        if (!planId || !resourceId) {
+            return {
+                success: false,
+                messages: ['ID Rencana (planId) dan ID Sumber Daya (resourceId) wajib diisi.']
+            };
+        }
+
         let dbClient;
 
         try {
             dbClient = await server.pg.connect();
             await dbClient.query('BEGIN');
 
-            const errors = [];
-
-            // Ambil mold_id dari cust_joborder
-            const joResult = await dbClient.query(`
-                SELECT mold_id
-                FROM cust_joborder
+            // update jo
+            const updateJoQuery = `
+                UPDATE cust_joborder 
+                SET iscurrent = 'Y', a_asset_id = $2 
                 WHERE cust_joborder_id = $1
-            `, [planId]);
-
-            const moldPlan = parseInt(joResult.rows[0]?.mold_id);
-
-            // Ambil mold_id dari a_asset
-            const assetResult = await dbClient.query(`
-                SELECT mold_id, status 
-                FROM a_asset 
-                WHERE a_asset_id = $1
-            `, [resourceId]);
-            const moldResource = parseInt(assetResult.rows[0]?.mold_id);
-
-            // Validasi mold
-            if (isNaN(moldPlan)) {
-                errors.push('Mold pada job order belum diatur');
-            }
-            if (isNaN(moldResource)) {
-                errors.push('Mold pada mesin belum diatur');
-            }
-
-            if (!isNaN(moldPlan) && !isNaN(moldResource) && moldPlan !== moldResource) {
-                errors.push('Mold job order tidak sesuai dengan mold pada mesin');
-            }
-
-
-            if (errors.length > 0) {
-                await dbClient.query('ROLLBACK');
-                return {
-                    success: false,
-                    messages: errors,
-                };
-            }
-
-            const createEventResult = await this.createEvent(
-                dbClient,
-                resourceId,
-                'RUN',
-                'START JOB ORDER',
-            );
-
-            if (!createEventResult) {
-                await dbClient.query('ROLLBACK');
-                return { success: false, messages: ['Gagal membuat event untuk mesin.'] };
-            }
-
-            // 1. Update status mesin ke RUNNING
-            const updateAssetStatus = `
-                UPDATE a_asset 
-                SET status = 'RUN' 
-                WHERE a_asset_id = $1
+                RETURNING cust_joborder_id
             `;
-            const resultAsset = await dbClient.query(updateAssetStatus, [resourceId]);
 
-            if (resultAsset.rowCount === 0) {
-                await dbClient.query('ROLLBACK');
-                return { success: false, messages: ['Mesin tidak ditemukan berdasarkan ID.'] };
-            }
-
-            const jobOrderQuery = `
-                    SELECT jo.iscurrent, jo.bom_id, jo.iscurrent, jo.ad_client_id, jo.ad_org_id, jo.createdby, jo.documentno, 
-                        aa.value as rcode, jo.qtyplanned, jo.description, jo.m_product_id, jo.datedoc, mp.m_locator_id
-                    FROM cust_joborder jo
-                    JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
-                    JOIN m_product mp on jo.m_product_id = mp.m_product_id
-                    WHERE jo.cust_joborder_id = $1
-                `;
-            const resultJO = await dbClient.query(jobOrderQuery, [planId]);
-
-            if (resultJO.rowCount === 0) {
-                await dbClient.query('ROLLBACK');
-                return { success: false, messages: ['Data job order tidak ditemukan.'] };
-            }
-
-            const jo = resultJO.rows[0];
-
-            // const bomId = Number(jo.bom_id);
-            // let bomComponent;
-            // try {
-            //     bomComponent = await this.getBOMComponent(server, bomId);
-            // } catch (err) {
-            //     await dbClient.query('ROLLBACK');
-            //     return { success: false, messages: ['Gagal mengambil komponen BOM.', err.message] };
-            // }
-
-            // if (jo.iscurrent === 'N') {
-            //     try {
-            //         // const productionCreate = await server.productionsService.create(server, productionData);
-            //         const response = await axios.post(
-            //             'https://192.168.3.6:8443/api/v1/models/m_production', // ID 109 = CompleteProduction
-            //             {
-            //                 "name": `Production for JO ${jo.documentno} at resource ${jo.rcode}`,
-            //                 "Cust_JobOrder_ID": {
-            //                     "id": parseInt(planId), //Injection Produksi
-            //                     "tableName": "Cust_JobOrder"
-            //                 },
-            //                 "M_Locator_ID": {
-            //                     "id": parseInt(jo.m_locator_id), //locator on product
-            //                     "tableName": "M_Locator"
-            //                 },
-            //                 "M_Product_ID": {
-            //                     "id": parseInt(jo.m_product_id),
-            //                     "tableName": "M_Product"
-            //                 },
-            //                 "productionQty": 0,
-            //             },
-            //             {
-            //                 headers: {
-            //                     Authorization: `Bearer ${user.token}`,
-            //                     'Content-Type': 'application/json'
-            //                 },
-            //                 httpsAgent: agent
-            //             },
-            //         );
-
-
-            //         if (response.status === 201) {
-            //             const queryUpdateIsCurrentOnly = `
-            //                 UPDATE cust_joborder
-            //                 SET iscurrent = 'Y'
-            //                 WHERE cust_joborder_id = $1 AND a_asset_id = $2
-            //             `;
-
-            //             const row = await dbClient.query(queryUpdateIsCurrentOnly, [planId, resourceId]);
-
-            //             if (row.rowCount === 0) {
-            //                 await dbClient.query('ROLLBACK');
-            //                 return {
-            //                     success: false,
-            //                     messages: ['Job order tidak ditemukan untuk mesin tersebut.'],
-            //                 };
-            //             }
-            //         }
-            //     } catch (err) {
-            //         await dbClient.query('ROLLBACK');
-            //         return { success: false, messages: ['Gagal membuat data produksi.', err.message] };
-            //     }
-
-            // }
-
-            const queryUpdateIsCurrentOnly = `
-                            UPDATE cust_joborder
-                            SET iscurrent = 'Y'
-                            WHERE cust_joborder_id = $1 AND a_asset_id = $2
-                        `;
-
-            const row = await dbClient.query(queryUpdateIsCurrentOnly, [planId, resourceId]);
-
-            if (row.rowCount === 0) {
+            const { rows: updateJo } = await dbClient.query(updateJoQuery, [planId, resourceId]);
+            if (updateJo.length === 0) {
                 await dbClient.query('ROLLBACK');
                 return {
                     success: false,
-                    messages: ['Job order tidak ditemukan untuk mesin tersebut.'],
+                    messages: [`Tidak ada perubahan dilakukan pada JO ini.`]
                 };
             }
 
             await dbClient.query('COMMIT');
 
-            return { success: true, messages: ['Job order berhasil dimulai.'] };
+            return {
+                success: true,
+                messages: ['Job order berhasil dimulai.']
+            };
 
         } catch (error) {
             if (dbClient) await dbClient.query('ROLLBACK');
-            console.error('Error in jobOrderStart:', error);
+
+            console.error('startPlan error:', error);
+
             return {
                 success: false,
                 messages: ['Terjadi kesalahan saat memulai job order.', error.message]
             };
+
         } finally {
             if (dbClient) dbClient.release();
         }
     }
+
 
     async startMultiPlan(request, server, planIdArray, resourceId) {
         const user = request.session.get('user');

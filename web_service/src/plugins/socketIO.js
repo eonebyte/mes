@@ -5,10 +5,9 @@ async function socketIoService(fastify) {
   const io = new Server(fastify.server, {
     cors: { origin: "*", methods: ["GET", "POST"] }, // Allow all origins and methods
   });
+  fastify.io = io;
 
   io.on("connection", (socket) => {
-
-
     socket.on("refreshServer", async (data) => {
       console.log('Menerima request refresh dari frontend, data:', data);
       console.log('server:', fastify);

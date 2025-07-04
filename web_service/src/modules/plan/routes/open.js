@@ -11,7 +11,7 @@ export default async (server, opts) => {
             }
 
             // Panggil service yang kamu buat
-            const result = await server.plan.updateJOStatusProgress(server, planId, status);
+            const result = await server.plan.openJO(server, planId, status);
 
             if (!result.success) {
                 // Kalau error karena BOM null, berikan 400

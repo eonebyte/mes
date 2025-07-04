@@ -1,7 +1,7 @@
 import { Alert, Button, Card, Col, Empty, Flex, Row, Spin, Typography } from "antd";
 import { MoreOutlined } from "@ant-design/icons";
 import SettingsIcon from '@mui/icons-material/Settings';
-import DoneIcon from '@mui/icons-material/Done';
+// import DoneIcon from '@mui/icons-material/Done';
 // import TableChartIcon from '@mui/icons-material/TableChart';
 import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
 import GppBadIcon from '@mui/icons-material/GppBad';
@@ -15,20 +15,18 @@ import { useEffect, useMemo, useState } from "react";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 // import ChangeCavity from "../../../components/Buttons/ChangeCavity";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchMovementLines, fetchPlanActive, fetchProductionDefects, fetchResourceById } from "../../../data/fetchs";
-import ConfirmStartActive from "../../../components/Buttons/ConfirmStartActive";
+import { fetchPlanActive, fetchProductionDefects, fetchResourceById } from "../../../data/fetchs";
+// import ConfirmStartActive from "../../../components/Buttons/ConfirmStartActive";
 import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
 import { refreshResources } from "../../../states/reducers/resourceSlice";
-import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
-import ConfirmMaterialNew from "../../../components/Buttons/ConfirmMaterialNew";
+// import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 // import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import InputDefect from "../../../components/Buttons/InputDefect";
 import TaskOutlinedIcon from '@mui/icons-material/TaskOutlined';
 import InputOutput from "../../../components/Buttons/InputOutput";
 import NotListedLocationIcon from '@mui/icons-material/NotListedLocation';
 import InputLost from "../../../components/Buttons/InputLost";
-import ConfirmHold from "../../../components/Buttons/ConfirmHold";
-import WarehouseIcon from '@mui/icons-material/Warehouse';
+// import ConfirmHold from "../../../components/Buttons/ConfirmHold";
 
 
 
@@ -41,10 +39,9 @@ function ActiveResource() {
     const [openOutputModal, setOpenOutputModal] = useState(false);
     const [openInputDefectModal, setOpenInputDefectModal] = useState(false);
     const [openCompleteModal, setOpenCompleteModal] = useState(false);
-    const [openHoldModal, setOpenHoldModal] = useState(false);
+    // const [openHoldModal, setOpenHoldModal] = useState(false);
     const [openInputLostModal, setOpenInputLostModal] = useState(false);
 
-    const [openMaterialModal, setOpenMaterialModal] = useState(false);
     const user = useSelector((state) => state.auth.user);
 
     const [searchParams] = useSearchParams();
@@ -59,13 +56,8 @@ function ActiveResource() {
     const [lostQty, setLostQty] = useState(0);
     const [lastProductionOutput, setLastProductionOutput] = useState(0);  // Tambah state baru
 
-
     const [loading, setLoading] = useState(true);
     const [productionDefects, setProductionDefects] = useState([]);
-
-
-    const [singlePlanMovementLines, setSinglePlanMovementLines] = useState({});
-
 
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -90,8 +82,6 @@ function ActiveResource() {
                     totalDefectQty = fetchedProductionDefects.reduce((sum, defect) => parseInt(sum) + parseInt(defect.qty), 0);
                 }
                 setDefectQty(totalDefectQty);
-                const movementLines = await fetchMovementLines(fetchedPlan.planId);
-                setSinglePlanMovementLines(movementLines);
                 setPlan(fetchedPlan);
 
                 let totalOutputQty = 0;
@@ -140,6 +130,8 @@ function ActiveResource() {
     const toGoQty = useMemo(() => plan ? plan.qty - outputQty : 0, [plan, outputQty]);
     const goodQty = useMemo(() => outputQty ? outputQty - (defectQty + lostQty) : 0, [outputQty, defectQty, lostQty]);
 
+    console.log('this plan :', plan);
+
     return (
         <ResourceLayout>
             {loading ?
@@ -161,7 +153,11 @@ function ActiveResource() {
                 :
                 (
                     <>
-                        {plan.length === 1 && plan ?
+                        {!plan || !Array.isArray(plan.job_orders) || plan.job_orders.length === 0 ?
+                            <Empty
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description={<Typography.Text>No active plan</Typography.Text>}
+                            /> :
                             <>
                                 {/* BODY CONTENT */}
                                 <Card
@@ -225,7 +221,7 @@ function ActiveResource() {
                                                 onSuccess={handleSuccessOnActive}
                                                 resourceId={plan.resourceId}
                                             />
-                                            {plan.resourceStatus !== 'RR' && (
+                                            {/* {plan.resourceStatus !== 'RR' && (
                                                 <Button
                                                     color="primary"
                                                     variant="text"
@@ -247,8 +243,8 @@ function ActiveResource() {
                                                     <PowerSettingsNewIcon sx={{ fontSize: 18 }} />
                                                     <span>START</span>
                                                 </Button>
-                                            )}
-                                            <Button
+                                            )} */}
+                                            {/* <Button
                                                 color="primary"
                                                 variant="text"
                                                 style={{
@@ -287,7 +283,7 @@ function ActiveResource() {
                                             >
                                                 <DoneIcon sx={{ fontSize: 18 }} />
                                                 <span>COMPLETE</span>
-                                            </Button>
+                                            </Button> */}
                                             <ConfirmComplete
                                                 planId={parseInt(plan.planId)}
                                                 resourceId={parseInt(plan.resourceId)}
@@ -300,77 +296,62 @@ function ActiveResource() {
                                                 togoQty={parseInt(toGoQty)}
                                                 outputQty={parseInt(outputQty)}
                                             />
-
-                                            <Button
-                                                color="primary"
-                                                variant="text"
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontFamily: "'Roboto', Arial, sans-serif",
-                                                    fontSize: "12px",
-                                                    padding: "4px 12px",
-                                                }}
-                                                onClick={() => setOpenMaterialModal(true)}
-                                            >
-                                                <WarehouseIcon sx={{ fontSize: 18 }} />
-                                                <span>MATERIAL</span>
-                                            </Button>
-                                            {openMaterialModal && (
-                                                <ConfirmMaterialNew
-                                                    movementLines={singlePlanMovementLines}
-                                                    open={openMaterialModal}
-                                                    onClose={() => setOpenMaterialModal(false)}
-                                                />
-                                            )}
                                         </Col>
                                     </Row>
-                                    <Row gutter={[16]}>
-                                        <Col lg={7} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                                            <div>JO No.</div>
-                                            <div style={{ marginBottom: 10 }}><strong>{plan.planNo}</strong></div>
-                                            <div>Part No.</div>
-                                            <div style={{ marginBottom: 10 }}><strong>{plan.partNo}</strong></div>
-                                            <div>Order No.</div>
-                                            <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                        </Col>
-                                        <Col lg={4}>
-                                            <div>ToGo Qty</div>
-                                            <div style={{ marginBottom: 10 }}><strong>{plan.togoqty ? plan.togoqty : toGoQty}</strong></div>
-                                            <div>Production Qty</div>
-                                            <div style={{ marginBottom: 10 }}><strong>{outputQty}</strong></div>
-                                            <div>CT <small>(s)</small></div>
-                                            <div style={{ marginBottom: 10 }}><strong>{plan.cycletime}</strong></div>
-                                        </Col>
 
-                                        <Col lg={4}>
-                                            <div>Good Qty</div>
-                                            <div style={{ marginBottom: 10 }}><strong>{goodQty}</strong></div>
-                                            <div>Defect Qty</div>
-                                            <div style={{ marginBottom: 10 }}><strong>{defectQty}</strong></div>
-                                            <div>Lost Qty</div>
-                                            <div style={{ marginBottom: 10 }}><strong>{lostQty}</strong></div>
-                                        </Col>
-                                        <Col lg={9}>
-
-                                            <Flex align="flex-start" justify="space-between">
-                                                <div>
-                                                    <div>Part Desc</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>{plan.part_desc ? plan.part_desc : '-'}</strong></div>
-                                                    <div>Cavity</div>
-                                                    <div style={{ marginBottom: 10 }}><strong>{plan.cavity}</strong></div>
-                                                    <div>Part Drawing #</div>
+                                    {/* Body Row */}
+                                    {plan.job_orders.map((plan) => (
+                                        <>
+                                            <Row gutter={[16]}>
+                                                <Col lg={7} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+                                                    <div>JO No.</div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{plan.planNo}</strong></div>
+                                                    <div>Part No.</div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{plan.partNo}</strong></div>
+                                                    <div>Order No.</div>
                                                     <div style={{ marginBottom: 10 }}><strong>-</strong></div>
-                                                </div>
-                                                {resource ? (
-                                                    <RemainingPlanDetail planQty={plan.qty} toGoQty={plan.qty - outputQty} outputQty={outputQty} CT={parseInt(plan.cycletime)} />
-                                                ) : (
-                                                    <p>No resource found</p>
-                                                )}
-                                            </Flex>
-                                        </Col>
-                                    </Row>
+                                                </Col>
+                                                <Col lg={4}>
+                                                    <div>ToGo Qty</div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{plan.togoqty ? plan.togoqty : toGoQty}</strong></div>
+                                                    <div>Production Qty</div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{outputQty}</strong></div>
+                                                    <div>CT <small>(s)</small></div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{plan.cycletime}</strong></div>
+                                                </Col>
 
-                                    {/* Row 2 */}
+                                                <Col lg={4}>
+                                                    <div>Good Qty</div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{goodQty}</strong></div>
+                                                    <div>Defect Qty</div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{defectQty}</strong></div>
+                                                    <div>Lost Qty</div>
+                                                    <div style={{ marginBottom: 10 }}><strong>{lostQty}</strong></div>
+                                                </Col>
+                                                <Col lg={9}>
+
+                                                    <Flex align="flex-start" justify="space-between">
+                                                        <div>
+                                                            <div>Part Desc</div>
+                                                            <div style={{ marginBottom: 10 }}><strong>{plan.part_desc ? plan.part_desc : '-'}</strong></div>
+                                                            <div>Cavity</div>
+                                                            <div style={{ marginBottom: 10 }}><strong>{plan.cavity}</strong></div>
+                                                            <div>Part Drawing #</div>
+                                                            <div style={{ marginBottom: 10 }}><strong>-</strong></div>
+                                                        </div>
+                                                        {resource ? (
+                                                            <RemainingPlanDetail planQty={plan.qty} toGoQty={plan.qty - outputQty} outputQty={outputQty} CT={parseInt(plan.cycletime)} />
+                                                        ) : (
+                                                            <p>No resource found</p>
+                                                        )}
+                                                    </Flex>
+                                                </Col>
+                                            </Row>
+                                        </>
+                                    ))}
+
+
+                                    {/* Button Row */}
                                     <Row>
                                         <Col lg={24} style={{ padding: 0 }}>
                                             <Button
@@ -510,11 +491,7 @@ function ActiveResource() {
                                     </Row>
                                 </Card>
                             </>
-                            :
-                            <Empty
-                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                description={<Typography.Text>No active plan</Typography.Text>}
-                            />}
+                        }
 
                     </>
                 )

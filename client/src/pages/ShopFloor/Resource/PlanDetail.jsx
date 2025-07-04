@@ -15,7 +15,7 @@ import ConfirmStart from "../../../components/Buttons/ConfirmStart";
 import ConfirmReady from "../../../components/Buttons/ConfirmReady";
 import ConfirmSetup from "../../../components/Buttons/ConfirmSetup";
 import RemainingPlanDetail from "../../../components/ShopFloors/Plan/RemainingPlanDetail";
-import { fetchDetailPlan, fetchMovementLines } from "../../../data/fetchs";
+import { fetchDetailPlan } from "../../../data/fetchs";
 // import ConfirmComplete from "../../../components/Buttons/ConfirmComplete";
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import { refreshResources } from "../../../states/reducers/resourceSlice";
@@ -28,10 +28,7 @@ import ConfirmStartMultiPlan from "../../../components/Buttons/ConfirmStartMulti
 // import ChangeCavity from "../../../components/Buttons/ChangeCavity";
 function PlanDetail() {
     const dispatch = useDispatch();
-    // const user = useSelector((state) => state.auth.user);
     const [openMaterialModal, setOpenMaterialModal] = useState(false);
-    // const [openCavityModal, setOpenCavityModal] = useState(false);
-    // const [openCompleteModal, setOpenCompleteModal] = useState(false);
 
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -52,7 +49,6 @@ function PlanDetail() {
 
     const [loading, setLoading] = useState(true);
     const [singlePlan, setSinglePlan] = useState({});
-    const [singlePlanMovementLines, setSinglePlanMovementLines] = useState({});
     const [multiplePlan, setMultiplePlan] = useState({});
 
     // const [isModalVisible, setIsModalVisible] = useState(false);
@@ -64,8 +60,6 @@ function PlanDetail() {
 
             if (planId) {
                 singlePlanData = await fetchDetailPlan(planId, null);
-                const movementLines = await fetchMovementLines(planId);
-                setSinglePlanMovementLines(movementLines);
             } else {
                 multiplePlanData = await fetchDetailPlan(null, moldId);
             }
@@ -129,7 +123,7 @@ function PlanDetail() {
         return isDarkMode ? '#ffffff' : '#1677FF'; // Teks putih jika mode gelap, hitam jika terang
     }
 
-    
+
 
     return (
         <LayoutDashboard>
@@ -324,27 +318,6 @@ function PlanDetail() {
                                                     <span>COMPLETE JO</span>
                                                 </Button>
                                             )}
-                                            <Button
-                                                color="primary"
-                                                variant="text"
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontFamily: "'Roboto', Arial, sans-serif",
-                                                    fontSize: "12px",
-                                                    padding: "4px 12px",
-                                                }}
-                                                onClick={() => setOpenMaterialModal(true)}
-                                            >
-                                                <WarehouseIcon sx={{ fontSize: 18 }} />
-                                                <span>MATERIAL</span>
-                                            </Button>
-                                            {openMaterialModal && (
-                                                <ConfirmMaterialNew
-                                                    movementLines={singlePlanMovementLines}
-                                                    open={openMaterialModal}
-                                                    onClose={() => setOpenMaterialModal(false)}
-                                                />
-                                            )}
                                         </Col>
                                     </Row>
 
@@ -413,97 +386,6 @@ function PlanDetail() {
                                     {/* Row 2 */}
                                     <Row>
                                         <Col lg={24} style={{ padding: 0 }}>
-                                            {/* <Button
-                                                color="primary"
-                                                variant="text"
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontFamily: "'Roboto', Arial, sans-serif",
-                                                    fontSize: "12px",
-                                                    padding: "4px 12px",
-                                                }}
-                                                onClick={() => setOpenCavityModal(true)}
-                                            >
-                                                <GroupWorkIcon sx={{ fontSize: 18 }} />
-                                                <span>CAVITY</span>
-                                            </Button>
-                                            {openCavityModal && (
-                                                <ChangeCavity
-                                                    moldId={singlePlan.moldId}
-                                                    open={openCavityModal}
-                                                    onClose={() => setOpenCavityModal(false)}
-                                                    onSuccess={handleSuccess}
-                                                    userId={parseInt(user.id)}
-                                                    currentCavity={singlePlan.cavity}
-                                                />
-                                            )}
-
-                                            <Button
-                                                color="primary"
-                                                variant="text"
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontFamily: "'Roboto', Arial, sans-serif",
-                                                    fontSize: "12px",
-                                                    padding: "4px 12px",
-                                                }}
-                                            >
-                                                <GppBadIcon sx={{ fontSize: 18 }} />
-                                                <span>DEFECT</span>
-                                            </Button>
-                                            <Button
-                                                color="primary"
-                                                variant="text"
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontFamily: "'Roboto', Arial, sans-serif",
-                                                    fontSize: "12px",
-                                                    padding: "4px 12px",
-                                                }}
-                                            >
-                                                <DatasetIcon sx={{ fontSize: 16 }} />
-                                                <span>LOT</span>
-                                            </Button>
-                                            <Button
-                                                color="primary"
-                                                variant="text"
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontFamily: "'Roboto', Arial, sans-serif",
-                                                    fontSize: "12px",
-                                                    padding: "4px 12px",
-                                                }}
-                                            >
-                                                <ScienceIcon sx={{ fontSize: 16 }} />
-                                                <span>FAI</span>
-                                            </Button>
-                                            <Button
-                                                color="primary"
-                                                variant="text"
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontFamily: "'Roboto', Arial, sans-serif",
-                                                    fontSize: "12px",
-                                                    padding: "4px 12px",
-                                                }}
-                                            >
-                                                <PolicyIcon sx={{ fontSize: 16 }} />
-                                                <span>PQC</span>
-                                            </Button>
-                                            <Button
-                                                color="primary"
-                                                variant="text"
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontFamily: "'Roboto', Arial, sans-serif",
-                                                    fontSize: "12px",
-                                                    padding: "4px 12px",
-                                                }}
-                                            >
-                                                <CloudUploadIcon sx={{ fontSize: 16 }} />
-                                                <span>PARAMETER</span>
-                                            </Button> */}
-
                                             {/* STATION */}
                                             <h1 style={{ marginTop: 0 }}>Station</h1>
                                             <Card
@@ -810,7 +692,7 @@ function PlanDetail() {
                                                     </Flex>
                                                 </Col>
                                             </Row>
-                                            </React.Fragment>
+                                        </React.Fragment>
                                     ))}
 
 

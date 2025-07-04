@@ -16,31 +16,8 @@ import { fetchResourceById } from "../../../data/fetchs";
 import { setResourceStore } from "../../../states/reducers/resourceSlice";
 const { Sider, Content } = Layout;
 
-// const downtimeCategories = [
-//     { category: "RUNNING", code: "RR", color: "#52c41a", label: "RUNNING", textColor: "#000000" },           // abu, teks putih
-//     { category: "IDLE", code: "R", color: "#8c8c8c", label: "IDLE", textColor: "#ffffff" },           // abu, teks putih
-//     { category: "OFF", code: "R0", color: "#000", label: "OFF", textColor: "#fff" },        // putih, teks hitam
-//     { category: "DANDORI & PREPARE", code: "R1", color: "#1677ff", label: "DANDORI & PREPARE", textColor: "#000000" }, // kuning, teks hitam
-//     { category: "BACKUP MESIN LAIN", code: "R2", color: "#cf1322", label: "BACKUP MESIN LAIN", textColor: "#ffffff" }, // abu terang
-//     { category: "TROUBLE MESIN", code: "R3", color: "#f5222d", label: "TROUBLE MESIN", textColor: "#fff" }, // merah, teks putih
-//     { category: "TROUBLE MOLD", code: "R4", color: "#f5222d", label: "TROUBLE MOLD", textColor: "#fff" },
-//     { category: "MATERIAL", code: "R5", color: "#fa8c16", label: "MATERIAL", textColor: "#000000" },
-//     { category: "NO LOADING", code: "R6", color: "#f5222d", label: "NO LOADING", textColor: "#ffffff" },
-//     { category: "PACKING", code: "R7", color: "#91caff", label: "PACKING", textColor: "#000000" }, // biru, teks putih
-//     { category: "TROUBLE SHOOTING", code: "R8", color: "#ffbb96", label: "TROUBLE SHOOTING", textColor: "#000000" },
-//     { category: "ISTIRAHAT", code: "R9", color: "#eb2f96", label: "ISTIRAHAT", textColor: "#fff" },
-//     { category: "WAITING", code: "WAIT", color: "#faad14", label: "WAITING", textColor: "#000000" },
-// ];
-
 const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3080';
 const prefix = '/api/v1';
-
-// const getResourceDisplayInfo = (downs, status) => {
-//     const match = downtimeCategories.find(item => item.code === status);
-//     return match ? { color: match.color, label: match.label, textColor: match.textColor } : { color: "#fff", label: "" };
-// };
-
-
 
 const ResourceLayout = ({ children }) => {
     const dispatch = useDispatch();
@@ -56,15 +33,12 @@ const ResourceLayout = ({ children }) => {
 
     const fetchDownCategories = async () => {
         try {
-            const res = await fetch(`${backendUrl}${prefix}/down/categories`);
+            const res = await fetch(`${backendUrl}${prefix}/event/categories`);
 
             const response = await res.json();
 
-            console.log("Response from server:", response);
-
             if (Array.isArray(response.data)) {
                 setDowntimeCategories(response.data);
-                console.log("Set buttons with data:", response.data);
             } else {
                 console.warn("Unexpected data format:", response);
             }
@@ -73,8 +47,6 @@ const ResourceLayout = ({ children }) => {
             console.error("Failed to fetch down categories data:", error);
         }
     };
-
-
 
     const navigate = useNavigate();
     const location = useLocation();

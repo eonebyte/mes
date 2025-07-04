@@ -14,7 +14,7 @@ function setupSocketListeners(store) {
 
     socket.on("refreshFetchData", (data = {}) => {
         console.log("Socket received data:", data);
-        if (data.status) {
+        if (data) {
             notification.info({
                 message: 'Data Updated',
                 description: data.message || 'Received real-time update from server',
@@ -22,7 +22,7 @@ function setupSocketListeners(store) {
 
             // Dispatch Redux action, if you want to update global state
             store?.dispatch({ type: 'DATA_SHOULD_REFRESH' });
-        }
+        }   
     });
 
     socket.hasListeners = true;
