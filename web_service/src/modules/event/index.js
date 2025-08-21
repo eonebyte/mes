@@ -1,7 +1,9 @@
 import fp from 'fastify-plugin'
 import autoload from '@fastify/autoload'
 import { join } from 'desm'
-import { DateTime } from 'luxon';
+import { DateTime, Duration } from 'luxon';
+import oracleConnection from "../../configs/oracle.connection.js";
+
 
 class Event {
 
@@ -592,6 +594,373 @@ class Event {
             };
         } finally {
             if (dbClient) dbClient.release();
+        }
+    }
+
+    async generateDowntime() {
+        let connection;
+
+        try {
+            connection = await oracleConnection.openConnection();
+
+            const mergeQuery = `
+                MERGE INTO ADW_Downtime T
+                USING (
+				WITH OrderedAssetLogs AS (
+				    SELECT
+				        asl.A_ASSET_LOG_ID,
+				        asl.CUST_JOBORDER_ID,
+				        asl.M_PRODUCT_ID,
+				        asl.A_ASSET_ID,
+				        asl.DATETRX,
+				        asl.CYCLETIME
+				    FROM A_ASSET_LOG asl
+				    WHERE asl.DATETRX BETWEEN SYSDATE - 1 AND SYSDATE
+				      AND asl.LOGTYPE = 'CT'
+				),
+				AssetDowntime AS (
+				    SELECT
+				        o.A_ASSET_LOG_ID,
+				        o.CUST_JOBORDER_ID,
+				        o.M_PRODUCT_ID,
+				        o.A_ASSET_ID,
+				        o.DATETRX AS EndDowntime,
+				        LEAD(o.DATETRX) OVER (
+				            PARTITION BY o.A_ASSET_ID
+				            ORDER BY o.DATETRX DESC
+				        ) AS StartDowntime,
+				        o.CYCLETIME
+				    FROM OrderedAssetLogs o
+				)
+				SELECT
+				    ad.A_ASSET_LOG_ID,
+				    ad.CUST_JOBORDER_ID,
+				    ad.M_PRODUCT_ID,
+				    ad.A_ASSET_ID,
+				    NVL(
+				        ad.StartDowntime,
+				        TRUNC(SYSDATE - 1) + 7.5 / 24
+				    ) AS StartDowntime,
+				    ad.EndDowntime,
+				    ad.CYCLETIME
+				FROM AssetDowntime ad
+				WHERE
+				  ad.CUST_JOBORDER_ID = 0
+				  OR
+				  ad.CYCLETIME > 180
+                ) S
+                ON (T.A_ASSET_LOG_ID = S.A_ASSET_LOG_ID)
+                WHEN NOT MATCHED THEN
+                    INSERT (
+                         ADW_DOWNTIME_ID, AD_Client_ID, AD_Org_ID, Created, CreatedBy, Updated, UpdatedBy,
+                        A_Asset_Log_ID, Cust_JobOrder_ID, M_Product_ID, A_Asset_ID, StartTime, EndTime, Cycletime
+                       )
+                    VALUES (
+                        ADW_DOWNTIME_SEQ.NEXTVAL, 1000000, 1000000, SYSDATE, 100, SYSDATE, 100,
+                        S.A_ASSET_LOG_ID, S.Cust_JobOrder_ID, S.M_Product_ID, S.A_ASSET_ID, S.StartDownTime, S.EndDownTime, S.Cycletime
+                    )
+            `;
+
+            const result = await connection.execute(mergeQuery, [], { autoCommit: true });
+
+            return {
+                success: true,
+                message: `Downtime generation complete. ${result.rowsAffected} new rows inserted.`
+            };
+        } catch (error) {
+            console.error('Error generateDowntime:', error);
+            // Tidak perlu commit/rollback manual, karena autoCommit menangani ini atau error akan mencegah commit.
+            return {
+                success: false,
+                message: 'Gagal generate downtime: ' + error.message
+            };
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (err) {
+                    console.error('Error closing connection:', err);
+                }
+            }
+        }
+    }
+
+    async findEventLog() {
+
+        let connection;
+
+        try {
+            connection = await oracleConnection.openConnection();
+
+            const query = `
+                WITH OrderedAssetLogs AS (
+        SELECT
+            asl.A_ASSET_LOG_ID,
+            asl.ADW_DOWNTIME_ID,
+            asl.DESCRIPTION,
+            cj.DOCUMENTNO,
+            mp.VALUE AS PARTNO,
+            mp.NAME AS PARTNAME,
+            mp.VERSIONNO AS CUSTOMER,
+            asl.A_ASSET_ID,
+            asl.DATETRX,
+            asl.CYCLETIME,
+            ROW_NUMBER() OVER (PARTITION BY asl.A_ASSET_ID ORDER BY asl.DATETRX DESC) AS Row_Num,
+            SYSDATE - 1 AS sdrange,
+            SYSDATE AS edrange
+        FROM
+            A_ASSET_LOG asl
+        JOIN
+        CUST_JOBORDER cj
+            ON asl.CUST_JOBORDER_ID = cj.CUST_JOBORDER_ID
+        JOIN
+            M_PRODUCT mp
+            ON cj.M_PRODUCT_ID = mp.M_PRODUCT_ID
+        WHERE
+            DATETRX BETWEEN SYSDATE - 1 AND SYSDATE
+            AND LOGTYPE = 'CT'
+    ),
+    AssetDowntime AS (
+        SELECT
+            O.A_ASSET_LOG_ID,
+            O.ADW_DOWNTIME_ID,
+            O.DESCRIPTION,
+            O.DOCUMENTNO,
+            O.PARTNO,
+            O.PARTNAME,
+            O.CUSTOMER,
+            O.A_ASSET_ID,
+            O.DATETRX AS EndDowntime,
+            LEAD(O.DATETRX) OVER (PARTITION BY O.A_ASSET_ID ORDER BY O.DATETRX DESC) AS StartDowntime,
+            O.CYCLETIME,
+            O.Row_Num , O.sdrange, O.edrange
+        FROM
+            OrderedAssetLogs O
+    )
+    SELECT
+        AD.A_ASSET_LOG_ID,
+        AD.ADW_DOWNTIME_ID,
+        AD.DESCRIPTION,
+        AD.DOCUMENTNO,
+        AD.PARTNO,
+        AD.PARTNAME,
+        AD.CUSTOMER,
+        AD.A_ASSET_ID,
+        aa.VALUE,
+        aa.LINENO,
+        aa.VERSIONNO,
+        'DOWNTIME' AS TYPE_DATA,
+        TO_CHAR(aa.LASTRUNNINGDATE, 'YYYY-MM-DD HH24:MI:SS') AS LASTRUNNINGDATE,
+        TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') AS CURRENT_TIME,
+        SUBSTR(aa.lineno, 1, INSTR(aa.lineno, '-') - 1) AS LINE,
+        NVL(CASE
+            WHEN
+            	AD.Row_Num = 1 THEN TO_CHAR(AD.EndDowntime, 'YYYY-MM-DD HH24:MI:SS')
+            ELSE
+            	TO_CHAR(AD.StartDowntime, 'YYYY-MM-DD HH24:MI:SS')
+        END,
+        TO_CHAR(TRUNC(SYSDATE - 1) + 7.5/24, 'YYYY-MM-DD HH24:MI:SS')
+        ) AS StartDowntime,
+        CASE
+            WHEN AD.Row_Num = 1 THEN TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+            ELSE TO_CHAR(AD.EndDowntime, 'YYYY-MM-DD HH24:MI:SS')
+        END AS EndDowntime,
+        CASE
+            WHEN AD.Row_Num = 1 THEN
+                (SYSDATE - AD.EndDowntime) * 86400
+            ELSE
+                AD.CYCLETIME
+        END AS CYCLETIME,
+        CASE
+            WHEN AD.Row_Num = 1 THEN  -- Pastikan Downtime_Format terisi untuk Row_Num = 1
+                TRUNC((SYSDATE - AD.EndDowntime) * 86400 / 86400) || 'hari ' ||
+                TRUNC(MOD((SYSDATE - AD.EndDowntime) * 86400, 86400) / 3600) || 'jam ' ||
+                TRUNC(MOD((SYSDATE - AD.EndDowntime) * 86400, 3600) / 60) || 'menit ' ||
+                TRUNC(MOD((SYSDATE - AD.EndDowntime) * 86400, 60)) || 'detik'
+            WHEN AD.CYCLETIME > 300 THEN
+                TRUNC(AD.CYCLETIME / 86400) || 'hari ' ||
+                TRUNC(MOD(AD.CYCLETIME, 86400) / 3600) || 'jam ' ||
+                TRUNC(MOD(AD.CYCLETIME, 3600) / 60) || 'menit ' ||
+                TRUNC(MOD(AD.CYCLETIME, 60)) || 'detik'
+            ELSE NULL
+        END AS Downtime_Format
+    FROM
+        AssetDowntime AD
+    LEFT JOIN
+        A_ASSET aa ON aa.A_ASSET_ID = AD.A_ASSET_ID
+    WHERE
+        aa.A_Asset_Group_ID=1000000
+        AND (AD.CYCLETIME > 300)
+            `;
+
+            const { rows } = await connection.execute(query, [], {
+                outFormat: oracleConnection.instanceOracleDB.OUT_FORMAT_OBJECT,
+            });
+
+            const grouped = {};
+            for (const row of rows) {
+                if (!grouped[row.A_ASSET_ID]) grouped[row.A_ASSET_ID] = [];
+                grouped[row.A_ASSET_ID].push(row);
+            }
+
+            const filledRows = [];
+            const MAX_GAP = 300;
+
+            function formatDuration(seconds) {
+                if (!seconds || isNaN(seconds) || seconds < 0)
+                    return '0hari 0jam 0menit 0detik';
+                const duration = Duration.fromObject({ seconds: Math.floor(seconds) })
+                    .shiftTo('days', 'hours', 'minutes', 'seconds')
+                    .toObject();
+                return `${Math.floor(duration.days || 0)}hari ${Math.floor(duration.hours || 0)}jam ${Math.floor(duration.minutes || 0)}menit ${Math.floor(duration.seconds || 0)}detik`;
+            }
+
+            for (const assetId in grouped) {
+                const list = grouped[assetId];
+                list.sort((a, b) => new Date(a.STARTDOWNTIME) - new Date(b.STARTDOWNTIME));
+
+                // Hapus duplikat STARTDOWNTIME, ambil ENDDOWNTIME paling akhir
+                const mergedByStart = {};
+                for (const row of list) {
+                    const key = row.STARTDOWNTIME;
+                    if (!mergedByStart[key] || new Date(row.ENDDOWNTIME) > new Date(mergedByStart[key].ENDDOWNTIME)) {
+                        mergedByStart[key] = row;
+                    }
+                }
+
+                const uniqueRows = Object.values(mergedByStart).sort((a, b) => new Date(a.STARTDOWNTIME) - new Date(b.STARTDOWNTIME));
+                const mergedDowntimes = [];
+
+                for (const current of uniqueRows) {
+                    const last = mergedDowntimes[mergedDowntimes.length - 1];
+                    if (last) {
+                        const gap = (new Date(current.STARTDOWNTIME) - new Date(last.ENDDOWNTIME)) / 1000;
+                        if (gap < MAX_GAP) {
+                            // Gabungkan downtime
+                            last.ENDDOWNTIME = new Date(current.ENDDOWNTIME) > new Date(last.ENDDOWNTIME)
+                                ? current.ENDDOWNTIME
+                                : last.ENDDOWNTIME;
+                            last.CYCLETIME = (new Date(last.ENDDOWNTIME) - new Date(last.STARTDOWNTIME)) / 1000;
+                            last.DOWNTIME_FORMAT = formatDuration(last.CYCLETIME);
+                            continue;
+                        }
+                    }
+
+                    current.CYCLETIME = (new Date(current.ENDDOWNTIME) - new Date(current.STARTDOWNTIME)) / 1000;
+                    current.DOWNTIME_FORMAT = formatDuration(current.CYCLETIME);
+                    mergedDowntimes.push(current);
+                }
+
+                // Generate RUNNING rows jika selisih antar downtime lebih dari MAX_GAP
+                for (let i = 0; i < mergedDowntimes.length; i++) {
+                    const current = mergedDowntimes[i];
+                    filledRows.push(current);
+
+                    const next = mergedDowntimes[i + 1];
+                    if (next) {
+                        const endCurrent = new Date(current.ENDDOWNTIME);
+                        const startNext = new Date(next.STARTDOWNTIME);
+                        const diffSeconds = (startNext - endCurrent) / 1000;
+
+                        if (diffSeconds > MAX_GAP) {
+                            filledRows.push({
+                                A_ASSET_LOG_ID: null,
+                                ADW_DOWNTIME_ID: null,
+                                DESCRIPTION: null,
+                                DOCUMENTNO: current.DOCUMENTNO,
+                                PARTNO: current.PARTNO,
+                                PARTNAME: current.PARTNAME,
+                                CUSTOMER: current.CUSTOMER,
+                                A_ASSET_ID: current.A_ASSET_ID,
+                                VALUE: current.VALUE,
+                                LINENO: current.LINENO,
+                                VERSIONNO: current.VERSIONNO,
+                                TYPE_DATA: 'RUNNING',
+                                LASTRUNNINGDATE: current.LASTRUNNINGDATE,
+                                CURRENT_TIME: current.CURRENT_TIME,
+                                LINE: current.LINE,
+                                STARTDOWNTIME: current.ENDDOWNTIME,
+                                ENDDOWNTIME: next.STARTDOWNTIME,
+                                CYCLETIME: diffSeconds,
+                                DOWNTIME_FORMAT: formatDuration(diffSeconds),
+                            });
+                        } else {
+                            // Update ENDDOWNTIME jika terlalu dekat (<300s)
+                            current.ENDDOWNTIME = next.STARTDOWNTIME;
+                            current.CYCLETIME = (new Date(current.ENDDOWNTIME) - new Date(current.STARTDOWNTIME)) / 1000;
+                            current.DOWNTIME_FORMAT = formatDuration(current.CYCLETIME);
+                        }
+                    }
+                }
+
+                // Tambahkan evaluasi downtime terakhir hingga saat ini
+                const lastRow = filledRows[filledRows.length - 1];
+                const queryCekLastInject = `
+                  SELECT DATETRX FROM (
+                    SELECT DATETRX FROM A_ASSET_LOG
+                    WHERE A_ASSET_ID = :assetID
+                    AND DATETRX >= TRUNC(SYSDATE)
+                    AND DATETRX < TRUNC(SYSDATE) + 1
+                    ORDER BY DATETRX DESC
+                  ) WHERE ROWNUM = 1`;
+
+                const { rows: lastInjectRows } = await connection.execute(queryCekLastInject, { assetID: assetId }, { outFormat: oracleConnection.instanceOracleDB.OUT_FORMAT_OBJECT });
+
+                const lastInject = lastInjectRows?.[0]?.DATETRX;
+                if (lastRow && lastRow.A_ASSET_ID == assetId && lastInject) {
+                    const now = DateTime.now().setZone('Asia/Jakarta');
+                    const lastInjectDate = new Date(lastInject);
+                    const endLast = new Date(lastRow.ENDDOWNTIME);
+                    const diffToNow = (now.toJSDate() - lastInjectDate) / 1000;
+
+                    if (diffToNow > MAX_GAP) {
+                        lastRow.ENDDOWNTIME = now.toFormat("yyyy-MM-dd HH:mm:ss");
+                        lastRow.CYCLETIME = (now.toJSDate() - endLast) / 1000;
+                        lastRow.DOWNTIME_FORMAT = formatDuration(lastRow.CYCLETIME);
+                    } else if (diffToNow >= 0) {
+                        const diffRunning = (now.toJSDate() - endLast) / 1000;
+                        filledRows.push({
+                            A_ASSET_LOG_ID: null,
+                            ADW_DOWNTIME_ID: null,
+                            DESCRIPTION: null,
+                            DOCUMENTNO: lastRow.DOCUMENTNO,
+                            PARTNO: lastRow.PARTNO,
+                            PARTNAME: lastRow.PARTNAME,
+                            CUSTOMER: lastRow.CUSTOMER,
+                            A_ASSET_ID: lastRow.A_ASSET_ID,
+                            VALUE: lastRow.VALUE,
+                            LINENO: lastRow.LINENO,
+                            VERSIONNO: lastRow.VERSIONNO,
+                            TYPE_DATA: "RUNNING",
+                            LASTRUNNINGDATE: lastRow.LASTRUNNINGDATE,
+                            CURRENT_TIME: now.toFormat("yyyy-MM-dd HH:mm:ss"),
+                            LINE: lastRow.LINE,
+                            STARTDOWNTIME: lastRow.ENDDOWNTIME,
+                            ENDDOWNTIME: now.toFormat("yyyy-MM-dd HH:mm:ss"),
+                            CYCLETIME: diffRunning,
+                            DOWNTIME_FORMAT: formatDuration(diffRunning),
+                        });
+                    }
+                }
+            }
+
+            filledRows.sort((a, b) => new Date(b.STARTDOWNTIME) - new Date(a.STARTDOWNTIME));
+
+
+            return {
+                success: true,
+                message: 'Fetch successfully',
+                rows: filledRows
+            };
+        } catch (error) {
+            console.error('Error in findEventLog:', error);
+            return {
+                rows: [],
+                message: 'Gagal mengambil data: ' + error.message,
+                success: false,
+            };
+        } finally {
+            if (connection) connection.close();
         }
     }
 

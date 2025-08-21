@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3080';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3080';
 const PREFIX = '/api/v1';
 
 // checkAuthStatus (cek status auth saat awal)
@@ -21,7 +21,7 @@ export const checkAuthStatus = createAsyncThunk('auth/checkAuthStatus', async (_
 // login
 export const login = createAsyncThunk('auth/login', async ({ username, password }, { rejectWithValue }) => {
     try {
-        const response = await axios.post(`${API_BASE_URL}${PREFIX}/auth/login/idempiere`, { username, password }, { withCredentials: true });
+        const response = await axios.post(`${API_BASE_URL}${PREFIX}/auth/login/oracle`, { username, password }, { withCredentials: true });
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || 'Login failed');
@@ -31,7 +31,7 @@ export const login = createAsyncThunk('auth/login', async ({ username, password 
 // logout
 export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}${PREFIX}/auth/logout/idempiere`, { withCredentials: true });
+        const response = await axios.get(`${API_BASE_URL}${PREFIX}/auth/logout/oracle`, { withCredentials: true });
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || 'Logout failed');

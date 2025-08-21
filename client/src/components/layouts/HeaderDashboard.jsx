@@ -2,7 +2,7 @@ import { useState } from "react";
 import PropTypes from "prop-types";
 import { Layout, theme, Flex, Space, Button, Dropdown, Typography, Menu, Avatar } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
-import { MoonOutlined, SunOutlined, DashboardOutlined, SettingOutlined, DownOutlined, ExclamationCircleOutlined, HomeOutlined, DatabaseOutlined, ControlOutlined, CarryOutOutlined, FundProjectionScreenOutlined, CloudUploadOutlined, UnorderedListOutlined, MoreOutlined, UserOutlined, LogoutOutlined } from "@ant-design/icons";
+import { TableOutlined, MoonOutlined, SunOutlined, DashboardOutlined, SettingOutlined, DownOutlined, ExclamationCircleOutlined, HomeOutlined, DatabaseOutlined, ControlOutlined, CarryOutOutlined, FundProjectionScreenOutlined, CloudUploadOutlined, UnorderedListOutlined, MoreOutlined, UserOutlined, LogoutOutlined } from "@ant-design/icons";
 // import StatisticDrawer from "../Statistics/StatisticDrawer";
 import MachineProdIcon from "../Icons/MachineProdIcon";
 import { useDispatch, useSelector } from "react-redux";
@@ -80,16 +80,21 @@ export default function HeaderDashboard({ isDarkMode, handleModeClick }) {
             key: '/shopfloor',
             icon: <ControlOutlined />,
             children: [
-                {
-                    label: 'Dashboard',
-                    key: '/shopfloor/dashboard',
-                    icon: <DashboardCustomizeOutlinedIcon sx={{ fontSize: '24px' }} />
-                },
-                {
-                    label: 'Timeline',
-                    key: '/shopfloor/timeline',
-                    icon: <ViewTimelineIcon sx={{ fontSize: '24px' }} />
-                },
+                // {
+                //     label: 'Dashboard',
+                //     key: '/shopfloor/dashboard',
+                //     icon: <DashboardCustomizeOutlinedIcon sx={{ fontSize: '24px' }} />
+                // },
+                // {
+                //     label: 'Timeline',
+                //     key: '/shopfloor/timeline',
+                //     icon: <ViewTimelineIcon sx={{ fontSize: '24px' }} />
+                // },
+                // {
+                //     label: 'Table Down',
+                //     key: '/shopfloor/table/down',
+                //     icon: <TableOutlined sx={{ fontSize: '24px' }} />
+                // },
             ],
         },
         {

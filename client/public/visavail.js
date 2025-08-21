@@ -734,7 +734,9 @@
                         })
                         .on('click', function (d) {
                             if (d.measure_url != null) {
-                                return window.open(d.measure_url);
+                                // return window.open(d.measure_url);
+                                // window.location.href = d.measure_url;
+                                return null
                             }
                             return null;
                         })

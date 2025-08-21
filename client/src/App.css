@@ -82,7 +82,7 @@ h1 {
   /* Highlight on hover */
 }
 
-.ant-table-thead>tr>th {
+/* .ant-table-thead>tr>th {
   background-color: #91d5ff !important;
   color: #000;
   font-weight: bold;
@@ -91,7 +91,7 @@ h1 {
 
 .ant-table-cell {
   vertical-align: middle;
-}
+} */
 
 .visavail-bar.status-DANDORY {
   fill: #ff9800 !important;
@@ -103,4 +103,15 @@ h1 {
 
 .visavail-bar.status-IDLE {
   fill: #f44336 !important;
+}
+
+.invalid-row td {
+  background-color: #ffa39e !important;
+  /* Warna merah muda lembut */
+  color: #5c0011;
+  /* Warna teks merah gelap agar kontras */
+}
+
+.header-table-custome-center {
+  text-align: center !important;
 }

@@ -1,6 +1,8 @@
 import fp from 'fastify-plugin'
 import autoload from '@fastify/autoload'
 import { join } from 'desm'
+import oracleDB from '../../configs/oracle.connection.js';
+
 
 class Auth {
     async getUserAndRole(server, name, pwd) {
@@ -37,6 +39,60 @@ class Auth {
             }
         }
     }
+
+    async getUserAndRoleOracle(name, pwd) {
+        let connection;
+        try {
+            connection = await oracleDB.getConnection();
+
+            // Query user
+            const query = `
+            SELECT ad_user_id 
+            FROM AD_User 
+            WHERE Name = :name 
+              AND Password = :pwd 
+              AND IsActive = 'Y'
+        `;
+
+            const result = await connection.execute(query, { name, pwd });
+
+            if (result.rows && result.rows.length > 0) {
+                const userId = result.rows[0][0]; // ambil ad_user_id
+
+                // Query role
+                const queryGetUserAndRole = `
+                SELECT ar.ad_role_id AS role_id, 
+                       ar.name AS role_name, 
+                       au.name AS user_name
+                FROM AD_User_Roles aur
+                JOIN ad_user au ON aur.ad_user_id = au.ad_user_id
+                JOIN ad_role ar ON aur.ad_role_id = ar.ad_role_id
+                WHERE ar.ismasterrole = 'N' 
+                  AND au.ad_user_id = :userId
+            `;
+
+                const resultUserAndRole = await connection.execute(queryGetUserAndRole, { userId });
+
+                if (resultUserAndRole.rows && resultUserAndRole.rows.length > 0) {
+                    // resultUserAndRole.rows default berupa array of arrays
+                    const [role_id, role_name, user_name] = resultUserAndRole.rows[0];
+                    return { role_id, role_name, user_name };
+                }
+            }
+            return null;
+        } catch (error) {
+            throw new Error(`Failed to fetch user: ${error.message}`);
+        } finally {
+            if (connection) {
+                try {
+                    await connection.close();
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        }
+    }
+
 }
 
 async function auth(fastify, opts) {

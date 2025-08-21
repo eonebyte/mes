@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { EyeOutlined, FormOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Col, DatePicker, Descriptions, Form, Input, InputNumber, Modal, notification, Row, Select, Space, Spin, Switch, Table } from 'antd';
+import { EyeOutlined, FormOutlined, MoreOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Card, Col, DatePicker, Descriptions, Dropdown, Form, Input, InputNumber, Modal, notification, Row, Select, Space, Spin, Switch, Table } from 'antd';
 import Highlighter from 'react-highlight-words';
 import LayoutDashboard from '../../components/layouts/LayoutDashboard';
 import dayjs from 'dayjs';
+import { DateTime } from "luxon";
+import { ExportOutlined, CloseSquareOutlined } from '@ant-design/icons';
 
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -27,10 +29,6 @@ const ListPlan = () => {
 
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [formData, setFormData] = useState({});
-
-    console.log('selected : ', selectedData);
-    console.log('formData : ', formData);
-
 
     const [bomOptions, setBomOptions] = useState([]);
     const [resourceOptions, setResourceOptions] = useState([]);
@@ -196,30 +194,6 @@ const ListPlan = () => {
             ),
     });
 
-    // const formatDate = (dateStr) => {
-    //     const [datePart] = dateStr.split(' '); // ["30-12-2024"]
-    //     const [day, month, year] = datePart.split('-'); // ["30", "12", "2024"]
-    //     const formattedDate = new Date(`${year}-${month}-${day}`);
-    //     const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-    //     const formatter = new Intl.DateTimeFormat('id-ID', options);
-    //     return formatter.format(formattedDate); // Output: "30/12/2024"
-    // };
-
-    // const formatDateTime = (dateStr) => {
-    //     if (!dateStr) return '';
-
-    //     try {
-    //         const [datePart, timePart] = dateStr.split(' ');
-    //         const [day, month, year] = datePart.split('-');
-    //         const [hours, minutes, seconds] = timePart.split(':');
-    //         const formattedDate = `${day}/${month}/${year}`;
-    //         const formattedDateTime = `${formattedDate} ${hours}:${minutes}:${seconds}`;
-    //         return formattedDateTime;
-    //     } catch (error) {
-    //         console.error("Error formatting date/time:", error);
-    //         return '';  // Jika terjadi error, kembalikan string kosong
-    //     }
-    // };
 
     const handleViewDetail = (record) => {
         setSelectedData(record);
@@ -229,7 +203,7 @@ const ListPlan = () => {
     const columns = [
         { title: 'No', dataIndex: 'no', key: 'no', ...getColumnSearchProps('no') },
         {
-            title: 'Plan No',
+            title: 'Doc No',
             dataIndex: 'planNo',
             key: 'planNo', ...getColumnSearchProps('planNo'),
             defaultSortOrder: 'descend',
@@ -242,63 +216,96 @@ const ListPlan = () => {
                 return a.planNo.toString().localeCompare(b.planNo.toString());
             },
         },
-        { title: 'Description', dataIndex: 'description', key: 'description', ...getColumnSearchProps('description') },
         {
-            title: 'Resource code', dataIndex: 'resourceCode', key: 'resourceCode', ...getColumnSearchProps('resourceCode'),
+            title: 'MC', dataIndex: 'MC', key: 'MC', ...getColumnSearchProps('MC'),
+            className: 'header-table-custome-center',
             render: (text, record) => (
                 <Button type="link" onClick={() => navigate(`/resource?resourceId=${record.resourceId}`)}>
                     {text}
                 </Button>
             )
         },
-        { title: 'Mold', dataIndex: 'moldName', key: 'moldName', ...getColumnSearchProps('moldName') },
         { title: 'Part No', dataIndex: 'partNo', key: 'partNo', ...getColumnSearchProps('partNo') },
         { title: 'Part Name', dataIndex: 'partName', key: 'partName', ...getColumnSearchProps('partName') },
         // { title: 'User', dataIndex: 'user', key: 'user', ...getColumnSearchProps('user') },
+        {
+            title: 'Date Doc',
+            dataIndex: 'dateDoc',
+            key: 'dateDoc',
+            ...getColumnSearchProps('dateDoc'),
+            render: (text) =>
+                text
+                    ? DateTime.fromFormat(text, 'dd-MM-yyyy HH:mm:ss').toFormat('dd-MM-yyyy')
+                    : '',
+        },
         { title: 'Plan Status', dataIndex: 'status', key: 'status', ...getColumnSearchProps('status') },
         { title: 'Qty', dataIndex: 'qty', key: 'qty', ...getColumnSearchProps('qty') },
-        // {
-        //     title: 'Date Doc',
-        //     dataIndex: 'dateDoc',
-        //     key: 'dateDoc',
-        //     ...getColumnSearchProps('dateDoc'),
-        //     render: (text) => formatDate(text),
-        // },
-        // {
-        //     title: 'Start Time',
-        //     dataIndex: 'planStartTime',
-        //     key: 'planStartTime',
-        //     render: (text) => formatDateTime(text),  // Terapkan formatDateTime untuk Start Time
-        // },
-        // {
-        //     title: 'Complete Time',
-        //     dataIndex: 'planCompleteTime',
-        //     key: 'planCompleteTime',
-        //     render: (text) => formatDateTime(text),  // Terapkan formatDateTime untuk Complete Time
-        // },
-        // { title: 'Cycletime', dataIndex: 'cycletime', key: 'cycletime', ...getColumnSearchProps('cycletime') },
-        // { title: 'Cavity', dataIndex: 'cavity', key: 'cavity', ...getColumnSearchProps('cavity') },
-        // { title: 'Trial', dataIndex: 'isTrial', key: 'isTrial', ...getColumnSearchProps('isTrial') },
-        // { title: 'BOM', dataIndex: 'bom', key: 'bom', ...getColumnSearchProps('bom') },
         {
             title: "Action",
             key: "action",
-            render: (text, record) => (
-                <>
-                    <Button type="link" onClick={() => handleViewDetail(record)}>
-                        <EyeOutlined />
-                    </Button>
-                    {/* === */}
-                    <Button key="edit" onClick={() => {
-                        setFormData(record);
-                        setEditModalVisible(true);
-                    }}>
-                        <FormOutlined />
-                    </Button>
-                </>
+            align: "center",
+            render: (_, record) => {
+                const items = [
+                    {
+                        key: "view",
+                        label: (
+                            <span onClick={() => handleViewDetail(record)}>
+                                <EyeOutlined style={{ marginRight: 8 }} />
+                                Detail
+                            </span>
+                        ),
+                    },
+                    {
+                        key: "edit",
+                        label: (
+                            <span
+                                onClick={() => {
+                                    setFormData(record);
+                                    setEditModalVisible(true);
+                                }}
+                            >
+                                <FormOutlined style={{ marginRight: 8 }} />
+                                Edit
+                            </span>
+                        ),
+                    },
+                    {
+                        key: "open",
+                        label: (
+                            <span
+                                onClick={() => {
+                                    setFormData(record);
+                                    setEditModalVisible(true);
+                                }}
+                            >
+                                <ExportOutlined style={{ marginRight: 8 }} />
+                                Open
+                            </span>
+                        ),
+                    },
+                    {
+                        key: "close",
+                        label: (
+                            <span
+                                onClick={() => {
+                                    setFormData(record);
+                                    setEditModalVisible(true);
+                                }}
+                            >
+                                <CloseSquareOutlined style={{ marginRight: 8 }} />
+                                Close
+                            </span>
+                        ),
+                    },
+                ];
 
-            ),
-        },
+                return (
+                    <Dropdown menu={{ items }} trigger={["click"]} placement="bottomRight">
+                        <Button type="text" icon={<MoreOutlined style={{ fontSize: 18 }} />} />
+                    </Dropdown>
+                );
+            },
+        }
     ];
 
     return (
@@ -342,20 +349,21 @@ const ListPlan = () => {
                         <Descriptions.Item label="No">{selectedData.no}</Descriptions.Item>
                         <Descriptions.Item label="Plan No">{selectedData.planNo}</Descriptions.Item>
                         <Descriptions.Item label="Description">{selectedData.description}</Descriptions.Item>
-                        <Descriptions.Item label="Resource Code">{selectedData.resourceCode}</Descriptions.Item>
+                        <Descriptions.Item label="MC">{selectedData.MC}</Descriptions.Item>
                         <Descriptions.Item label="Mold">{selectedData.moldName}</Descriptions.Item>
                         <Descriptions.Item label="Part No">{selectedData.partNo}</Descriptions.Item>
                         <Descriptions.Item label="Part Name">{selectedData.partName}</Descriptions.Item>
                         <Descriptions.Item label="User">{selectedData.user}</Descriptions.Item>
                         <Descriptions.Item label="Plan Status">{selectedData.status}</Descriptions.Item>
                         <Descriptions.Item label="Quantity">{selectedData.qty}</Descriptions.Item>
-                        <Descriptions.Item label="Date Doc">{selectedData.dateDoc}</Descriptions.Item>
+                        <Descriptions.Item label="Date Doc">{
+                            DateTime.fromFormat(selectedData.dateDoc, 'dd-MM-yyyy HH:mm:ss').toFormat('dd-MM-yyyy')
+                        }</Descriptions.Item>
                         <Descriptions.Item label="Start Time">{selectedData.planStartTime}</Descriptions.Item>
                         <Descriptions.Item label="Complete Time">{selectedData.planCompleteTime}</Descriptions.Item>
                         <Descriptions.Item label="Cycletime">{selectedData.cycletime}</Descriptions.Item>
-                        <Descriptions.Item label="Cavity">{selectedData.cavity}</Descriptions.Item>
+                        {/* <Descriptions.Item label="Cavity">{selectedData.cavity}</Descriptions.Item> */}
                         <Descriptions.Item label="Trial">{selectedData.isTrial === false ? 'N' : 'Y'}</Descriptions.Item>
-                        <Descriptions.Item label="BOM">{selectedData.bomName}</Descriptions.Item>
                     </Descriptions>
                 )}
             </Modal>

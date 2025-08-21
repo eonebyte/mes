@@ -17,7 +17,8 @@ const Login = () => {
     const onFinish = () => {
         dispatch(login({ username, password })).then(async (result) => {
             if (result.payload && result.payload.success) {
-                navigate('/shopfloor/dashboard');
+                // navigate('/shopfloor/dashboard');
+                navigate('/plan/list');
             } else {
                 message.error(result.payload ? result.payload.message : 'Login failed');
             }

@@ -6,16 +6,20 @@ import { fetchAssetEvents } from "../../data/fetchs";
 import { Divider, Modal, Row, Spin } from "antd";
 import socket from '../../libs/socket-io/socket.js'
 import StatusButton from '../../components/Buttons/StatusButton.jsx';
+// import { useNavigate } from 'react-router-dom';
 
 
 const TimelineDown = () => {
+
     const chartRef = useRef(null);
     const datasetRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [assetEvents, setAssetEvents] = useState([]);
+    // const navigate = useNavigate();
 
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [clickedBlockData, setClickedBlockData] = useState(null);
+    
 
     const handleShowModal = useCallback((data) => {
         setClickedBlockData(data);
@@ -94,7 +98,7 @@ const TimelineDown = () => {
 
                 for (let i = 0; i < newDataRaw.length; i++) {
                     const rawEntry = newDataRaw[i];
-                    const descEntry = description?.[i]?.[0] || 'No description';
+                    const descEntry = description?.[i] || 'No description';
 
 
                     if (targetData.length > 0) {
@@ -216,6 +220,7 @@ const TimelineDown = () => {
             if (graphEl) graphEl.innerHTML = '';
 
             const dataset = aEvents.filter(event => event.data && event.data.length > 0);
+
             datasetRef.current = dataset;
 
 
@@ -294,7 +299,7 @@ const TimelineDown = () => {
                     let status = 'Status tidak ditemukan.';
 
                     for (const resource of datasetRef.current) {
-                        status = resource.description[i]?.[0] || 'Tidak ada deskripsi.';
+                        status = resource.description[i] || 'Tidak ada deskripsi.';
                     }
 
                     const modalData = {
@@ -304,12 +309,23 @@ const TimelineDown = () => {
                     };
 
                     handleShowModal(modalData);
-                }
+                },
                 // --- AKHIR DARI PENAMBAHAN onClickBlock ---
 
             };
 
+            const container = document.getElementById('visavail_graph');
+            if (!container || container.offsetWidth === 0) {
+                console.warn("Container belum siap, tunda render chart 100ms");
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+
             chartRef.current = window.visavail.generate(options2, datasetRef.current);
+
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 100);
 
             // function addCategoryIfNotExist(catKey) {
             //     if (!dataset[0].categories[catKey]) {
@@ -342,40 +358,43 @@ const TimelineDown = () => {
     }, [assetEvents, handleShowModal]);
 
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            try {
-                if (chartRef.current) {
-                    const oldData = datasetRef.current[0]?.data;
 
-                    if (oldData?.length > 0) {
-                        const nowUTC = DateTime.now()
-                            .setZone("UTC")
-                            .toFormat('yyyy-MM-dd HH:mm:ss');
 
-                        let updated = false;
 
-                        for (const resource of datasetRef.current) {
-                            const data = resource?.data;
-                            if (Array.isArray(data) && data.length > 0) {
-                                data[data.length - 1][2] = nowUTC;
-                                updated = true;
-                            }
-                        }
+    // useEffect(() => {
+    //     const interval = setInterval(() => {
+    //         try {
+    //             if (chartRef.current) {
+    //                 const oldData = datasetRef.current[0]?.data;
 
-                        if (updated) {
-                            chartRef.current.updateGraph(datasetRef.current);
-                            console.log("Chart updated (auto-refresh) at", nowUTC);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error("Auto-refresh failed:", error);
-            }
-        }, 60000); // setiap 1 menit
+    //                 if (oldData?.length > 0) {
+    //                     const nowUTC = DateTime.now()
+    //                         .setZone("UTC")
+    //                         .toFormat('yyyy-MM-dd HH:mm:ss');
 
-        return () => clearInterval(interval);
-    }, []);
+    //                     let updated = false;
+
+    //                     for (const resource of datasetRef.current) {
+    //                         const data = resource?.data;
+    //                         if (Array.isArray(data) && data.length > 0) {
+    //                             data[data.length - 1][2] = nowUTC;
+    //                             updated = true;
+    //                         }
+    //                     }
+
+    //                     if (updated) {
+    //                         chartRef.current.updateGraph(datasetRef.current);
+    //                         console.log("Chart updated (auto-refresh) at", nowUTC);
+    //                     }
+    //                 }
+    //             }
+    //         } catch (error) {
+    //             console.error("Auto-refresh failed:", error);
+    //         }
+    //     }, 60000); // setiap 1 menit
+
+    //     return () => clearInterval(interval);
+    // }, []);
 
 
 

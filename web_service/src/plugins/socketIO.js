@@ -8,6 +8,18 @@ async function socketIoService(fastify) {
   fastify.io = io;
 
   io.on("connection", (socket) => {
+
+    socket.on('gantt-task-changed', (taskData) => {
+
+      fastify.log.info(`Menerima perubahan untuk task ID: ${taskData.id} dari klien ${socket.id}`);
+      socket.broadcast.emit('gantt-task-updated', taskData);
+    });
+
+    socket.on('gantt-task-save-db', (ganttData) => {
+      socket.broadcast.emit('gantt-task-saved', ganttData);
+    });
+
+
     socket.on("refreshServer", async (data) => {
       console.log('Menerima request refresh dari frontend, data:', data);
       console.log('server:', fastify);

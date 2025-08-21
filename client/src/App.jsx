@@ -14,7 +14,6 @@ import Mold from "./pages/ShopFloor/Resource/Mold";
 import MoldSetup from "./pages/ShopFloor/Resource/MoldSetup";
 import Down from "./pages/ShopFloor/Resource/Down";
 import Resources from "./pages/Resources";
-import Scheduler from "./pages/Scheduler";
 import McRun from "./pages/McRun";
 import Import from "./pages/Plan/Import";
 import ListPlan from "./pages/Plan/List";
@@ -24,7 +23,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { checkAuthStatus } from "./states/reducers/authSlice";
 import { useEffect } from "react";
 import TimelineDown from "./pages/ShopFloor/TimelineDown";
+import TimelineDownDetail from "./pages/ShopFloor/TimelineDownDetail";
 import Forbidden from "./components/Forbidden";
+import TableDown from "./pages/ShopFloor/TableDown";
+
 // import ProtectedRoute from "./components/ProtectedRoute";
 // <Route path="/resource" element={
 //   <ProtectedRoute allowedRoles={['Leader_Produksi']}>
@@ -32,7 +34,6 @@ import Forbidden from "./components/Forbidden";
 //   </ProtectedRoute>
 // }>
 // </Route>
-
 
 function App() {
 
@@ -53,6 +54,7 @@ function App() {
     return <Login />;
   }
 
+
   return (
     <>
       <Routes>
@@ -64,10 +66,11 @@ function App() {
         {/* Forbidden */}
         <Route path="/403" element={<Forbidden />}></Route>
 
-
         {/* Shopfloor */}
         <Route path="/shopfloor/dashboard" element={<Dashboard />}></Route>
         <Route path="/shopfloor/timeline" element={<TimelineDown />}></Route>
+        <Route path="/shopfloor/timeline/detail" element={<TimelineDownDetail />}></Route>
+        <Route path="/shopfloor/table/down" element={<TableDown />}></Route>
         <Route path="/resource" element={<Active />}></Route>
         <Route path="/resource/plan" element={<PlanList />}></Route>
         <Route path="/resource/plan/detail" element={<PlanDetail />}></Route>
@@ -85,7 +88,6 @@ function App() {
         <Route path="/machine-downtime" element={<MachineDowntime />}></Route>
         <Route path="/simulasi-iot" element={<SimulasiIoT />}></Route>
         <Route path="/resources" element={<Resources />}></Route>
-        <Route path="/scheduler" element={<Scheduler />}></Route>
         <Route path="/mc-run" element={<McRun />}></Route>
         {/* <Route path="/home" element={<Home />}></Route> */}
         {/* <Route path="/gedung-b" element={<GedungB />}></Route> */}

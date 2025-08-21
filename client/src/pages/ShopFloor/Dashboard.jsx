@@ -1,7 +1,7 @@
 import { Row, Divider, Spin } from "antd";
 import LayoutDashboard from '../../components/layouts/LayoutDashboard';
 
-import StatusButton from "../../components/Buttons/StatusButton";
+import StatusButton from "../../components/Buttons/StatusButtonFromOracle";
 // import { plans, resources } from "../../data/fetchResource";
 import { useEffect, useState } from "react";
 import { fetchResources } from "../../data/fetchs";

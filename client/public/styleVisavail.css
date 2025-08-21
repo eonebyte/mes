@@ -1,3 +1,31 @@
+/* Sesuaikan dengan nama kelas yang Anda gunakan di JS */
+.rect_Running {
+    fill: #0f9d58; /* Warna hijau 'success' Bootstrap */
+}
+
+.tooltip_Running {
+    color: #0f9d58;
+}
+
+/* Anda juga sudah memiliki kelas untuk status lain, misal Down/Trouble */
+.rect_Down, .rect_Trouble {
+    fill: #dc3545; /* Warna merah */
+}
+.tooltip_Down, .tooltip_Trouble {
+    color: #dc3545;
+}
+
+/* UNKNOW */
+.rect_UNKNOW {
+    fill: #db4437
+;
+}
+
+.tooltip_UNKNOW {
+    color: #db4437
+;
+}
+
 /* RUNNING */
 .rect_RUN {
     fill: #52c41a;

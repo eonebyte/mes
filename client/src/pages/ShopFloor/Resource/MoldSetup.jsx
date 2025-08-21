@@ -8,7 +8,7 @@ import { useSelector } from 'react-redux';
 import UploadIcon from '@mui/icons-material/Upload';
 import { fetchMolds, fetchResourceById } from '../../../data/fetchs';
 
-const backendUrl = 'http://localhost:3080';
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3080';
 const prefix = '/api/v1';
 
 const StepMoldSetup = () => {

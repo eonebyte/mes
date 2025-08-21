@@ -10,6 +10,7 @@ import cors from '@fastify/cors';
 import autoload from '@fastify/autoload'
 import socketIoService from './plugins/socketIO.js';
 import { join } from 'desm'
+import fastifyStatic from '@fastify/static';
 
 
 
@@ -27,7 +28,7 @@ async function build(opts = {}) {
     const REDIS_PORT = process.env.REDIS_PORT;
     const REDIS_PASS = process.env.REDIS_PASS;
 
-    
+
 
     await app.register(cors, {
         origin: true,
@@ -42,8 +43,9 @@ async function build(opts = {}) {
         expiry: 60 * 60, // 1 Jam
         cookie: {
             path: '/',
-            httpOnly: true
-            // options for setCookie, see https://github.com/app/app-cookie
+            httpOnly: true,
+            secure: false,
+            sameSite: 'lax'
         }
     })
 
@@ -72,6 +74,26 @@ async function build(opts = {}) {
     // modules
     await app.register(formbody);
     await app.register(socketIoService);
+
+    await app.register(fastifyStatic, {
+        root: join(import.meta.url, '../../client/src/assets'),
+        prefix: '/src/assets/', // URL prefix untuk mengakses assets di client
+        decorateReply: false
+    });
+
+
+    await app.register(fastifyStatic, {
+        root: join(import.meta.url, '../../client/dist'), // Menyesuaikan path ke folder 'dist'
+        prefix: '/', // Semua file di folder dist akan dapat diakses melalui prefix ini
+    });
+
+    app.get('/', async (request, reply) => {
+        return reply.sendFile('index.html'); // Mengakses file index.html di folder dist
+    });
+
+    app.get('/plan/list', async (request, reply) => {
+        return reply.sendFile('index.html'); // Mengakses file index.html di folder dist
+    });
 
     app.register(autoload, {
         dir: join(import.meta.url, 'modules'),

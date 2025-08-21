@@ -37,6 +37,6 @@ async function closeConnection(connection) {
     }
 }
 
-export default { openConnection, closeConnection };
+export default { openConnection, closeConnection, instanceOracleDB: OracleDB };
 
 

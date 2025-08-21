@@ -4,6 +4,8 @@ import { join } from 'desm'
 import axios from 'axios';
 import https from 'https';
 import { DateTime } from 'luxon';
+import oracleDB from '../../configs/oracle.connection.js';
+
 
 class Plan {
     async getQtyUsedActual(server, partId, bomId) {
@@ -210,6 +212,88 @@ class Plan {
         } finally {
             if (dbClient) {
                 dbClient.release(); // PostgreSQL pakai release() untuk pool
+            }
+        }
+    }
+
+    async findAllOracle(server) {
+        let connection;
+        try {
+            connection = await oracleDB.openConnection(); // PostgreSQL pakai pool
+
+            const query = `
+            SELECT
+                jo.cust_joborder_id,
+                jo.documentno,
+                aa.a_asset_id,
+                aa.lineno AS lineno,
+                aa.value AS mc,
+                au.ad_user_id AS user_id,
+                au.name AS createdby,
+                jo.docstatus,
+                TO_CHAR(jo.datedoc, 'DD-MM-YYYY HH24:MI:SS') AS datedoc,
+                TO_CHAR(jo.startdate, 'DD-MM-YYYY HH24:MI:SS') AS startdate,
+                TO_CHAR(jo.enddate, 'DD-MM-YYYY HH24:MI:SS') AS enddate,
+                mp.cycletime,
+                mp2.cavity,
+                jo.isactive,
+                jo.isverified,
+                mp.m_product_id AS product_id,
+                mp.value AS product_value,
+                mp.name AS product_name,
+                jo.qtyplanned,
+                jo.istrial,
+                mp2.m_product_id AS moldid,
+                mp2.value AS moldno,
+                mp2.name AS moldname,
+                jo.description
+            FROM cust_joborder jo
+            JOIN a_asset aa ON jo.a_asset_id = aa.a_asset_id
+            JOIN ad_user au ON jo.createdby = au.ad_user_id
+            JOIN m_product mp ON jo.m_product_id = mp.m_product_id
+            LEFT JOIN m_product mp2 ON jo.m_productmold_id = mp2.m_product_id
+            WHERE jo.datedoc >= DATE '2025-08-01'
+            AND jo.docstatus = 'DR'
+            ORDER BY jo.documentno DESC
+        `;
+
+            const result = await connection.execute(query, [], { outFormat: oracleDB.instanceOracleDB.OBJECT }); // PostgreSQL pakai query()
+
+            if (result.rows.length > 0) {
+                return result.rows.map((row, index) => ({
+                    no: index + 1,
+                    planId: row.CUST_JOBORDER_ID,
+                    planNo: row.DOCUMENTNO,
+                    resourceId: row.A_ASSET_ID,
+                    MC: `${row.LINENO} [${row.MC}]`,
+                    userId: row.USER_ID,
+                    user: row.CREATEDBY,
+                    status: row.DOCSTATUS,
+                    dateDoc: row.DATEDOC,
+                    planStartTime: row.STARTDATE,
+                    planCompleteTime: row.ENDDATE,
+                    cycletime: Math.floor(row.CYCLETIME),
+                    cavity: row.CAVITY,
+                    isActive: row.ISACTIVE,
+                    isVerified: row.ISVERIFIED,
+                    partId: row.PRODUCT_ID,
+                    partNo: row.PRODUCT_VALUE,
+                    partName: row.PRODUCT_NAME,
+                    qty: Math.floor(row.QTYPLANNED),
+                    isTrial: row.ISTRIAL,
+                    moldId: row.MOLDID,
+                    moldNo: row.MOLDNO,
+                    moldName: row.MOLDNAME,
+                    description: row.DESCRIPTION
+                }));
+            }
+
+            return [];
+        } catch (error) {
+            throw new Error(`Failed to fetch All Job Orders: ${error}`);
+        } finally {
+            if (connection) {
+                await connection.close();
             }
         }
     }

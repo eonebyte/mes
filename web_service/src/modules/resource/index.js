@@ -1,6 +1,8 @@
 import fp from 'fastify-plugin'
 import autoload from '@fastify/autoload'
 import { join } from 'desm'
+import oracleConnection from "../../configs/oracle.connection.js";
+
 
 class Resource {
     async saveTimestampToRedis(server, redisKey) {
@@ -297,46 +299,82 @@ class Resource {
     }
 
     async getTimelineData(server) {
-        let dbClient;
+        let connection;
 
         try {
-            dbClient = await server.pg.connect();
+            connection = await oracleConnection.openConnection();
 
             // Ambil data resources (a_asset)
-            const resourcesRes = await dbClient.query(`
-                    SELECT a_asset_id, name, value, lineno
-                    FROM a_asset
-                `);
+            const resourcesResQuery = `
+                SELECT A_ASSET_ID, NAME, VALUE, LINENO
+                FROM A_ASSET
+                WHERE 
+                    A_ASSET_GROUP_ID = 1000000
+                    AND ISACTIVE = 'Y'
+            `;
 
             // Ambil data tasks/events (a_asset_event)
-            const tasksRes = await dbClient.query(`
-                    SELECT a_asset_event_id, 
-                           a_asset_id AS "resourceId",
-                           TO_CHAR(starttime AT TIME ZONE 'Asia/Jakarta' AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS') AS "start",
-                           TO_CHAR(
-                            CASE 
-                                WHEN endtime IS NULL THEN NOW() AT TIME ZONE 'UTC'
-                                ELSE endtime AT TIME ZONE 'Asia/Jakarta' AT TIME ZONE 'UTC'
-                            END,
-                            'YYYY-MM-DD HH24:MI:SS'
-                        ) AS "end",
-                           status,
-                           code,
-                           EXTRACT(EPOCH FROM (endtime - starttime)) AS duration_seconds
-                    FROM a_asset_event
-                    WHERE starttime IS NOT NULL
-                `);
+            const tasksResQuery = `
+            SELECT 
+                ad.ADW_DOWNTIME_ID AS "a_asset_event_id",
+                ad.A_ASSET_LOG_ID,
+                ad.A_ASSET_ID,
+                TO_CHAR(CAST(FROM_TZ(CAST(starttime AS TIMESTAMP), 'Asia/Jakarta') AT TIME ZONE 'UTC' AS DATE), 'YYYY-MM-DD HH24:MI:SS') AS STARTTIME,
+                TO_CHAR(
+                    FROM_TZ(CAST(ad.endtime AS TIMESTAMP), 'Asia/Jakarta') AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD HH24:MI:SS'
+                ) AS ENDTIME,
+                CASE
+                    WHEN ad.ADW_OEEDT_ID IS NULL THEN 'UNKNOW'
+                    ELSE TO_CHAR(ao.NAME)
+                END AS STATUS,
+                ad.ADW_DOWNTIME_ID,
+                CASE
+                    WHEN ad.ADW_OEEDT_ID IS NULL THEN 'UNKNOW'
+                    ELSE TO_CHAR(ao.DTCLASS)
+                END AS CODE,
+                ((NVL(endtime, SYSDATE) - starttime) * 86400) AS DURATION_SECONDS
+            FROM ADW_DOWNTIME ad
+            LEFT JOIN ADW_OEEDT ao ON ad.ADW_OEEDT_ID = ao.ADW_OEEDT_ID
+            /* PENTING: Tambahkan filter waktu di sini agar lebih efisien */
+            /* WHERE ad.starttime > (SYSDATE - 1) */ 
+        `;
 
-            // Map data resources
-            const resources = resourcesRes.rows.map((row, index) => ({
-                a_asset_id: row.a_asset_id.toString(),
-                label: `${row.lineno} #${row.value}`,
-                data: [],
-                description: [],
+            const [resourcesResult, tasksResult] = await Promise.all([
+                connection.execute(resourcesResQuery, [], {
+                    outFormat: oracleConnection.instanceOracleDB.OUT_FORMAT_OBJECT,
+                }),
+                connection.execute(tasksResQuery, [], {
+                    outFormat: oracleConnection.instanceOracleDB.OUT_FORMAT_OBJECT,
+                })
+            ]);
+
+            // --- PERBAIKAN TOTAL DIMULAI DI SINI ---
+
+            // FIX 1: Definisikan variabel waktu dan helper yang hilang
+            // Menggunakan waktu Jakarta (WIB/GMT+7)
+            const now = new Date();
+            const todayAt730 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 30, 0);
+
+            // Konversi ke UTC untuk konsistensi. Chart library biasanya bekerja dengan UTC.
+            const chartStartTimeUTC = todayAt730;
+            const chartEndTimeUTC = now;
+
+            const formatUTCDateString = (date) => {
+                if (!date || !(date instanceof Date)) return null;
+                return date.toISOString().slice(0, 19).replace('T', ' ');
+            };
+
+            // FIX 2: Inisialisasi 'events: []' bukan 'data: []' dan 'description: []'
+            const resources = resourcesResult.rows.map(row => ({
+                a_asset_id: row.A_ASSET_ID.toString(),
+                label: `${row.LINENO ?? ''} #${row.VALUE ?? '-'}`,
+                events: [], // Ini adalah perbaikan utamanya
                 categories: {}
             }));
 
-            function formatDuration(seconds) {
+            const formatDuration = (seconds) => {
+                if (seconds === null || seconds === undefined) return '';
                 const d = Math.floor(seconds / (24 * 3600));
                 const h = Math.floor((seconds % (24 * 3600)) / 3600);
                 const m = Math.floor((seconds % 3600) / 60);
@@ -346,42 +384,112 @@ class Resource {
                     d > 0 ? `${d}d` : '',
                     h > 0 ? `${h}h` : '',
                     m > 0 ? `${m}m` : '',
-                    s > 0 && d === 0 && h === 0 ? `${s}s` : ''  // tampilkan detik hanya jika kurang dari 1 jam dan 0 hari
+                    s > 0 && d === 0 && h === 0 ? `${s}s` : ''
                 ].filter(Boolean).join(' ');
+            };
+
+            // Langkah 1: Kumpulkan semua event downtime ke resource yang sesuai
+            for (const row of tasksResult.rows) {
+                const resource = resources.find(r => r.a_asset_id === row.A_ASSET_ID.toString());
+                if (!resource) continue; // Lewati jika event tidak memiliki resource yang cocok
+
+                const hasDowntimeType = row.CODE !== 'UNKNOW';
+                const code = hasDowntimeType ? row.CODE.replace(/\s+/g, '_') : 'UNKNOW';
+                const desc = hasDowntimeType ? row.STATUS : 'UNKNOW';
+                const downtimeId = row.ADW_DOWNTIME_ID || 0;
+                const duration = row.DURATION_SECONDS || 0;
+                const fullDesc = `${desc} ${downtimeId} <br /> (${formatDuration(duration)})`;
+
+                // Sekarang 'resource.events' sudah ada (berupa array kosong) dan bisa di-push
+                resource.events.push({
+                    start: row.STARTTIME,
+                    end: row.ENDTIME,
+                    code: code,
+                    description: fullDesc
+                });
             }
 
+            // Langkah 2: Loop setiap resource untuk mengisi celah dengan status 'RUN'
+            for (const resource of resources) {
+                // Urutkan event berdasarkan waktu mulai. Ini SANGAT PENTING!
+                resource.events.sort((a, b) => new Date(a.start) - new Date(b.start));
 
-            for (const row of tasksRes.rows) {
-                const resource = resources.find(r => r.a_asset_id === row.resourceId.toString());
-                if (!resource) continue;
+                const filledEvents = [];
+                // Tentukan kategori untuk Running
+                resource.categories['Running'] = {
+                    class: `rect_Running`, // Anda perlu menambahkan CSS untuk kelas ini (warna hijau)
+                    tooltip_html: `<i class="fas fa-fw fa-circle tooltip_Running"></i>`
+                };
 
-                const code = row.code || 'RUN';
-                const desc = row.status || 'Unknown';
-                const duration = row.duration_seconds || 0;
-                const fullDesc = `${desc} (${formatDuration(duration)})`;
+                // Mulai tracking dari awal waktu chart
+                let lastEventEndTime = formatUTCDateString(chartStartTimeUTC);
 
-                // Tambahkan kategori berdasarkan code jika belum ada
-                if (!resource.categories[code]) {
-                    resource.categories[code] = {
-                        class: `rect_${code}`,
-                        tooltip_html: `<i class="fas fa-fw fa-circle tooltip_${code}"></i>`
-                    };
+                if (resource.events.length === 0) {
+                    // Jika tidak ada event sama sekali, berarti Running sepanjang waktu
+                    filledEvents.push({
+                        start: lastEventEndTime,
+                        end: formatUTCDateString(chartEndTimeUTC),
+                        code: 'Running',
+                        description: 'Running'
+                    });
+                } else {
+                    for (const event of resource.events) {
+                        const currentEventStartTime = new Date(event.start);
+
+                        // Cek celah antara event terakhir dan event saat ini
+                        if (currentEventStartTime > new Date(lastEventEndTime)) {
+                            filledEvents.push({
+                                start: lastEventEndTime,
+                                end: event.start,
+                                code: 'Running',
+                                description: 'Running'
+                            });
+                        }
+
+                        // Tambahkan event downtime itu sendiri
+                        filledEvents.push(event);
+
+                        // Update waktu akhir event terakhir, pastikan tidak null
+                        lastEventEndTime = event.end || event.start;
+                    }
+
+                    // Cek celah setelah event terakhir hingga waktu sekarang
+                    if (new Date(lastEventEndTime) < chartEndTimeUTC) {
+                        filledEvents.push({
+                            start: lastEventEndTime,
+                            end: formatUTCDateString(chartEndTimeUTC),
+                            code: 'Running',
+                            description: 'Running'
+                        });
+                    }
                 }
 
-                // Tambahkan data dan deskripsi
-                resource.data.push([row.start, code, row.end]);
-                resource.description.push([fullDesc]);
+                // Ganti data event lama dengan yang sudah diisi
+                resource.events = filledEvents;
             }
 
+            // Langkah 3: Bangun dataset final dalam format yang dibutuhkan frontend
+            const dataset = resources.map(resource => {
+                // Buat kategori untuk semua downtime event yang ada di dalam events
+                resource.events.forEach(event => {
+                    if (event.code !== 'Running' && !resource.categories[event.code]) {
+                        resource.categories[event.code] = {
+                            class: `rect_${event.code}`,
+                            tooltip_html: `<i class="fas fa-fw fa-circle tooltip_${event.code}"></i>`
+                        };
+                    }
+                });
 
-            // Gabungkan data ke dalam format yang diinginkan
-            const dataset = resources.map(resource => ({
-                resourceId: resource.a_asset_id,
-                measure: resource.label,
-                categories: resource.categories, // Kategori hanya berisi status yang ditemukan
-                data: resource.data,
-                description: resource.description
-            }));
+                return {
+                    resourceId: resource.a_asset_id,
+                    measure: resource.label,
+                    measure_url: `/shopfloor/timeline/detail?resourceId=${resource.a_asset_id}`,
+                    categories: resource.categories,
+                    // Ubah kembali ke format array [start, code, end] dan array description
+                    data: resource.events.map(e => [e.start, e.code, e.end]),
+                    description: resource.events.map(e => e.description)
+                };
+            });
 
             return { dataset };
 
@@ -389,12 +497,8 @@ class Resource {
             console.error('Error fetching timeline data:', error);
             throw new Error('Gagal mengambil data timeline');
         } finally {
-            if (dbClient) {
-                try {
-                    dbClient.release();
-                } catch (closeError) {
-                    console.error('Error closing connection:', closeError);
-                }
+            if (connection) {
+                await connection.close(); // pastikan close adalah async
             }
         }
     }
